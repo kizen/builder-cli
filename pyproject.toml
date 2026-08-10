@@ -1,29 +1,25 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=77", "wheel"]  # >=77 for PEP 639 SPDX license metadata
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "kizen-builder"
-# SemVer, static, single source of truth. Deliberately not setuptools-scm:
-# the dominant install is an editable checkout, where an scm version churns to
-# `0.2.1.dev4+g1a2b3c` on every commit — which makes the upgrade nag mushy and
-# "what version are you on?" unanswerable in a chat. Bumping this is a release
-# decision; see CHANGELOG.md. Note `kizen --version` reads *installed*
-# metadata, so a bump only shows after a re-sync/reinstall.
+# SemVer, static, and the single source of truth. Bumping it is a release
+# decision — see docs/RELEASING.md. `kizen --version` reads *installed*
+# metadata, so a bump only shows after a re-sync or reinstall.
 version = "0.2.0"
 description = "Command-line tool for designing and iterating on a Kizen environment via the Kizen REST API."
 readme = "README.md"
 requires-python = ">=3.12"
 authors = [{ name = "Kizen Solutions" }]
 keywords = ["kizen", "crm", "cli", "automation", "rest-api"]
-# No `license` field yet — the license is an open decision, not something to
-# invent here. It's blocked regardless by the vendored product source under
-# src/kizen_builder/vendor/ (see its PROVENANCE.md).
+license = "MIT"
+license-files = ["LICENSE"]
 classifiers = [
-    # Not a real PyPI classifier — that's the point. The index rejects any
-    # `Private ::` classifier, so an accidental `twine upload` fails
-    # server-side while this repo is private. Removing this line is the
-    # deliberate act of making the package publishable.
+    # A guard, not a real PyPI classifier: the index rejects any `Private ::`
+    # classifier, so an accidental `twine upload` fails server-side. Releases
+    # ship as artifacts on the GitHub Release; remove this line when the
+    # package starts going to an index.
     "Private :: Do Not Upload",
     "Development Status :: 4 - Beta",
     "Environment :: Console",

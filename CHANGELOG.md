@@ -14,6 +14,12 @@ called out explicitly under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+### Added
+
+- **The package declares its license.** `kizen-builder` is MIT-licensed, and the
+  built wheel and sdist now carry `License-Expression: MIT` along with a copy of
+  `LICENSE`.
+
 ### Changed
 
 - **The docs are now one topic per Kizen surface.** `reference.md` was a

@@ -18,7 +18,7 @@ see exactly what a command would do before anything touches the environment.
 
 ## Install
 
-There's no public package index for this yet — it installs from a clone.
+`kizen` installs from a clone:
 
 ```bash
 git clone https://github.com/kizen/builder-cli.git "Kizen Builder"
@@ -82,16 +82,15 @@ Read verbs are always safe to run. Every create/update verb takes `--dry-run`,
 with `kizen apply --plan-file plan.json`.
 
 `kizen --help` lists the command groups; each group's `--help` lists its verbs
-and flags. That's the source of truth for syntax — this README deliberately
-doesn't copy it.
+and flags. That's the source of truth for syntax.
 
 ## One environment per working directory
 
 Environment selection is *positional* — the working directory's `.kizen/profile`
-pin decides which profile a command targets. There is no mutable global "current
-env" to drift onto. The pin also records the expected `business_id`, and every
-command verifies the resolved profile matches it, so a command run from a pinned
-directory can't act against the wrong environment.
+pin decides which profile a command targets, so there's no global "current env"
+to switch or drift onto. The pin also records the expected `business_id`, and
+every command verifies the resolved profile matches it, so a command run from a
+pinned directory can't act against the wrong environment.
 
 Profile-name resolution order:
 
@@ -107,9 +106,9 @@ profile whose `business_id` doesn't match.
 
 ## Documentation
 
-**The docs ship with the CLI and are served by it.** Nothing is copied or
-symlinked into an environment folder, so there's no sync step and nothing to go
-stale:
+**The docs ship with the CLI and are served by it**, so what you read always
+matches the version you have installed — there's no sync step and nothing to
+copy into an environment folder:
 
 ```bash
 kizen docs show operating    # the operating model and the approval gate
@@ -167,3 +166,14 @@ What changed in each release is in [CHANGELOG.md](CHANGELOG.md).
   `uv tool install --editable ".[connectors]"`, or later — run the command
   without it and the error prints the exact install line for your environment.
   See `kizen docs show reference`, "Installing the `connectors` extra".
+
+## Contributing
+
+[CONTRIBUTING.md](CONTRIBUTING.md) covers dev setup, the test tiers, the source
+tree, and how to add a command or a surface.
+
+## License
+
+MIT — see [LICENSE](LICENSE). `src/kizen_builder/vendor/connector_runtime/`
+carries Kizen product source, vendored so local connector runs match production;
+see its [PROVENANCE.md](src/kizen_builder/vendor/connector_runtime/PROVENANCE.md).

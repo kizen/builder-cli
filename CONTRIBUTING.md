@@ -14,9 +14,13 @@ laid out, and tested.
 ```bash
 git clone https://github.com/kizen/builder-cli.git "Kizen Builder"
 cd "Kizen Builder"
-uv sync              # creates .venv from the committed uv.lock
+uv sync --extra dev  # creates .venv from the committed uv.lock
 uv run pytest        # confirm green before changing anything
 ```
+
+The `dev` extra carries pytest, respx, ruff, and mypy; a plain `uv sync` prunes
+them and collection fails on the missing imports. CI syncs the same way, with
+`--locked` added.
 
 `uv sync` is the dev setup: it builds the checkout's own `.venv`. Users install
 with `uv tool install --editable .`, which puts `kizen` on `PATH` globally; see
