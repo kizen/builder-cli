@@ -174,6 +174,4 @@ tree, and how to add a command or a surface.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). `src/kizen_builder/vendor/connector_runtime/`
-carries Kizen product source, vendored so local connector runs match production;
-see its [PROVENANCE.md](src/kizen_builder/vendor/connector_runtime/PROVENANCE.md).
+MIT — see [LICENSE](LICENSE).
