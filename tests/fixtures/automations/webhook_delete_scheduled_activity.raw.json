@@ -1,0 +1,2286 @@
+{
+  "id": "01b9be9f-2faa-4212-84f8-9268a1c59e92",
+  "name": "Single Doc Converts to Multi-Doc",
+  "api_name": "single_doc_converts_to_multi_doc",
+  "ai_description": "\nTriggered manually or by a webhook on a Document Sets record, this 18-step automation prepares a single document file for splitting into multiple child documents. The workflow begins by initializing variables for the record ID, automation details, and an optional 'index' value from the webhook. It then deletes two scheduled review activities and updates the triggering Document Sets record, setting 'Contains Multiple Documents?' to 'Yes' and clearing several other fields. A condition then checks if the 'index' variable is blank. If it is, a Python script runs, and a separate workflow named 'Indexing Agent' is started, followed by an update to a related audit log. If the 'index' is not blank, a Python script uses the provided page ranges to create child records, followed by a file content extraction step and a final audit log update.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+    "name": "document_sets",
+    "description": "The Document Sets object stores and categorizes financial documents for mortgage transactions, classifying them by type like 'Appraisal' or 'W2'. It tracks classification status, records an execution date, and identifies multi-document files. Each set is linked to a primary Deal, Party, and Contact, and supports parent-child hierarchies for grouping related documents.",
+    "entity_name": "Document",
+    "object_name": "Document Sets",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "626434a0-9e6a-417e-a346-eae66f4ce04c",
+    "name": "Exception Automations"
+  },
+  "triggers": [
+    {
+      "id": "db0f4b4d-07f7-48eb-a128-4e665462adbb",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 2
+      }
+    },
+    {
+      "id": "7753a86d-2aa4-4c2a-862b-0ce19626db77",
+      "order": 1,
+      "description": "Webhook 'single_doc_converts_to_multi_doc' Received",
+      "user_description": "webhook",
+      "trigger_type": "webhook",
+      "trigger_webhook": {
+        "id": "a68589e2-9651-4a3a-a69a-9596be46f0e4",
+        "name": "single_doc_converts_to_multi_doc",
+        "http_method": "POST",
+        "content_type": "application/json",
+        "sample_post_body": "{\n  \"type\": \"Single-to-Multi\",\n  \"index\": [\n    {\n      \"page_start\": 1,\n      \"page_end\": 5,\n      \"classification\": \"Pay Stub\",\n      \"category\": \"Income Docs\"\n    },\n    {\n      \"page_start\": 6,\n      \"page_end\": 10,\n      \"classification\": \"W-2\",\n      \"category\": \"Income Docs\"\n    },\n    {\n      \"page_start\": 11,\n      \"page_end\": 15,\n      \"classification\": \"\",\n      \"category\": \"\"\n    }\n  ],\n  \"user\": \"taylor@example.net\"\n}",
+        "extract_raw_body_content": true,
+        "extract_url_query_string": true,
+        "webhook_url": "https://app.go.kizen.com/api/automations/single_doc_converts_to_multi_doc/webhook/single_doc_converts_to_multi_doc",
+        "extractors": [
+          {
+            "id": "87e6162c-a3ab-4b63-961e-da69ed635eb5",
+            "value_name": "user",
+            "value_json_path": "$.user",
+            "order": 0
+          },
+          {
+            "id": "c0f2ab73-377b-4edd-a178-d234b68bd57d",
+            "value_name": "index",
+            "value_json_path": "$.index",
+            "order": 1
+          },
+          {
+            "id": "3814bdb7-dca2-4000-a1b6-52ea92992f5b",
+            "value_name": "type",
+            "value_json_path": "$.type",
+            "order": 2
+          }
+        ]
+      },
+      "stats": {
+        "number_completed": 26
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "6764760c-de31-4d40-adfa-fde6a1ef7431",
+      "step_type": "initialize_variable",
+      "order": 0,
+      "description": "entity_record_id = \u2018{{ custom_objects.id }}\u2019",
+      "user_description": "entity record id",
+      "stats": {
+        "number_completed": 28,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ custom_objects.id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Document ID\" data-merge-field-relationship=\"custom_objects.id\">{{ custom_objects.id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "40cc0e0b-8430-446b-979c-23eec9a3efce",
+          "name": "entity_record_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-26T19:13:24.630558Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "2b6570ca-8d12-4117-88ef-00e898d1e453",
+      "step_type": "initialize_variable",
+      "order": 1,
+      "description": "user = \u2018single_doc_converts_to_multi_doc.user\u2019",
+      "user_description": "ExternalSystem User ID",
+      "stats": {
+        "number_completed": 28,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "6764760c-de31-4d40-adfa-fde6a1ef7431",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "webhook_trigger",
+            "source_subtype": null,
+            "value_category": {
+              "value": "single_doc_converts_to_multi_doc",
+              "label": "single_doc_converts_to_multi_doc",
+              "deleted": false
+            },
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": {
+              "value": "user",
+              "label": "user",
+              "deleted": false
+            },
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "252332dd-44d8-429c-8059-8a8e1f2a19ff",
+          "name": "user",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-02-08T18:55:32.994106Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "f7b3597a-33ac-4ce4-9d8d-870a77b2d4fb",
+      "step_type": "initialize_variable",
+      "order": 2,
+      "description": "index = \u2018single_doc_converts_to_multi_doc.index\u2019",
+      "user_description": "document index (optional)",
+      "stats": {
+        "number_completed": 28,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "2b6570ca-8d12-4117-88ef-00e898d1e453",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "webhook_trigger",
+            "source_subtype": null,
+            "value_category": {
+              "value": "single_doc_converts_to_multi_doc",
+              "label": "single_doc_converts_to_multi_doc",
+              "deleted": false
+            },
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": {
+              "value": "index",
+              "label": "index",
+              "deleted": false
+            },
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "b570f32f-6294-4ada-8a7a-30ebc7130e8c",
+          "name": "index",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-02-08T18:55:33.018128Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "38a86938-d8f5-4420-b02f-7f7a7fa8b50a",
+      "step_type": "initialize_variable",
+      "order": 3,
+      "description": "automation_id = \u2018{{ automation_history.automation_id }}\u2019",
+      "user_description": "automation id",
+      "stats": {
+        "number_completed": 28,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "f7b3597a-33ac-4ce4-9d8d-870a77b2d4fb",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ automation_history.automation_id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Automation ID\" data-merge-field-relationship=\"automation_history.automation_id\">{{ automation_history.automation_id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "e4694f15-ed64-4468-9f61-946f873b504d",
+          "name": "automation_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-02-08T18:55:33.049787Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "428c5b19-93ec-40d2-9916-2c7b0d503e20",
+      "step_type": "initialize_variable",
+      "order": 4,
+      "description": "automation_execution_id = \u2018{{ automation_history.execution_id }}\u2019",
+      "user_description": "automation execution id",
+      "stats": {
+        "number_completed": 28,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "38a86938-d8f5-4420-b02f-7f7a7fa8b50a",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ automation_history.execution_id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Automation Execution ID\" data-merge-field-relationship=\"automation_history.execution_id\">{{ automation_history.execution_id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "f755d4c0-0297-4ea0-a217-1b4b67cbd5f7",
+          "name": "automation_execution_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-02-08T18:55:33.058703Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "9d7b5030-fd82-4336-93d0-5dd883bca505",
+      "step_type": "initialize_variable",
+      "order": 5,
+      "description": "type = \u2018single_doc_converts_to_multi_doc.type\u2019",
+      "user_description": "Type of change from webhook",
+      "stats": {
+        "number_completed": 3,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "428c5b19-93ec-40d2-9916-2c7b0d503e20",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "webhook_trigger",
+            "source_subtype": null,
+            "value_category": {
+              "value": "single_doc_converts_to_multi_doc",
+              "label": "single_doc_converts_to_multi_doc",
+              "deleted": false
+            },
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": {
+              "value": "type",
+              "label": "type",
+              "deleted": false
+            },
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "d64839b6-4b3d-42fa-9301-505ca8391fa4",
+          "name": "type",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-30T13:21:45.885953Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "36f304b6-40a9-432c-b4c6-7c12352f8d04",
+      "step_type": "initialize_variable",
+      "order": 6,
+      "description": "original_classification = \u2018Initial Document Type\u2019",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "9d7b5030-fd82-4336-93d0-5dd883bca505",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "field_value",
+            "source_subtype": "primary_related_object_field",
+            "value_category": null,
+            "field": {
+              "id": "0b91b35e-0f4b-43d3-8667-da537ab74093",
+              "name": "initial_document_type",
+              "display_name": "Initial Document Type",
+              "field_type": "text",
+              "deleted": false,
+              "relation": null
+            },
+            "relationship_field": {
+              "id": "13392cb9-25f5-4d7c-beb3-0ee01fe4b9b6",
+              "name": "primary_audit_log_record",
+              "display_name": "Primary Audit Log Record",
+              "field_type": "relationship",
+              "deleted": false,
+              "relation": {
+                "related_object_name": "Audit Logs",
+                "related_object_object_name": "audit_logs",
+                "related_entity_name": "Audit Log",
+                "cardinality": "one_to_one",
+                "relation_type": "one_to_one"
+              }
+            },
+            "variable": null,
+            "value": null,
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "38bb4ce4-fb5b-43b5-9ecb-d169880b3500",
+          "name": "original_classification",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-30T15:50:54.755861Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "40edefa7-dcc6-4545-b84b-7f89baee89da",
+      "step_type": "delete_scheduled_activity",
+      "order": 7,
+      "description": "Delete 2 Scheduled Activities",
+      "user_description": "Delete any scheduled activities",
+      "stats": {
+        "number_completed": 3,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "36f304b6-40a9-432c-b4c6-7c12352f8d04",
+      "parent_condition": "",
+      "action_delete_scheduled_activity": {
+        "activities": [
+          {
+            "id": "991a0110-317d-45e4-9e90-7d0171c3544d",
+            "api_name": "document_classification_review_copy_1",
+            "name": "Document Classification Review - Classified/Override",
+            "deleted": false
+          },
+          {
+            "id": "9fcd8602-b9ff-45d2-95c6-256f1a0306ef",
+            "api_name": "document_classification_review",
+            "name": "Document Classification Review - Manual Review",
+            "deleted": false
+          }
+        ],
+        "note": ""
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "9d195401-7249-451a-9d0b-722f62faf688",
+      "step_type": "code_step",
+      "order": 8,
+      "description": "Run Python 3.13 Code on (entity_id, and 4 more) and set (0 outputs)",
+      "user_description": "Log activity on Primary Doc Record",
+      "stats": {
+        "number_completed": 1,
+        "number_failed": 0,
+        "number_pending": 2
+      },
+      "parent_step_id": "40edefa7-dcc6-4545-b84b-7f89baee89da",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "180526bb-6b27-4787-aeec-e377c05ddcfb",
+            "name": "kizen_api",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "entity_id",
+            "variable": {
+              "name": "entity_record_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "user",
+            "variable": {
+              "name": "user",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "job_id",
+            "field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "index_json",
+            "variable": {
+              "name": "index",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "change_type",
+            "variable": {
+              "name": "type",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [],
+        "script": "import requests\nimport json\n\n# ==================== KIZEN AUTHENTICATION ====================\nbusiness_id, user_id, api_key = secrets[\"kizen_api\"].split(\":\")\n\ns = requests.Session()\ns.headers.update(\n    {\n        \"X-BUSINESS-ID\": business_id,\n        \"X-USER-ID\": user_id,\n        \"X-API-KEY\": api_key,\n        \"accept\": \"application/json\",\n    }\n)\n\nBASE_URL = \"https://app.go.kizen.com/api\"\n\n# ==================== CONFIGURATION (API NAMES ONLY) ====================\nDOCUMENT_SETS_API_NAME = \"document_sets\"\n\n# Map change_type \u2192 activity API name and field layout\n# Fields per activity type (from the activity type definitions):\n#\n# Single to Multi:  activity_user_id, activity_change_type, activity_index, notes\n# Multi to Single:  activity_user_id, activity_change_type, activity_classification, activity_category, notes\n# Re-Split:         activity_user_id, activity_change_type, activity_index, notes\n\nACTIVITY_TYPES = {\n    \"multi-to-single\": {\n        \"api_name\": \"document_structure_change_multi_to_single_doc\",\n        \"has_index\": False,\n        \"has_classification\": True,\n    },\n    \"single-to-multi\": {\n        \"api_name\": \"document_structure_change_single_to_multi_doc\",\n        \"has_index\": True,\n        \"has_classification\": False,\n    },\n    \"multi-re-split\": {\n        \"api_name\": \"document_structure_change_re_split_multi_doc\",\n        \"has_index\": True,\n        \"has_classification\": False,\n    },\n}\n\n\ndef normalize_change_type(raw):\n    \"\"\"\n    Normalize the change_type string to match our canonical keys.\n    Handles variations like:\n      \"Multi-to-Single\", \"multi to single\", \"Multi to Single\", \"MULTI-TO-SINGLE\"\n      \"Single-to-Multi\", \"single to multi\", \"Single to Multi\"\n      \"Multi-Re-Split\", \"multi re-split\", \"Multi Re Split\", \"Re-Split\"\n    \"\"\"\n    normalized = raw.strip().lower().replace(\" \", \"-\").replace(\"_\", \"-\")\n\n    # Handle \"re-split\" / \"resplit\" without the \"multi-\" prefix\n    if normalized in (\"re-split\", \"resplit\"):\n        normalized = \"multi-re-split\"\n\n    return normalized\n\n# ==================== RESOLVE IDS FROM API NAMES ====================\n\ndef get_custom_object_id(session, api_name):\n    \"\"\"Fetch the UUID for a custom object by its API name.\"\"\"\n    resp = session.get(f\"{BASE_URL}/custom-objects/{api_name}\")\n    resp.raise_for_status()\n    return resp.json()[\"id\"]\n\n\ndef get_activity_field_ids(session, activity_api_name):\n    \"\"\"\n    Fetch field UUIDs for an activity type by its API name.\n    Endpoint: GET /api/activities/{activity_api_name}/fields\n    Returns {field_api_name: field_uuid}.\n    \"\"\"\n    resp = session.get(f\"{BASE_URL}/activities/{activity_api_name}/fields\")\n    resp.raise_for_status()\n    fields = resp.json()  # returns the array directly\n\n    field_map = {}\n    for field in fields:\n        field_api_name = field.get(\"name\")\n        if field_api_name:\n            field_map[field_api_name] = field[\"id\"]\n\n    return field_map\n\n\n# ==================== GATHER INPUTS ====================\nentity_id = inputs.entity_id\nraw_change_type = inputs.change_type  # e.g. \"Multi-to-Single\", \"Single-to-Multi\", \"Multi-Re-Split\"\nuser = (inputs.user or \"\").strip()\nclassification = getattr(inputs, \"classification\", \"\") or \"\"\ncategory = getattr(inputs, \"category\", \"\") or \"\"\nindex_json = getattr(inputs, \"index_json\", \"\") or \"\"\n\n# Normalize and resolve activity config\nchange_type = normalize_change_type(raw_change_type)\nconfig = ACTIVITY_TYPES.get(change_type)\nif not config:\n    raise ValueError(\n        f\"Unknown change_type: '{raw_change_type}' (normalized: '{change_type}'). \"\n        f\"Expected one of: {list(ACTIVITY_TYPES.keys())}\"\n    )\n\nactivity_api_name = config[\"api_name\"]\noutputs.log(f\"Logging '{raw_change_type}' activity ({activity_api_name}) on record {entity_id}\")\n\n# ==================== RESOLVE IDS AT RUNTIME ====================\ndocument_sets_object_id = get_custom_object_id(s, DOCUMENT_SETS_API_NAME)\nfield_ids = get_activity_field_ids(s, activity_api_name)\n\noutputs.log(f\"Resolved object_id={document_sets_object_id}\")\noutputs.log(f\"Resolved field_ids: {field_ids}\")\n\n# ==================== BUILD FIELDS ARRAY ====================\nactivity_fields = []\n\n# User ID (present on all three)\nif \"activity_user_id\" in field_ids:\n    activity_fields.append({\n        \"id\": field_ids[\"activity_user_id\"],\n        \"value\": user,\n    })\n\n# Change type (present on all three)\nif \"activity_change_type\" in field_ids:\n    activity_fields.append({\n        \"id\": field_ids[\"activity_change_type\"],\n        \"value\": raw_change_type,\n    })\n\n# Index (Single-to-Multi and Re-Split only)\nif config[\"has_index\"] and index_json and \"activity_index\" in field_ids:\n    activity_fields.append({\n        \"id\": field_ids[\"activity_index\"],\n        \"value\": index_json,\n    })\n\n# Classification + Category (Multi-to-Single only)\nif config[\"has_classification\"]:\n    if classification and \"activity_classification\" in field_ids:\n        activity_fields.append({\n            \"id\": field_ids[\"activity_classification\"],\n            \"value\": classification,\n        })\n    if category and \"activity_category\" in field_ids:\n        activity_fields.append({\n            \"id\": field_ids[\"activity_category\"],\n            \"value\": category,\n        })\n\n# ==================== LOG THE ACTIVITY ====================\n# Endpoint: POST /api/activities/{activity_api_name}/log-activity\n\nlog_payload = {\n    \"fields\": activity_fields,\n    \"related_objects\": [\n        {\n            \"custom_object\": document_sets_object_id,\n            \"entity_id\": entity_id,\n        }\n    ],\n}\n\nlog_resp = s.post(\n    f\"{BASE_URL}/activities/{activity_api_name}/log-activity\",\n    json=log_payload,\n)\n\nif log_resp.status_code >= 400:\n    outputs.log(f\"ERROR logging activity: {log_resp.status_code} - {log_resp.text[:500]}\")\n    raise RuntimeError(f\"Failed to log activity: {log_resp.status_code}\")\n\nlog_resp.raise_for_status()\noutputs.log(f\"Activity logged successfully for record {entity_id}: {raw_change_type}\")"
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d8955fe9-d4b6-4941-b7e0-0a0972e3b021",
+      "step_type": "change_field_value",
+      "order": 9,
+      "description": "Change Fields \u2018Contains Multiple Documents?\u2019 to \u2018Yes\u2019, \u2018Document Classification Status\u2019 to \u2018N/A\u2019, and 4 Additional Field Updates",
+      "user_description": "update fields",
+      "stats": {
+        "number_completed": 26,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "9d195401-7249-451a-9d0b-722f62faf688",
+      "parent_condition": "",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "cad8942c-1db3-40be-abae-b40e081fe51a",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "ed259ff0-8ff8-407f-b7ec-992bd25bc014",
+              "name": "contains_multiple_documents",
+              "display_name": "Contains Multiple Documents?",
+              "deleted": false,
+              "field_type": "yesnomaybe",
+              "options": [
+                {
+                  "id": "c5b71872-d0ea-4f61-b4cc-e62e276f1cab",
+                  "code": "yes",
+                  "name": "Yes",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "84810afe-5fbd-4384-b587-d7154dc03a3c",
+                  "code": "no",
+                  "name": "No",
+                  "order": 2,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "c5b71872-d0ea-4f61-b4cc-e62e276f1cab",
+              "name": "Yes",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "935641d5-f1dc-4d26-866a-dfd5625827e8",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "51a0523b-1033-4e6f-a803-a26323bac96e",
+              "name": "document_classification_status",
+              "display_name": "Document Classification Status",
+              "deleted": false,
+              "field_type": "status",
+              "options": [
+                {
+                  "id": "87dd5e5f-675b-46e0-8a3c-fb9dc5c15264",
+                  "code": "",
+                  "name": "Classified",
+                  "order": 1,
+                  "meta": {
+                    "color": "rgba(50,192,85,1)"
+                  }
+                },
+                {
+                  "id": "3f54ad54-3d0f-4007-a972-7fb32eb43f05",
+                  "code": "",
+                  "name": "Needs Classification",
+                  "order": 2,
+                  "meta": {
+                    "color": "rgba(8,91,238,1)"
+                  }
+                },
+                {
+                  "id": "3d1c6831-c17a-46ca-96d0-897036032472",
+                  "code": "",
+                  "name": "Manual Review",
+                  "order": 3,
+                  "meta": {
+                    "color": "rgba(243,168,0,1)"
+                  }
+                },
+                {
+                  "id": "bce84de2-dbb4-4e34-87fd-d7caad87b5a5",
+                  "code": "",
+                  "name": "N/A",
+                  "order": 4,
+                  "meta": {
+                    "color": "rgba(0,0,0,1)"
+                  }
+                },
+                {
+                  "id": "c9e3cf4c-6405-4eb8-9c25-10500a9dc451",
+                  "code": "",
+                  "name": "Failed",
+                  "order": 5,
+                  "meta": {
+                    "color": "rgba(220,20,34,1)"
+                  }
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "bce84de2-dbb4-4e34-87fd-d7caad87b5a5",
+              "name": "N/A",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "f203bae4-49c7-4001-a3ab-d0efc4e4aaa9",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "651a92b7-68f6-436f-b70b-ec9e850851eb",
+              "name": "document_type",
+              "display_name": "Document Type",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": "",
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "42758843-5cc9-4d58-bf81-76edf7c7e041",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "7077bdbc-08ca-402f-8812-4837dda52600",
+              "name": "document_category",
+              "display_name": "Document Category",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "3b4c15bb-09ff-4c02-aaa9-a855ad49f856",
+                  "code": "",
+                  "name": "Notes to Underwriter",
+                  "order": 1,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "f3abc5f0-1163-469e-b551-0bba94d8fc23",
+                  "code": "",
+                  "name": "2015 Settlement Service Provider List",
+                  "order": 2,
+                  "meta": {}
+                },
+                {
+                  "id": "269d3d36-6715-4e60-9e08-f7358e609651",
+                  "code": "",
+                  "name": "Acknowledgement of Home Ownership",
+                  "order": 3,
+                  "meta": {}
+                },
+                {
+                  "id": "bf409025-90c6-4d6d-a27e-26d1deca8c02",
+                  "code": "",
+                  "name": "Address Change Form",
+                  "order": 4,
+                  "meta": {}
+                },
+                {
+                  "id": "ef2ec34a-7d23-443c-8c5d-a0e91bc6b8cb",
+                  "code": "",
+                  "name": "Appraisal",
+                  "order": 5,
+                  "meta": {}
+                },
+                {
+                  "id": "da9f75d4-9534-4a41-8983-3b6c2ffe6042",
+                  "code": "",
+                  "name": "Appraisal Waiver",
+                  "order": 6,
+                  "meta": {}
+                },
+                {
+                  "id": "45fc1ac0-249f-4f1a-bfa8-4a9dea5750ac",
+                  "code": "",
+                  "name": "Assets",
+                  "order": 7,
+                  "meta": {}
+                },
+                {
+                  "id": "b54c599e-407a-4371-a3f5-2ed0e9f68a5d",
+                  "code": "",
+                  "name": "Bankruptcy Papers",
+                  "order": 8,
+                  "meta": {}
+                },
+                {
+                  "id": "827ba089-e0bf-43d4-ac3d-237dd1daf991",
+                  "code": "",
+                  "name": "Booking Information",
+                  "order": 9,
+                  "meta": {}
+                },
+                {
+                  "id": "e828f7bb-580c-48dc-ad9a-b4a0267f0eec",
+                  "code": "",
+                  "name": "Borrower Lock Agreement",
+                  "order": 10,
+                  "meta": {}
+                },
+                {
+                  "id": "61138a35-ddc0-44ac-bd5e-8317fad5abeb",
+                  "code": "",
+                  "name": "Borrower's Certificate & Authorization",
+                  "order": 11,
+                  "meta": {}
+                },
+                {
+                  "id": "d9d743bd-18cf-4c22-8993-fa1285232e7b",
+                  "code": "",
+                  "name": "Certificate of Eligibility",
+                  "order": 12,
+                  "meta": {}
+                },
+                {
+                  "id": "8bcea122-4c1c-4d16-9617-fc38a9ebf5e4",
+                  "code": "",
+                  "name": "Child Support/Divorce Decree",
+                  "order": 13,
+                  "meta": {}
+                },
+                {
+                  "id": "94a20806-a634-4efb-be86-188a8241029e",
+                  "code": "",
+                  "name": "Closing Disclosure",
+                  "order": 14,
+                  "meta": {}
+                },
+                {
+                  "id": "25769a85-2bd2-4e4a-9650-61da1ff289ea",
+                  "code": "",
+                  "name": "Closing Disclosure (Seller)",
+                  "order": 15,
+                  "meta": {}
+                },
+                {
+                  "id": "a30cfee9-bfa0-49ab-87ad-9d41ea0856a8",
+                  "code": "",
+                  "name": "Closing Invoices",
+                  "order": 16,
+                  "meta": {}
+                },
+                {
+                  "id": "0f2975bb-4797-427c-a150-6980362691d9",
+                  "code": "",
+                  "name": "Compliance Report",
+                  "order": 17,
+                  "meta": {}
+                },
+                {
+                  "id": "b14caa7e-a289-45f9-8fc9-6a76a9120af6",
+                  "code": "",
+                  "name": "Conditional Approval Letter",
+                  "order": 18,
+                  "meta": {}
+                },
+                {
+                  "id": "e4bdcf94-9025-4877-b5b5-00a957db50b1",
+                  "code": "",
+                  "name": "Conditional Commitment",
+                  "order": 19,
+                  "meta": {}
+                },
+                {
+                  "id": "eab363dd-d821-4fa7-89f1-391718ca9c9a",
+                  "code": "",
+                  "name": "Condo",
+                  "order": 20,
+                  "meta": {}
+                },
+                {
+                  "id": "23b6efe1-77fd-409c-bb81-a00da1952415",
+                  "code": "",
+                  "name": "Construction Loan Agreement",
+                  "order": 21,
+                  "meta": {}
+                },
+                {
+                  "id": "1ff70bfe-ef73-4219-9728-b16c79f4adff",
+                  "code": "",
+                  "name": "Credit Report",
+                  "order": 22,
+                  "meta": {}
+                },
+                {
+                  "id": "ede34b05-608f-40fc-8c64-f11426a25273",
+                  "code": "",
+                  "name": "Credit Sup",
+                  "order": 23,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "fd8329bb-1049-4223-81cd-bc6fd7e6f287",
+                  "code": "",
+                  "name": "Data Proof Sheet - Fees",
+                  "order": 24,
+                  "meta": {}
+                },
+                {
+                  "id": "9cc40437-da2d-4198-b70c-f9ee4b90f0d7",
+                  "code": "",
+                  "name": "Disclosure Notices",
+                  "order": 25,
+                  "meta": {}
+                },
+                {
+                  "id": "dd6f991c-5b59-44a6-b939-015ff2998484",
+                  "code": "",
+                  "name": "Disclosures - Purchase Agreement",
+                  "order": 26,
+                  "meta": {}
+                },
+                {
+                  "id": "e04bd12d-bdc3-4ddb-9c97-0616ac7fd04b",
+                  "code": "",
+                  "name": "DocuSign Certificate of Completion",
+                  "order": 27,
+                  "meta": {}
+                },
+                {
+                  "id": "4ebfb816-7f4b-4a27-b03a-b19dd88a9f1f",
+                  "code": "",
+                  "name": "E-Consent",
+                  "order": 28,
+                  "meta": {}
+                },
+                {
+                  "id": "75d2145e-5416-497f-a3b6-0cb0b2d4fdb3",
+                  "code": "",
+                  "name": "Escrow Docs",
+                  "order": 29,
+                  "meta": {}
+                },
+                {
+                  "id": "9ad782b2-abb2-4711-86d8-bf3611edcaf6",
+                  "code": "",
+                  "name": "FeeWise - LE Summary",
+                  "order": 30,
+                  "meta": {}
+                },
+                {
+                  "id": "cfbc44dc-91d6-406e-8c85-549a65e661cc",
+                  "code": "",
+                  "name": "FHA #",
+                  "order": 31,
+                  "meta": {}
+                },
+                {
+                  "id": "885b3ad6-102e-4952-9d02-5dac27e757f1",
+                  "code": "",
+                  "name": "Final UW Docs",
+                  "order": 32,
+                  "meta": {}
+                },
+                {
+                  "id": "97238949-6554-41e5-bffa-8d1bdc1f25ae",
+                  "code": "",
+                  "name": "First Payment Letter",
+                  "order": 33,
+                  "meta": {}
+                },
+                {
+                  "id": "7f97fdc4-bcfa-48ee-b199-03b2e8be92f3",
+                  "code": "",
+                  "name": "Flood Certificate",
+                  "order": 34,
+                  "meta": {}
+                },
+                {
+                  "id": "76e3677a-815a-4896-8153-e1396d96467e",
+                  "code": "",
+                  "name": "Flood Insurance",
+                  "order": 35,
+                  "meta": {}
+                },
+                {
+                  "id": "d2134948-e8e4-4533-8c13-34ba05b9f6c7",
+                  "code": "",
+                  "name": "Fraud",
+                  "order": 36,
+                  "meta": {}
+                },
+                {
+                  "id": "c1110f80-6db3-4afd-83b9-13bf00e10b06",
+                  "code": "",
+                  "name": "HOA",
+                  "order": 37,
+                  "meta": {}
+                },
+                {
+                  "id": "37985c81-afc3-4970-b547-323b5cfd8a64",
+                  "code": "",
+                  "name": "Home Loan Toolkit",
+                  "order": 38,
+                  "meta": {}
+                },
+                {
+                  "id": "05ef8c1d-d4c0-4c6e-9789-eea7e7735c73",
+                  "code": "",
+                  "name": "Homebuyer Education Cert",
+                  "order": 39,
+                  "meta": {}
+                },
+                {
+                  "id": "81ad22fc-5023-4ffc-8b41-ebfb80149512",
+                  "code": "",
+                  "name": "Homeowner's Insurance Policy",
+                  "order": 40,
+                  "meta": {}
+                },
+                {
+                  "id": "a4c54ff4-0ab7-4b7e-b2f6-a23160d3bd88",
+                  "code": "",
+                  "name": "Homeownership Counseling List",
+                  "order": 41,
+                  "meta": {}
+                },
+                {
+                  "id": "442ff7c0-c3e9-4558-8dfe-9946f0471623",
+                  "code": "",
+                  "name": "Housing Docs",
+                  "order": 42,
+                  "meta": {}
+                },
+                {
+                  "id": "98db6f2b-43f0-48bd-9a62-6271ce4ed1be",
+                  "code": "",
+                  "name": "ID's",
+                  "order": 43,
+                  "meta": {}
+                },
+                {
+                  "id": "ed80fb9a-b254-4903-826c-3d703eeb10a7",
+                  "code": "",
+                  "name": "Income Docs",
+                  "order": 44,
+                  "meta": {}
+                },
+                {
+                  "id": "7ea6922d-4a68-4cfa-9a35-db5bc94d2372",
+                  "code": "",
+                  "name": "Inspections",
+                  "order": 45,
+                  "meta": {}
+                },
+                {
+                  "id": "d37249bd-bfc1-4052-8ac8-7fc824743801",
+                  "code": "",
+                  "name": "Loan Closing Advisor",
+                  "order": 46,
+                  "meta": {}
+                },
+                {
+                  "id": "9ab34246-dfff-4f86-acb3-cf45191b906d",
+                  "code": "",
+                  "name": "Loan Estimate",
+                  "order": 47,
+                  "meta": {}
+                },
+                {
+                  "id": "e329b3c1-65e2-4208-aae6-5656fec235ac",
+                  "code": "",
+                  "name": "Lock Points",
+                  "order": 48,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "d18edeb5-89b6-478e-a85d-53f7b246ffbf",
+                  "code": "",
+                  "name": "LOX for Inquiries",
+                  "order": 49,
+                  "meta": {}
+                },
+                {
+                  "id": "0afb8085-c7ce-4c71-8f29-ad28d7fa8f17",
+                  "code": "",
+                  "name": "MERS Registration",
+                  "order": 50,
+                  "meta": {}
+                },
+                {
+                  "id": "db71adff-7be0-4b99-ade9-611e41501b72",
+                  "code": "",
+                  "name": "Miscellaneous",
+                  "order": 51,
+                  "meta": {}
+                },
+                {
+                  "id": "79cceb2f-8ac9-4008-b01f-fcac46ac16f4",
+                  "code": "",
+                  "name": "Mortgage",
+                  "order": 52,
+                  "meta": {}
+                },
+                {
+                  "id": "d10e812a-6d5a-4ee7-83ee-bee937ffb53f",
+                  "code": "",
+                  "name": "Mortgage Fraud is Investigated by the FBI",
+                  "order": 53,
+                  "meta": {}
+                },
+                {
+                  "id": "1006eab8-ef92-4dd9-87d9-790e2b3900f2",
+                  "code": "",
+                  "name": "Mortgage Insurance",
+                  "order": 54,
+                  "meta": {}
+                },
+                {
+                  "id": "867507e3-f934-4d5f-82c8-948da15cfdc2",
+                  "code": "",
+                  "name": "N/A - Needs Manual Review",
+                  "order": 55,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "b5c8d40a-5804-4af4-8617-023ef45b7a38",
+                  "code": "",
+                  "name": "New construction forms",
+                  "order": 56,
+                  "meta": {}
+                },
+                {
+                  "id": "c4d7c116-cd8d-4449-83ff-d7275009d0fb",
+                  "code": "",
+                  "name": "Note",
+                  "order": 57,
+                  "meta": {}
+                },
+                {
+                  "id": "59de54b6-fb87-461c-b98a-1caffc52d33b",
+                  "code": "",
+                  "name": "Patriot Act Disclosure",
+                  "order": 58,
+                  "meta": {}
+                },
+                {
+                  "id": "2f68b6fb-5813-4db2-b0ea-30ad1a4e150f",
+                  "code": "",
+                  "name": "Patriot Act Information",
+                  "order": 59,
+                  "meta": {}
+                },
+                {
+                  "id": "a1c1f1fa-c235-438c-8689-0689cccdf779",
+                  "code": "",
+                  "name": "Product and Pricing",
+                  "order": 60,
+                  "meta": {}
+                },
+                {
+                  "id": "de72d668-bb2c-44fc-9a04-24ed6efd0ca5",
+                  "code": "",
+                  "name": "Purchase Agreement",
+                  "order": 61,
+                  "meta": {}
+                },
+                {
+                  "id": "b62f5573-dc8e-48cf-b144-743136ab7bf8",
+                  "code": "",
+                  "name": "Refinance Docs",
+                  "order": 62,
+                  "meta": {}
+                },
+                {
+                  "id": "fc1c2bde-d81e-4cf3-a37a-7500f160b9a5",
+                  "code": "",
+                  "name": "Shipping Label",
+                  "order": 63,
+                  "meta": {}
+                },
+                {
+                  "id": "05121296-c177-45a6-b5bc-a4b8ab276090",
+                  "code": "",
+                  "name": "Signed Closing Docs",
+                  "order": 64,
+                  "meta": {}
+                },
+                {
+                  "id": "11fd8e01-1b46-4d6f-85ce-cf60968d1ae2",
+                  "code": "",
+                  "name": "Signed Prelim Docs",
+                  "order": 65,
+                  "meta": {}
+                },
+                {
+                  "id": "39646f9b-a0e2-4dd1-9e16-1c99f5610324",
+                  "code": "",
+                  "name": "SSR",
+                  "order": 66,
+                  "meta": {}
+                },
+                {
+                  "id": "e24985cc-4901-4811-9c17-0a867522230e",
+                  "code": "",
+                  "name": "Supplemental Consumer Information Form",
+                  "order": 67,
+                  "meta": {}
+                },
+                {
+                  "id": "6cc117a3-9848-4e25-851b-62aad299e1da",
+                  "code": "",
+                  "name": "Survey",
+                  "order": 68,
+                  "meta": {}
+                },
+                {
+                  "id": "5ca4f0ac-8159-49fd-ac78-64bffb8df7c2",
+                  "code": "",
+                  "name": "Taxes & Insurance for Investment Properties",
+                  "order": 69,
+                  "meta": {}
+                },
+                {
+                  "id": "532fec56-052a-4543-a433-33c80d14c853",
+                  "code": "",
+                  "name": "Title",
+                  "order": 70,
+                  "meta": {}
+                },
+                {
+                  "id": "6c75c116-24c0-4043-b7f8-d45144e684f7",
+                  "code": "",
+                  "name": "Title Report",
+                  "order": 71,
+                  "meta": {}
+                },
+                {
+                  "id": "70c0f20b-8800-43e2-919e-f8bb38e323d9",
+                  "code": "",
+                  "name": "Trust Docs",
+                  "order": 72,
+                  "meta": {}
+                },
+                {
+                  "id": "8d20c038-5aa8-474d-8ece-f54f090e21da",
+                  "code": "",
+                  "name": "UCD Collection",
+                  "order": 73,
+                  "meta": {}
+                },
+                {
+                  "id": "5812106f-17c6-483d-8e7f-bb2db3909e0b",
+                  "code": "",
+                  "name": "Underwriting",
+                  "order": 74,
+                  "meta": {}
+                },
+                {
+                  "id": "1a38b7ac-e64d-4c1c-bbf7-fe05f2bca6e7",
+                  "code": "",
+                  "name": "USA Patriot Act",
+                  "order": 75,
+                  "meta": {}
+                },
+                {
+                  "id": "79eb5213-fb6a-433c-b445-93d0b2a1047f",
+                  "code": "",
+                  "name": "USPS Verification",
+                  "order": 76,
+                  "meta": {}
+                },
+                {
+                  "id": "e3749b61-4399-4608-bf27-546063cc2ff7",
+                  "code": "",
+                  "name": "VA Disclosures",
+                  "order": 77,
+                  "meta": {}
+                },
+                {
+                  "id": "b4df0706-0385-42f2-9b0a-f1f156605a06",
+                  "code": "",
+                  "name": "VA Federal Collection",
+                  "order": 78,
+                  "meta": {}
+                },
+                {
+                  "id": "cf127088-73b4-4956-93c6-4ec470d41f20",
+                  "code": "",
+                  "name": "VA IRRRL - LIN Number",
+                  "order": 79,
+                  "meta": {}
+                },
+                {
+                  "id": "2a35a54c-493d-4455-aa90-eda92b7d3aca",
+                  "code": "",
+                  "name": "Verifications (VOE, VOD, VOM, VOR, VOL)",
+                  "order": 80,
+                  "meta": {}
+                },
+                {
+                  "id": "01733de4-41a6-4118-b08e-ace4aa0bac98",
+                  "code": "",
+                  "name": "Wire Instructions",
+                  "order": 81,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "0b3a8c27-c0b6-484e-aa48-c41d6ea81056",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "aa3344f2-753d-4de3-9ff2-b924c0460b60",
+              "name": "classification_reason",
+              "display_name": "Classification Reason",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": "",
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "0fa9082a-e627-4b83-ad5e-f3a930155505",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "5c7f4f71-44aa-46a2-bb8a-94bba85141a3",
+              "name": "classification_confidence",
+              "display_name": "Classification Confidence",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": "",
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "41ae1f2c-f69a-45d5-ac4b-a8349cfb7221",
+      "step_type": "condition",
+      "order": 10,
+      "description": "Document Variable Value 'index' Is Blank",
+      "user_description": "decide if index is blank or not",
+      "stats": {
+        "number_completed": 26,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 0,
+        "number_no": 26
+      },
+      "parent_step_id": "d8955fe9-d4b6-4941-b7e0-0a0972e3b021",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "value": true,
+                  "subtype": "automation_variable",
+                  "condition": "is_blank",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "index",
+                        "data_type": "string"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_blank"
+                    ]
+                  ],
+                  "description": "Variable Value 'index' Is Blank",
+                  "lhs_variable_name": "index"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "10f593a8-709f-4f3e-a7fd-7288e37fe18c"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "f3457946-9316-4d6f-b243-e57c07f56913"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "f3457946-9316-4d6f-b243-e57c07f56913",
+      "step_type": "code_step",
+      "order": 11,
+      "description": "Run Python 3.13 Code on (document_file_field, and 5 more) and set (0 outputs)",
+      "user_description": "Take index from webhook, create child records seeded with page ranges",
+      "stats": {
+        "number_completed": 25,
+        "number_failed": 0,
+        "number_pending": 1
+      },
+      "parent_step_id": "41ae1f2c-f69a-45d5-ac4b-a8349cfb7221",
+      "parent_condition": "no",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "180526bb-6b27-4787-aeec-e377c05ddcfb",
+            "name": "kizen_api",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "field",
+            "name": "document_file_field",
+            "field": {
+              "id": "ea866c74-4c97-4e75-b352-f9357e8313d8",
+              "name": "document_file_field",
+              "display_name": "Document File Field",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": true
+          },
+          {
+            "input_type": "variable",
+            "name": "document_index",
+            "variable": {
+              "name": "index",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "entity_record_id",
+            "variable": {
+              "name": "entity_record_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "job_id",
+            "field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "document_name",
+            "field": {
+              "id": "d238bd7a-1c38-47a7-97a9-3c9038b0ab95",
+              "name": "name",
+              "display_name": "Document Set Name",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_execution_id",
+            "variable": {
+              "name": "automation_execution_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [],
+        "script": "import json\nimport ast\nimport requests\nfrom concurrent.futures import ThreadPoolExecutor, as_completed\n\n# ==================== KIZEN AUTHENTICATION ====================\nbusiness_id, user_id, api_key = secrets[\"kizen_api\"].split(\":\")\n\ns = requests.Session()\ns.headers.update(\n    {\n        \"X-BUSINESS-ID\": business_id,\n        \"X-USER-ID\": user_id,\n        \"X-API-KEY\": api_key,\n        \"accept\": \"application/json\",\n    }\n)\n\n# ==================== CONSTANTS ====================\nBASE_URL = \"https://app.go.kizen.com/api\"\nOBJECT_IDENTIFIER = \"document_sets\"\nCREATE_RECORD_URL = f\"{BASE_URL}/records/{OBJECT_IDENTIFIER}/add\"\n\nMAX_WORKERS = 8        # Matches Assemble_Index pattern; tune in staging before bumping\nREQUEST_TIMEOUT = 30   # Per-call timeout \u2014 never let a hung request eat the step\n\nMANUAL_SENTINEL = \"Manually Classified\"\n\n# ==================== LOG INPUTS ====================\noutputs.log(f\"Parent Record ID: {inputs.entity_record_id}\")\noutputs.log(f\"Job ID: {inputs.job_id}\")\noutputs.log(f\"Document Name: {inputs.document_name}\")\noutputs.log(f\"Automation Execution ID: {inputs.automation_execution_id}\")\noutputs.log(f\"Raw index preview: {str(inputs.document_index)[:500]}\")\n\n\n# ==================== PARSING ====================\ndef parse_index(raw, label):\n    \"\"\"Parse a JSON index string. Falls back to ast.literal_eval for Python-style input.\"\"\"\n    if not raw:\n        return []\n    try:\n        result = json.loads(raw)\n    except json.JSONDecodeError:\n        outputs.log(f\"{label}: json.loads failed \u2192 falling back to ast.literal_eval\")\n        try:\n            result = ast.literal_eval(raw)\n        except Exception as e:\n            raise ValueError(f\"Failed to parse {label}: {e}\")\n    if not isinstance(result, list):\n        raise ValueError(f\"{label} did not parse to a list\")\n    return result\n\n\nindex_entries = parse_index(inputs.document_index, \"document_index\")\nif len(index_entries) == 0:\n    raise ValueError(\"document_index is empty\")\noutputs.log(f\"Successfully parsed {len(index_entries)} index entries\")\n\n\n# ==================== PAYLOAD BUILDER ====================\ndef build_payload(entry):\n    \"\"\"Build the full create-payload for one index entry.\"\"\"\n    page_start = entry[\"page_start\"]\n    page_end = entry[\"page_end\"]\n\n    base_name = (inputs.document_name or \"Document\").strip()\n    page_range = f\"{page_start}-{page_end}\"\n    unique_suffix = f\"{inputs.job_id} {inputs.automation_execution_id}\".strip()\n    record_name = f\"{base_name} Pages {page_range} {unique_suffix}\".strip()\n\n    fields = [\n        {\"name\": \"name\", \"value\": record_name},\n        {\"name\": \"job_id\", \"value\": inputs.job_id},\n        {\"name\": \"primary_document\", \"value\": {\"name\": \"No\"}},\n        {\"name\": \"contains_multiple_documents\", \"value\": {\"name\": \"No\"}},\n        {\"name\": \"skip_validation\", \"value\": {\"name\": \"Yes\"}},\n        {\"name\": \"primary_document_record\", \"value\": inputs.entity_record_id},\n        {\"name\": \"primary_document_start_page\", \"value\": page_start},\n        {\"name\": \"primary_document_end_page\", \"value\": page_end},\n    ]\n\n    classification = (entry.get(\"classification\") or \"\").strip()\n    category = (entry.get(\"category\") or \"\").strip()\n\n    if classification and category:\n        fields.extend(\n            [\n                {\"name\": \"document_type\", \"value\": classification},\n                {\"name\": \"document_classification_status\", \"value\": {\"name\": \"Classified\"}},\n                {\"name\": \"classification_reason\", \"value\": MANUAL_SENTINEL},\n                {\"name\": \"classification_confidence\", \"value\": MANUAL_SENTINEL},\n                {\"name\": \"document_category\", \"value\": {\"name\": category}},\n            ]\n        )\n        log_label = f\"classified \u2192 {classification} | {category}\"\n    else:\n        log_label = \"no classification\"\n\n    return record_name, log_label, {\"fields\": fields, \"unarchive\": \"overwrite\"}\n\n\n# ==================== VALIDATION & PAYLOAD PREP ====================\nprepared = []\nfor idx, entry in enumerate(index_entries, start=1):\n    if \"page_start\" not in entry or \"page_end\" not in entry:\n        outputs.log(f\"Entry {idx} missing page_start or page_end \u2192 skipping\")\n        continue\n\n    page_start = entry[\"page_start\"]\n    page_end = entry[\"page_end\"]\n\n    if not (isinstance(page_start, int) and isinstance(page_end, int)):\n        outputs.log(f\"Entry {idx} has non-integer page numbers \u2192 skipping\")\n        continue\n\n    if page_start < 1 or page_end < page_start:\n        outputs.log(\n            f\"Entry {idx} has invalid page range ({page_start}-{page_end}) \u2192 skipping\"\n        )\n        continue\n\n    record_name, log_label, payload = build_payload(entry)\n    prepared.append((idx, record_name, log_label, payload))\n\noutputs.log(f\"Prepared {len(prepared)} payloads for parallel creation\")\n\n\n# ==================== PARALLEL CREATION ====================\ndef create_one(idx, record_name, log_label, payload):\n    \"\"\"Create one child record. Returns (idx, record_name, log_label, record_id_or_None, error_msg_or_None).\"\"\"\n    try:\n        resp = s.post(CREATE_RECORD_URL, json=payload, timeout=REQUEST_TIMEOUT)\n        resp.raise_for_status()\n        data = resp.json()\n        new_id = data.get(\"id\")\n        if not new_id:\n            return (idx, record_name, log_label, None, f\"Create returned no id: {data}\")\n        return (idx, record_name, log_label, new_id, None)\n    except requests.HTTPError as e:\n        body = e.response.text[:500] if e.response is not None else str(e)\n        return (idx, record_name, log_label, None, f\"HTTPError: {body}\")\n    except requests.exceptions.RequestException as e:\n        return (idx, record_name, log_label, None, f\"RequestException: {e}\")\n\n\ncreated_record_ids = []\nfailed_entries = []\n\nif prepared:\n    with ThreadPoolExecutor(max_workers=MAX_WORKERS) as executor:\n        futures = {\n            executor.submit(create_one, idx, name, label, pl): idx\n            for (idx, name, label, pl) in prepared\n        }\n        for fut in as_completed(futures):\n            idx, name, label, new_id, err = fut.result()\n            if new_id:\n                created_record_ids.append(new_id)\n                outputs.log(f\"Created child {idx} [{label}]: {name} (ID: {new_id})\")\n            else:\n                failed_entries.append((idx, name, err))\n                outputs.log(f\"FAILED to create child {idx} [{label}]: {name} \u2014 {err}\")\n\n\n# ==================== FINAL OUTPUT ====================\noutputs.log(\n    f\"Done. Created {len(created_record_ids)} of {len(prepared)} child records \"\n    f\"({len(failed_entries)} failed)\"\n)\nif failed_entries:\n    outputs.log(\"Failures:\")\n    for idx, name, err in failed_entries:\n        outputs.log(f\"  Entry {idx} ({name}): {err}\")\noutputs.log(f\"Child Record IDs: {created_record_ids}\")"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "068b7e9b-e49a-423e-a09f-bf859e74f41c",
+      "step_type": "code_step",
+      "order": 12,
+      "description": "Run Python 3.13 Code on (entity_record_id, and 3 more) and set (0 outputs)",
+      "user_description": "webhook",
+      "stats": {
+        "number_completed": 25,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "f3457946-9316-4d6f-b243-e57c07f56913",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "992876d6-8b1e-48aa-bebe-14dc6a9cc133",
+            "name": "kizen_webhook_signing_key",
+            "deleted": false
+          },
+          {
+            "id": "3a66449f-baf8-40e3-a23f-570e285359d7",
+            "name": "webhook_base_url",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "entity_record_id",
+            "variable": {
+              "name": "entity_record_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_execution_id",
+            "variable": {
+              "name": "automation_execution_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_id",
+            "variable": {
+              "name": "automation_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "job_id",
+            "field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [],
+        "script": "import hashlib\nimport hmac\nimport base64\nimport json\nimport requests\n\nsigning_key = secrets[\"kizen_webhook_signing_key\"]\nwebhook_base_url = secrets[\"webhook_base_url\"]\n\nentity_id = inputs.entity_record_id\n\npayload = {\n    \"automationType\": \"MultipleDocument\",\n    \"entityId\": entity_id,\n    \"automationId\": inputs.automation_id,\n    \"automationExecutionId\": inputs.automation_execution_id,\n    \"jobId\": inputs.job_id,\n    \"exceptionType\": \"Single-to-Multi\"\n}\n\npayload_string = json.dumps(payload, separators=(',', ':'), ensure_ascii=False)\n\nsig = hmac.new(\n    signing_key.encode('utf-8'),\n    payload_string.encode('utf-8'),\n    hashlib.sha256\n).digest()\nsignature = base64.b64encode(sig).decode('utf-8')\n\nurl = f\"{webhook_base_url}/kizen-webhooks\"\nheaders = {\n    \"Content-Type\": \"application/json\",\n    \"x-kizen-signature\": signature\n}\n\ntry:\n    resp = requests.post(url, data=payload_string, headers=headers)\n\n    if resp.status_code >= 400:\n        outputs.log(f\"ERROR: Webhook request failed with status {resp.status_code}\")\nexcept Exception as e:\n    outputs.log(f\"ERROR: {str(e)}\")"
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "3fdef1db-ef41-46e6-bee1-9fa7e28521ec",
+      "step_type": "file_content_extraction",
+      "order": 13,
+      "description": "Extract Content from  \u2018File\u2019 field",
+      "user_description": "LLM Self Assessment only if index is provided",
+      "stats": {
+        "number_completed": 1,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "068b7e9b-e49a-423e-a09f-bf859e74f41c",
+      "parent_condition": "",
+      "action_file_content_extraction": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "business_plugin_app": {
+          "id": "1e8cecec-8f9c-4b06-8b6b-019fbc526c42",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are a Mortgage Document Classification Quality Analyst. Your job is to analyze individual cases where an automated classification system incorrectly treated a multi-document PDF as a single document, and a human reviewer corrected the output by identifying the actual document boundaries and categories. Produce a detailed, evidence-based analysis of what the system missed in this specific case.A document classification system reviewed the following PDF content and determined it contained a single document. A human reviewer has corrected this, identifying multiple distinct documents within the file. Analyze the document content, the original classification, and the corrected index to determine what boundaries the system missed and why.Original Classification (LLM Generated) - {{ automation_variable.original_classification }}Corrected Index (Human Reviewed) - {{ automation_variable.index }}Respond with a JSON object using exactly this structure:{  \"missed_boundaries\": [    {      \"boundary_location\": \"Page number or page range where a document transition occurs\",      \"document_before\": { \"pages\": [start, end], \"category\": \"...\" },      \"document_after\": { \"pages\": [start, end], \"category\": \"...\" },      \"boundary_indicators\": \"Specific content at or near the boundary that signals a new document begins (e.g., new title, different form number, change in parties, shift in legal purpose).\",      \"why_likely_missed\": \"What specific characteristics of the content likely caused the system to treat this as a continuation rather than a new document (e.g., consistent formatting across the boundary, shared parties or subject matter, no clear header on the second document).\"    }  ],  \"unifying_features\": \"What characteristics of the overall file likely made it appear to be a single cohesive document (e.g., consistent page numbering, same borrower name throughout, similar formatting, related subject matter across all sections).\",  \"difficulty_factors\": [    \"Specific characteristics of this file that made correct boundary detection challenging.\"  ]}Be specific and reference actual page content. Do not suggest generalized rules or future improvements \u2014 focus only on diagnosing this specific case.",
+        "html_prompt": "<p>You are a Mortgage Document Classification Quality Analyst. Your job is to analyze individual cases where an automated classification system incorrectly treated a multi-document PDF as a single document, and a human reviewer corrected the output by identifying the actual document boundaries and categories. Produce a detailed, evidence-based analysis of what the system missed in this specific case.</p><p></p><p>A document classification system reviewed the following PDF content and determined it contained a single document. A human reviewer has corrected this, identifying multiple distinct documents within the file. Analyze the document content, the original classification, and the corrected index to determine what boundaries the system missed and why.</p><p>Original Classification (LLM Generated) - <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"original_classification\" data-merge-field-relationship=\"automation_variable.original_classification\">{{ automation_variable.original_classification }}</span></p><p>Corrected Index (Human Reviewed) - <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"index\" data-merge-field-relationship=\"automation_variable.index\">{{ automation_variable.index }}</span></p><p></p><p>Respond with a JSON object using exactly this structure:</p><p>{</p><p>  \"missed_boundaries\": [</p><p>    {</p><p>      \"boundary_location\": \"Page number or page range where a document transition occurs\",</p><p>      \"document_before\": { \"pages\": [start, end], \"category\": \"...\" },</p><p>      \"document_after\": { \"pages\": [start, end], \"category\": \"...\" },</p><p>      \"boundary_indicators\": \"Specific content at or near the boundary that signals a new document begins (e.g., new title, different form number, change in parties, shift in legal purpose).\",</p><p>      \"why_likely_missed\": \"What specific characteristics of the content likely caused the system to treat this as a continuation rather than a new document (e.g., consistent formatting across the boundary, shared parties or subject matter, no clear header on the second document).\"</p><p>    }</p><p>  ],</p><p>  \"unifying_features\": \"What characteristics of the overall file likely made it appear to be a single cohesive document (e.g., consistent page numbering, same borrower name throughout, similar formatting, related subject matter across all sections).\",</p><p>  \"difficulty_factors\": [</p><p>    \"Specific characteristics of this file that made correct boundary detection challenging.\"</p><p>  ]</p><p>}</p><p></p><p>Be specific and reference actual page content. Do not suggest generalized rules or future improvements \u2014 focus only on diagnosing this specific case.</p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": {
+              "id": "db229d9b-af28-4a8a-af54-c6efec64d2f3",
+              "name": "structural_reclassification_insights",
+              "display_name": "Structural Reclassification Insights",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "field": {
+              "id": "13392cb9-25f5-4d7c-beb3-0ee01fe4b9b6",
+              "name": "primary_audit_log_record",
+              "display_name": "Primary Audit Log Record",
+              "deleted": false,
+              "field_type": "relationship",
+              "options": [],
+              "relation": {
+                "id": "b1561e75-f692-470c-ab62-a6e06c269c03",
+                "related_field": "62ee0383-5b03-4ff2-b5b5-2c36b8d17d03",
+                "related_object": "c9870848-7d42-4fbb-b324-3853f8114e08",
+                "related_object_name": "Audit Logs",
+                "related_object_object_name": "audit_logs",
+                "related_entity_name": "Audit Log",
+                "related_category": "1e3d9537-cda8-437f-a585-e02d95b1ba7f",
+                "related_name": "Primary Document Record",
+                "relation_type": "one_to_one",
+                "cardinality": "one_to_one",
+                "fetch_url": "standard"
+              },
+              "rating": null
+            },
+            "variable": null,
+            "conflict_resolution": "overwrite",
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false,
+        "data_type": "image",
+        "input_field": {
+          "id": "ea866c74-4c97-4e75-b352-f9357e8313d8",
+          "name": "document_file_field",
+          "display_name": "Document File Field",
+          "deleted": false,
+          "field_type": "files",
+          "options": [],
+          "relation": null,
+          "rating": null
+        }
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "0451d848-be3b-4aae-abd5-2a1a3bece0e4",
+      "step_type": "modify_related_entities",
+      "order": 14,
+      "description": "Change Related Entity \u2018Audit Logs: Audit Log\u2019 \u2018reclassification type\u2019 Field on \u2018Primary Audit Log Record\u2019 to \u2018Single to Multi Document\u2019, and 2 Additional Field Updates",
+      "user_description": "Modify audit log record",
+      "stats": {
+        "number_completed": 1,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "3fdef1db-ef41-46e6-bee1-9fa7e28521ec",
+      "parent_condition": "",
+      "action_modify_related_entities": {
+        "id": "58d287d1-9b70-4ff9-a4d7-13a58fd9a1ad",
+        "object_to_modify": {
+          "id": "c9870848-7d42-4fbb-b324-3853f8114e08",
+          "name": "audit_logs",
+          "description": null,
+          "entity_name": "Audit Log",
+          "object_name": "Audit Logs",
+          "object_class": "custom_objects",
+          "object_type": "standard",
+          "default_on_activities": true,
+          "deleted": false
+        },
+        "automation_target_relationship_fields": [
+          {
+            "id": "13392cb9-25f5-4d7c-beb3-0ee01fe4b9b6",
+            "name": "primary_audit_log_record",
+            "display_name": "Primary Audit Log Record",
+            "deleted": false,
+            "field_type": "relationship",
+            "options": [],
+            "relation": {
+              "id": "b1561e75-f692-470c-ab62-a6e06c269c03",
+              "related_field": "62ee0383-5b03-4ff2-b5b5-2c36b8d17d03",
+              "related_object": "c9870848-7d42-4fbb-b324-3853f8114e08",
+              "related_object_name": "Audit Logs",
+              "related_object_object_name": "audit_logs",
+              "related_entity_name": "Audit Log",
+              "related_category": "1e3d9537-cda8-437f-a585-e02d95b1ba7f",
+              "related_name": "Primary Document Record",
+              "relation_type": "one_to_one",
+              "cardinality": "one_to_one",
+              "fetch_url": "standard"
+            },
+            "rating": null
+          }
+        ],
+        "fields_to_modify": [
+          {
+            "field_to_modify": {
+              "id": "f65b4837-5846-4174-a352-33d551b35896",
+              "name": "reclassification_type",
+              "display_name": "reclassification type",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "ddfed3ce-2e97-4fd2-84ee-792e66ee1c32",
+                  "code": "",
+                  "name": "Override Classification",
+                  "order": 1,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "7f8ba103-01c5-461f-b672-fd329784c996",
+                  "code": "",
+                  "name": "Manually Classified",
+                  "order": 2,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "556b4a07-0a76-4e9a-bebd-5d368d169cec",
+                  "code": "",
+                  "name": "Re-Split Multi Document",
+                  "order": 3,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "abd9266e-8844-4e23-bbee-b6e3a46618b5",
+                  "code": "",
+                  "name": "Single to Multi Document",
+                  "order": 4,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "4a57c705-84e2-448c-92eb-3b48d6d4e8f8",
+                  "code": "",
+                  "name": "Multi Document to Single",
+                  "order": 5,
+                  "meta": {
+                    "cols": 2
+                  }
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "specific_value",
+            "specific_field_value": {
+              "id": "abd9266e-8844-4e23-bbee-b6e3a46618b5",
+              "name": "Single to Multi Document",
+              "deleted": false
+            },
+            "context_entity_field": null,
+            "created": "2026-06-25T15:41:10.826210-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "a49c7643-e322-40e0-8e76-b49f87da6360"
+          },
+          {
+            "field_to_modify": {
+              "id": "12d46c25-6a6b-47fb-851f-8b3e24c7fee1",
+              "name": "initial_index",
+              "display_name": "Initial Index",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "variable",
+            "specific_field_value": null,
+            "context_entity_field": null,
+            "created": "2026-06-25T15:41:10.845181-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": {
+              "id": "b570f32f-6294-4ada-8a7a-30ebc7130e8c",
+              "name": "index",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-02-08T18:55:33.018128Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "7f70e135-fd38-4acd-b930-17c315691816"
+          },
+          {
+            "field_to_modify": {
+              "id": "1625bd0a-a6b9-496e-aa7e-7b38282ca72e",
+              "name": "re_classified",
+              "display_name": "Re-Classified?",
+              "deleted": false,
+              "field_type": "checkbox",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "specific_value",
+            "specific_field_value": {
+              "value": true
+            },
+            "context_entity_field": null,
+            "created": "2026-06-25T15:41:10.863319-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "bfad31ce-d6d9-4ecf-b817-698abcb1f8a3"
+          }
+        ],
+        "record_source": "related_object_field",
+        "record_source_variables": [],
+        "automation_variables": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "10f593a8-709f-4f3e-a7fd-7288e37fe18c",
+      "step_type": "code_step",
+      "order": 15,
+      "description": "Run Python 3.13 Code on (entity_id, and 3 more) and set (0 outputs)",
+      "user_description": "webhook",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "41ae1f2c-f69a-45d5-ac4b-a8349cfb7221",
+      "parent_condition": "yes",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "992876d6-8b1e-48aa-bebe-14dc6a9cc133",
+            "name": "kizen_webhook_signing_key",
+            "deleted": false
+          },
+          {
+            "id": "3a66449f-baf8-40e3-a23f-570e285359d7",
+            "name": "webhook_base_url",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "entity_id",
+            "variable": {
+              "name": "entity_record_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_execution_id",
+            "variable": {
+              "name": "automation_execution_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_id",
+            "variable": {
+              "name": "automation_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "job_id",
+            "field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [],
+        "script": "import hashlib\nimport hmac\nimport base64\nimport json\nimport requests\n\nsigning_key = secrets[\"kizen_webhook_signing_key\"]\nwebhook_base_url = secrets[\"webhook_base_url\"]\n\nentity_id = inputs.entity_record_id\n\npayload = {\n    \"automationType\": \"ContainsMultipleDocuments\",\n    \"entityId\": entity_id,\n    \"containsMultipleDocuments\": True,\n    \"automationId\": inputs.automation_id,\n    \"automationExecutionId\": inputs.automation_execution_id,\n    \"jobId\": inputs.job_id,\n    \"exceptionType\": \"Single-to-Multi\"\n}\n\npayload_string = json.dumps(payload, separators=(',', ':'), ensure_ascii=False)\n\nsig = hmac.new(\n    signing_key.encode('utf-8'),\n    payload_string.encode('utf-8'),\n    hashlib.sha256\n).digest()\nsignature = base64.b64encode(sig).decode('utf-8')\n\nurl = f\"{webhook_base_url}/kizen-webhooks\"\nheaders = {\n    \"Content-Type\": \"application/json\",\n    \"x-kizen-signature\": signature\n}\n\ntry:\n    resp = requests.post(url, data=payload_string, headers=headers)\n\n    if resp.status_code >= 400:\n        outputs.log(f\"ERROR: Webhook request failed with status {resp.status_code}\")\nexcept Exception as e:\n    outputs.log(f\"ERROR: {str(e)}\")"
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d11d7542-6f46-4047-99e6-b6c95bb3ca9a",
+      "step_type": "start_automation",
+      "order": 16,
+      "description": "Start Agentic Workflows 'Indexing Agent'",
+      "user_description": "start multi-doc workflow",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "10f593a8-709f-4f3e-a7fd-7288e37fe18c",
+      "parent_condition": "",
+      "action_start_automation": {
+        "record_source": "this_record",
+        "relationship_fields": [],
+        "automation_variable": null,
+        "automations": [
+          {
+            "id": "0a0c72ae-5d91-4d84-80c7-3027ed4cf963",
+            "name": "Indexing Agent",
+            "deleted": false,
+            "active": true
+          }
+        ],
+        "resume_paused_automations": false,
+        "automation_variable_overrides": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "2b7fc6f5-2870-45fe-951e-b460442eae87",
+      "step_type": "modify_related_entities",
+      "order": 17,
+      "description": "Change Related Entity \u2018Audit Logs: Audit Log\u2019 \u2018reclassification type\u2019 Field on \u2018Primary Audit Log Record\u2019 to \u2018Single to Multi Document\u2019, and 1 Additional Field Updates",
+      "user_description": "Modify audit log record",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "d11d7542-6f46-4047-99e6-b6c95bb3ca9a",
+      "parent_condition": "",
+      "action_modify_related_entities": {
+        "id": "3d732fd1-53c2-4cd9-9057-3dced9cfa6ed",
+        "object_to_modify": {
+          "id": "c9870848-7d42-4fbb-b324-3853f8114e08",
+          "name": "audit_logs",
+          "description": null,
+          "entity_name": "Audit Log",
+          "object_name": "Audit Logs",
+          "object_class": "custom_objects",
+          "object_type": "standard",
+          "default_on_activities": true,
+          "deleted": false
+        },
+        "automation_target_relationship_fields": [
+          {
+            "id": "13392cb9-25f5-4d7c-beb3-0ee01fe4b9b6",
+            "name": "primary_audit_log_record",
+            "display_name": "Primary Audit Log Record",
+            "deleted": false,
+            "field_type": "relationship",
+            "options": [],
+            "relation": {
+              "id": "b1561e75-f692-470c-ab62-a6e06c269c03",
+              "related_field": "62ee0383-5b03-4ff2-b5b5-2c36b8d17d03",
+              "related_object": "c9870848-7d42-4fbb-b324-3853f8114e08",
+              "related_object_name": "Audit Logs",
+              "related_object_object_name": "audit_logs",
+              "related_entity_name": "Audit Log",
+              "related_category": "1e3d9537-cda8-437f-a585-e02d95b1ba7f",
+              "related_name": "Primary Document Record",
+              "relation_type": "one_to_one",
+              "cardinality": "one_to_one",
+              "fetch_url": "standard"
+            },
+            "rating": null
+          }
+        ],
+        "fields_to_modify": [
+          {
+            "field_to_modify": {
+              "id": "f65b4837-5846-4174-a352-33d551b35896",
+              "name": "reclassification_type",
+              "display_name": "reclassification type",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "ddfed3ce-2e97-4fd2-84ee-792e66ee1c32",
+                  "code": "",
+                  "name": "Override Classification",
+                  "order": 1,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "7f8ba103-01c5-461f-b672-fd329784c996",
+                  "code": "",
+                  "name": "Manually Classified",
+                  "order": 2,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "556b4a07-0a76-4e9a-bebd-5d368d169cec",
+                  "code": "",
+                  "name": "Re-Split Multi Document",
+                  "order": 3,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "abd9266e-8844-4e23-bbee-b6e3a46618b5",
+                  "code": "",
+                  "name": "Single to Multi Document",
+                  "order": 4,
+                  "meta": {
+                    "cols": 2
+                  }
+                },
+                {
+                  "id": "4a57c705-84e2-448c-92eb-3b48d6d4e8f8",
+                  "code": "",
+                  "name": "Multi Document to Single",
+                  "order": 5,
+                  "meta": {
+                    "cols": 2
+                  }
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "specific_value",
+            "specific_field_value": {
+              "id": "abd9266e-8844-4e23-bbee-b6e3a46618b5",
+              "name": "Single to Multi Document",
+              "deleted": false
+            },
+            "context_entity_field": null,
+            "created": "2026-06-25T15:41:11.054931-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "9aa2f530-1c0e-4af2-8f8c-772761ff8d2a"
+          },
+          {
+            "field_to_modify": {
+              "id": "1625bd0a-a6b9-496e-aa7e-7b38282ca72e",
+              "name": "re_classified",
+              "display_name": "Re-Classified?",
+              "deleted": false,
+              "field_type": "checkbox",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "specific_value",
+            "specific_field_value": {
+              "value": true
+            },
+            "context_entity_field": null,
+            "created": "2026-06-25T15:41:11.075124-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "a5fcaaf3-ad7c-476b-ab34-765b73818098"
+          }
+        ],
+        "record_source": "related_object_field",
+        "record_source_variables": [],
+        "automation_variables": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [
+    {
+      "id": "40cc0e0b-8430-446b-979c-23eec9a3efce",
+      "name": "entity_record_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-26T19:13:24.630558Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "252332dd-44d8-429c-8059-8a8e1f2a19ff",
+      "name": "user",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-02-08T18:55:32.994106Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "b570f32f-6294-4ada-8a7a-30ebc7130e8c",
+      "name": "index",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-02-08T18:55:33.018128Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "e4694f15-ed64-4468-9f61-946f873b504d",
+      "name": "automation_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-02-08T18:55:33.049787Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "f755d4c0-0297-4ea0-a217-1b4b67cbd5f7",
+      "name": "automation_execution_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-02-08T18:55:33.058703Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "d64839b6-4b3d-42fa-9301-505ca8391fa4",
+      "name": "type",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-30T13:21:45.885953Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "38bb4ce4-fb5b-43b5-9ecb-d169880b3500",
+      "name": "original_classification",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-30T15:50:54.755861Z",
+      "deleted": false,
+      "is_array": false
+    }
+  ],
+  "revision": 40,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 2,
+  "number_paused": 0,
+  "number_completed": 25,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-01-26T12:46:44.322384-06:00",
+  "updated": "2026-06-25T21:41:44.065132-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

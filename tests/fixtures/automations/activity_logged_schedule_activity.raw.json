@@ -1,0 +1,692 @@
+{
+  "id": "e0a255d1-ec9d-40f2-b9a4-643ccaf49491",
+  "name": "Manual Review Activity Complete",
+  "api_name": "manual_review_activity_complete",
+  "ai_description": "\nWhen a 'Document Classification Review - Manual Review' activity is logged on a Document Sets record, or when triggered manually, this 9-step automation finalizes the manual classification process. The workflow begins by initializing several variables for tracking, including the record, parent, and execution IDs. An LLM then generates an updated classification reason by prepending the text \"Classified Manually - Previous Classification Reasoning: \" to the existing reason on the record. The automation proceeds to update three fields on the Document Sets record: it sets the 'Document Classification Status' to 'Classified', updates the 'Classification Reason' with the LLM-generated text, and changes the 'Classification Confidence' to 'Manually Reviewed'. Finally, it schedules a 'Document Classification Review - Classified/Override' activity, assigns it to a team member via round-robin, and executes a Python code step.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+    "name": "document_sets",
+    "description": "The Document Sets object stores and categorizes financial documents for mortgage transactions, classifying them by type like 'Appraisal' or 'W2'. It tracks classification status, records an execution date, and identifies multi-document files. Each set is linked to a primary Deal, Party, and Contact, and supports parent-child hierarchies for grouping related documents.",
+    "entity_name": "Document",
+    "object_name": "Document Sets",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "c2df67c9-5028-4467-933c-570ae93cc4d0",
+    "name": "Activity Automations"
+  },
+  "triggers": [
+    {
+      "id": "bd76f797-03ba-445d-b8b6-d8eb06fd471c",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 0
+      }
+    },
+    {
+      "id": "0dc51c40-9856-4c63-9ca4-bcbf033f121c",
+      "order": 1,
+      "description": "Activity 'Document Classification Review - Manual Review' Logged",
+      "user_description": "Automation runs after a scheduled activity (manual review) is classified and complete",
+      "trigger_type": "activity_logged",
+      "trigger_activity_logged": {
+        "activity_type": {
+          "id": "9fcd8602-b9ff-45d2-95c6-256f1a0306ef",
+          "name": "Document Classification Review - Manual Review",
+          "api_name": "document_classification_review",
+          "deleted": false
+        }
+      },
+      "stats": {
+        "number_completed": 40
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "e237214e-008c-44ce-b150-7823bddc4888",
+      "step_type": "initialize_variable",
+      "order": 0,
+      "description": "new_classification_reason = <i>empty</i>",
+      "user_description": "new classification reason for audit purposes",
+      "stats": {
+        "number_completed": 40,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "c44c1325-2952-4de7-b539-4b320d4cb1c2",
+          "name": "new_classification_reason",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2025-12-16T03:04:00.950716Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "e54f6dad-7173-4fd6-89fd-b1af32ed7717",
+      "step_type": "initialize_variable",
+      "order": 1,
+      "description": "entity_record_id = \u2018{{ custom_objects.id }}\u2019",
+      "user_description": "entity record id",
+      "stats": {
+        "number_completed": 35,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "e237214e-008c-44ce-b150-7823bddc4888",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ custom_objects.id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Document ID\" data-merge-field-relationship=\"custom_objects.id\">{{ custom_objects.id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "fec7ac59-1777-4f12-8909-11fa1bcf468a",
+          "name": "entity_record_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-26T18:08:11.918888Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d868c2f2-6dff-489f-8b0d-8dce5a3934c9",
+      "step_type": "initialize_variable",
+      "order": 2,
+      "description": "automation_execution_id = \u2018{{ automation_history.execution_id }}\u2019",
+      "user_description": "id of specific run of the automation",
+      "stats": {
+        "number_completed": 35,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "e54f6dad-7173-4fd6-89fd-b1af32ed7717",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ automation_history.execution_id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Automation Execution ID\" data-merge-field-relationship=\"automation_history.execution_id\">{{ automation_history.execution_id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "706380d8-4a5a-4416-9be5-69ddec7af52a",
+          "name": "automation_execution_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-28T20:23:22.574631Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "30569e22-7be2-4e55-b6fa-8f6e4f8563ee",
+      "step_type": "initialize_variable",
+      "order": 3,
+      "description": "automation_id = \u2018{{ automation_history.automation_id }}\u2019",
+      "user_description": "id of automation",
+      "stats": {
+        "number_completed": 35,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "d868c2f2-6dff-489f-8b0d-8dce5a3934c9",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ automation_history.automation_id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Automation ID\" data-merge-field-relationship=\"automation_history.automation_id\">{{ automation_history.automation_id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "906d7d75-e026-48b5-8028-c6bb473a7e6b",
+          "name": "automation_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-30T04:15:09.957002Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "c8c6351a-8d87-4405-95bb-f5946ff3fe22",
+      "step_type": "initialize_variable",
+      "order": 4,
+      "description": "parent_id = \u2018{{ custom_objects.primary_document_record.id }}\u2019",
+      "user_description": "if child record, id of primary record id (parent id)",
+      "stats": {
+        "number_completed": 35,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "30569e22-7be2-4e55-b6fa-8f6e4f8563ee",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ custom_objects.primary_document_record.id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Primary Document Record (ID)\" data-merge-field-relationship=\"custom_objects.primary_document_record.id\">{{ custom_objects.primary_document_record.id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "063da62c-8bcf-4a71-96e5-4fc7a1fc8127",
+          "name": "parent_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-30T04:15:09.964207Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "3d6cf777-6767-4bb7-988b-5fe0b49c80ed",
+      "step_type": "call_llm",
+      "order": 5,
+      "description": "Call LLM  \u2018Please concatenate the following strings and output the full concatenation:String 1: \"Classified Manually - Previous Classification Reasoning: \"String 2: {{ custom_objects.classification_reason }}\u2019",
+      "user_description": "create updated classification reasoning",
+      "stats": {
+        "number_completed": 40,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "c8c6351a-8d87-4405-95bb-f5946ff3fe22",
+      "parent_condition": "",
+      "action_call_llm": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "business_plugin_app": {
+          "id": "1e8cecec-8f9c-4b06-8b6b-019fbc526c42",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "Please concatenate the following strings and output the full concatenation:String 1: \"Classified Manually - Previous Classification Reasoning: \"String 2: {{ custom_objects.classification_reason }}",
+        "html_prompt": "<p>Please concatenate the following strings and output the full concatenation:</p><p></p><p>String 1: \"Classified Manually - Previous Classification Reasoning: \"</p><p>String 2: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Classification Reason\" data-merge-field-relationship=\"custom_objects.classification_reason\">{{ custom_objects.classification_reason }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "c44c1325-2952-4de7-b539-4b320d4cb1c2",
+              "name": "new_classification_reason",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "bf8742aa-cfcf-48ea-bc8e-40d0304561f6",
+      "step_type": "change_field_value",
+      "order": 6,
+      "description": "Change Field \u2018Document Classification Status\u2019 to \u2018Classified\u2019 and 2 Additional Field update(s)",
+      "user_description": "change fields",
+      "stats": {
+        "number_completed": 40,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "3d6cf777-6767-4bb7-988b-5fe0b49c80ed",
+      "parent_condition": "",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "fb8799c4-c1bf-42be-bc00-f92429834de0",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "51a0523b-1033-4e6f-a803-a26323bac96e",
+              "name": "document_classification_status",
+              "display_name": "Document Classification Status",
+              "deleted": false,
+              "field_type": "status",
+              "options": [
+                {
+                  "id": "87dd5e5f-675b-46e0-8a3c-fb9dc5c15264",
+                  "code": "",
+                  "name": "Classified",
+                  "order": 1,
+                  "meta": {
+                    "color": "rgba(50,192,85,1)"
+                  }
+                },
+                {
+                  "id": "3f54ad54-3d0f-4007-a972-7fb32eb43f05",
+                  "code": "",
+                  "name": "Needs Classification",
+                  "order": 2,
+                  "meta": {
+                    "color": "rgba(8,91,238,1)"
+                  }
+                },
+                {
+                  "id": "3d1c6831-c17a-46ca-96d0-897036032472",
+                  "code": "",
+                  "name": "Manual Review",
+                  "order": 3,
+                  "meta": {
+                    "color": "rgba(243,168,0,1)"
+                  }
+                },
+                {
+                  "id": "bce84de2-dbb4-4e34-87fd-d7caad87b5a5",
+                  "code": "",
+                  "name": "N/A",
+                  "order": 4,
+                  "meta": {
+                    "color": "rgba(0,0,0,1)"
+                  }
+                },
+                {
+                  "id": "c9e3cf4c-6405-4eb8-9c25-10500a9dc451",
+                  "code": "",
+                  "name": "Failed",
+                  "order": 5,
+                  "meta": {
+                    "color": "rgba(220,20,34,1)"
+                  }
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "87dd5e5f-675b-46e0-8a3c-fb9dc5c15264",
+              "name": "Classified",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "53d6806c-5a1e-4268-9183-91c5b98c4e6c",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "aa3344f2-753d-4de3-9ff2-b924c0460b60",
+              "name": "classification_reason",
+              "display_name": "Classification Reason",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "c44c1325-2952-4de7-b539-4b320d4cb1c2",
+              "name": "new_classification_reason",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2025-12-16T03:04:00.950716Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "21d050c6-d7bb-4f32-b4c9-d5c0a7f724a0",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "5c7f4f71-44aa-46a2-bb8a-94bba85141a3",
+              "name": "classification_confidence",
+              "display_name": "Classification Confidence",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "value": "Manually Reviewed"
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "cdd735c5-3de5-4758-8889-9693ba59b59b",
+      "step_type": "schedule_activity",
+      "order": 7,
+      "description": "Schedule Activity \u2018Document Classification Review - Classified/Override\u2019 to Round Robin (Team Member of Any Role)",
+      "user_description": "schedule activity in case future re-classification is needed.",
+      "stats": {
+        "number_completed": 39,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "bf8742aa-cfcf-48ea-bc8e-40d0304561f6",
+      "parent_condition": "",
+      "action_schedule_activity": {
+        "activity_type": {
+          "id": "991a0110-317d-45e4-9e90-7d0171c3544d",
+          "name": "Document Classification Review - Classified/Override",
+          "deleted": false
+        },
+        "schedule": {
+          "type": "immediately",
+          "with_delay": null,
+          "on_or_around_date": null,
+          "skip_non_working_days": null
+        },
+        "assigned_to": {
+          "assignment_type": "round_robin_all",
+          "variable": null,
+          "role": null,
+          "employee": null,
+          "employees": [],
+          "field": null
+        },
+        "note": "<p>Document was previously manually classified:</p><p></p><p>Classification Reason: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"new_classification_reason\" data-merge-field-relationship=\"automation_variable.new_classification_reason\">{{ automation_variable.new_classification_reason }}</span> </p><p></p><p>Classification Confidence: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Classification Confidence\" data-merge-field-relationship=\"custom_objects.classification_confidence\">{{ custom_objects.classification_confidence }}</span> </p>",
+        "html_note": null,
+        "notifications": [],
+        "association_configs": [
+          {
+            "custom_object": {
+              "id": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+              "object_name": "Document Sets",
+              "entity_name": "Document",
+              "deleted": false
+            },
+            "association_source": "context_record",
+            "relationship_field": null,
+            "automation_variable": null
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "68b29449-3a89-4031-a882-417631c8cd40",
+      "step_type": "code_step",
+      "order": 8,
+      "description": "Run Python 3.13 Code on (entity_record_id, and 4 more) and set (0 outputs)",
+      "user_description": "webhook",
+      "stats": {
+        "number_completed": 35,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "cdd735c5-3de5-4758-8889-9693ba59b59b",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "992876d6-8b1e-48aa-bebe-14dc6a9cc133",
+            "name": "kizen_webhook_signing_key",
+            "deleted": false
+          },
+          {
+            "id": "3a66449f-baf8-40e3-a23f-570e285359d7",
+            "name": "webhook_base_url",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "entity_record_id",
+            "variable": {
+              "name": "entity_record_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_execution_id",
+            "variable": {
+              "name": "automation_execution_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_id",
+            "variable": {
+              "name": "automation_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "parent_id",
+            "variable": {
+              "name": "parent_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "job_id",
+            "field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [],
+        "script": "import hashlib\nimport hmac\nimport base64\nimport json\nimport requests\n\nsigning_key = secrets[\"kizen_webhook_signing_key\"]\nwebhook_base_url = secrets[\"webhook_base_url\"]\n\nentity_id = inputs.entity_record_id\n\npayload = {\n    \"automationType\": \"Reclassification\",\n    \"entityId\": entity_id,\n    \"automationId\": inputs.automation_id,\n    \"automationExecutionId\": inputs.automation_execution_id,\n    \"jobId\": inputs.job_id,\n    \"parentId\": inputs.parent_id\n}\n\npayload_string = json.dumps(payload, separators=(',', ':'), ensure_ascii=False)\n\nsig = hmac.new(\n    signing_key.encode('utf-8'),\n    payload_string.encode('utf-8'),\n    hashlib.sha256\n).digest()\nsignature = base64.b64encode(sig).decode('utf-8')\n\nurl = f\"{webhook_base_url}/kizen-webhooks\"\nheaders = {\n    \"Content-Type\": \"application/json\",\n    \"x-kizen-signature\": signature\n}\n\ntry:\n    resp = requests.post(url, data=payload_string, headers=headers)\n\n    if resp.status_code >= 400:\n        outputs.log(f\"ERROR: Webhook request failed with status {resp.status_code}\")\nexcept Exception as e:\n    outputs.log(f\"ERROR: {str(e)}\")"
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [
+    {
+      "id": "c44c1325-2952-4de7-b539-4b320d4cb1c2",
+      "name": "new_classification_reason",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2025-12-16T03:04:00.950716Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "fec7ac59-1777-4f12-8909-11fa1bcf468a",
+      "name": "entity_record_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-26T18:08:11.918888Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "706380d8-4a5a-4416-9be5-69ddec7af52a",
+      "name": "automation_execution_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-28T20:23:22.574631Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "906d7d75-e026-48b5-8028-c6bb473a7e6b",
+      "name": "automation_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-30T04:15:09.957002Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "063da62c-8bcf-4a71-96e5-4fc7a1fc8127",
+      "name": "parent_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-30T04:15:09.964207Z",
+      "deleted": false,
+      "is_array": false
+    }
+  ],
+  "revision": 18,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 40,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2025-12-15T20:56:55.103720-06:00",
+  "updated": "2026-02-24T15:43:41.124576-06:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

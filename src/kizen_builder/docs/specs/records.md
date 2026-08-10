@@ -1,0 +1,172 @@
+# Spec shape: bulk records (CSV / JSON)
+
+**Consumed by:** `kizen records create|update|upsert <object> --spec-file <f>`
+(also reads stdin). Records are *data*, not schema, but a bulk load runs
+through the same plan → preview → confirm → apply loop.
+
+> Single records don't need a file — use `--field api_name=value` (repeatable).
+> A spec file is for loading **many rows at once**. Contacts use the object
+> identifier `client_client`.
+
+---
+
+## Quick example
+
+**CSV** (header row = field api_names):
+
+```csv
+name,account_region,account_seats
+Acme Corp,North,12
+Globex Inc,West,8
+```
+
+```bash
+kizen records create accounts --spec-file accounts.csv --dry-run
+kizen records create accounts --spec-file accounts.csv --yes
+```
+
+**JSON** (list of objects — same keys):
+
+```json
+[
+  { "name": "Acme Corp", "account_region": "North", "account_seats": 12 },
+  { "name": "Globex Inc",   "account_region": "West", "account_seats": 8 }
+]
+```
+
+---
+
+## Which column each verb needs
+
+| Verb | Row must include | Behavior |
+|------|------------------|----------|
+| `create` | field values | Always inserts. Re-running **duplicates** — use `upsert` for idempotent loads. |
+| `update` | an `id` column | Targets an existing record by UUID. Blank cells are skipped (not cleared). |
+| `upsert` | a `lookup_value` column | Matches the object's name field (email for contacts); updates in place or creates. |
+
+`lookup_value` is a single string matched against the object's identifying
+field — there's no "match on field X" option.
+
+---
+
+## Value resolution
+
+Cell/JSON values are resolved against the live object schema:
+
+- **dropdown / status / radio** — pass the option **label**; resolved to its UUID.
+- **relationship** — pass the related record's name or UUID; becomes `{"id": <uuid>}`.
+- **checkbox / number** — string coerced by field type.
+- A value starting with `[` or `{` is parsed as **JSON** (multi-select lists, explicit refs).
+- **Full wire control** (JSON spec only): a row may carry a raw
+  `"fields": [{ "name"|"id": ..., "value": ... }, ...]` list, passed through untouched.
+
+---
+
+## Upsert conflict flags
+
+- `--oncreate-unarchive prompt|unarchive|overwrite` — what to do when an
+  archived record already matches on create.
+- `--onupdate-conflict overwrite` — let an update proceed past an
+  archived-record naming conflict.
+
+Omit both to keep the server's default (conflict-raising) behavior.
+
+## Gotchas
+
+- **`create` is not idempotent** — reload = duplicates. Reach for `upsert`.
+- **Blank cells on `update` are skipped**, not cleared — you can't null a field
+  by leaving it empty.
+- **Contacts** are `client_client` here, like everywhere else.
+
+---
+
+# Wire format & API behavior
+
+All record types — custom objects **and** contacts — use one unified records
+API. Contacts are the object identifier `client_client`; the `/api/client/`
+endpoint family is **deprecated**, don't use it. Accounts and every other CRM
+object are plain custom objects whose identifier is their api_name.
+
+## Endpoints (for production scripts)
+
+| Operation | Method | Path |
+|---|---|---|
+| Get one record | `GET` | `/api/records/{object_identifier}/{entity_id}` |
+| Search / list | `POST` | `/api/records/{object_identifier}/search` |
+| Create | `POST` | `/api/records/{object_identifier}/add` |
+| Update (partial) | `PATCH` | `/api/records/{object_identifier}/{entity_id}` |
+| Delete | `DELETE` | `/api/records/{object_identifier}/{entity_id}` |
+| Upsert | `POST` | `/api/records/{object_identifier}/upsert` |
+| Move between stages | `PATCH` | `/api/records/{object_identifier}/{entity_id}/move` |
+
+Search and list paginate via `page` / `page_size` query params — keep requesting
+until a short page comes back.
+
+## The `fields` write shape
+
+```json
+{"fields": [
+  {"name": "field_api_name",   "value": "some text"},
+  {"id":   "<field-uuid>",     "value": {"id": "<option-uuid>"}},
+  {"name": "relationship_field", "value": {"id": "<related-record-uuid>"}}
+]}
+```
+
+- Reference a field by `name` (api_name) **or** `id` (UUID).
+- **Option values** are `{"id": <option_uuid>}` or `{"name": "Label"}`.
+- **Relationship values** are `{"id": <record_uuid>}` — a **list** of those for
+  a multi-value field.
+
+The CLI resolves labels and ids from live schema for you; pass a raw `fields`
+list in a JSON spec to bypass that entirely.
+
+## Search body
+
+```json
+{
+  "query": [ { "and": true, "filters": [
+      {"type": "fields_v2", "field": "\"custom\"::<field-uuid>",
+       "subtype": "custom", "condition": "=", "value": "some text"} ] } ],
+  "and": true,
+  "field_names": ["name", "email"]
+}
+```
+
+`field_names` limits which fields come back. Pass `"query": []` to return all
+records. The `query` structure is the shared filter wire format —
+`kizen docs show filters`.
+
+## Bulk change field value (`records set-field`)
+
+`POST /api/custom-objects/{object_pk}/bulk-change-field-value` sets **one field
+to one value across many records** in one call.
+
+```bash
+kizen records set-field <object> <uuid> [<uuid> …] --field X --value Y [--resolution …]
+```
+
+- **`field_value` takes the bare wire scalar, not an object** — despite the
+  OpenAPI spec typing it `object`. Confirmed live 2026-07-20: a `longtext` field
+  wants a bare string, and a `dropdown` field wants the **bare option UUID
+  string**. Either wrapped as `{"value": …}` or `{"id": …}` 400s with
+  `field_value: ['Not a valid string.']`.
+- So `field_value` is the same value a record's own `fields` entry would take,
+  with any `{"id": …}` wrapper unwrapped to the bare id.
+- `field_id` is the field's **UUID**, not its api_name.
+- `field_resolution` is one of `overwrite`, `add_only`, `remove_only`,
+  `update_if_blank`, `overwrite_except_null` (`add_only`/`remove_only` apply to
+  multi-select fields).
+- **Untested live:** `checkboxes`/`dynamictags` (multi-select) and
+  `relationship` fields. By the same pattern they should want a bare list of
+  ids rather than a list of `{"id": …}` dicts — confirm before relying on it.
+- Id-targeted only. The request also accepts `entity_records_set_key` for
+  filter-targeted bulk ops, but that needs the separate
+  `bulk-action-summary`/`bulk-action-progress` framework, which isn't wired up.
+
+## See also
+
+- `kizen docs show field` — the schema these values are resolved against.
+- `kizen docs show filters` — the filter DSL and wire format used by `--filter`
+  and the search body.
+- `kizen docs show objects` — pipeline stages, and why `records move` exists.
+- `kizen records create|update|upsert --help` — current flags.

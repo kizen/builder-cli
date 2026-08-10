@@ -1,0 +1,166 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kizen-builder"
+# SemVer, static, single source of truth. Deliberately not setuptools-scm:
+# the dominant install is an editable checkout, where an scm version churns to
+# `0.2.1.dev4+g1a2b3c` on every commit — which makes the upgrade nag mushy and
+# "what version are you on?" unanswerable in a chat. Bumping this is a release
+# decision; see CHANGELOG.md. Note `kizen --version` reads *installed*
+# metadata, so a bump only shows after a re-sync/reinstall.
+version = "0.2.0"
+description = "Command-line tool for designing and iterating on a Kizen environment via the Kizen REST API."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Kizen Solutions" }]
+keywords = ["kizen", "crm", "cli", "automation", "rest-api"]
+# No `license` field yet — the license is an open decision, not something to
+# invent here. It's blocked regardless by the vendored product source under
+# src/kizen_builder/vendor/ (see its PROVENANCE.md).
+classifiers = [
+    # Not a real PyPI classifier — that's the point. The index rejects any
+    # `Private ::` classifier, so an accidental `twine upload` fails
+    # server-side while this repo is private. Removing this line is the
+    # deliberate act of making the package publishable.
+    "Private :: Do Not Upload",
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    "pydantic>=2.6",
+    "httpx>=0.27",
+    "typer>=0.12",
+    "python-dotenv>=1.0",
+    "rich>=13.7",
+    "tomli-w>=1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "pytest-mock>=3.12",
+    "respx>=0.21",
+    "build>=1.2",  # tests/test_docs_packaging.py builds a real wheel
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.11",
+]
+# Smart-connector local execution. Heavy native deps (embedded ClickHouse via
+# chdb) that only `kizen smart-connectors run`/`add-input` need — kept out of
+# the core install so the rest of the CLI stays lightweight. Install with
+# `uv sync --extra connectors` or `pip install -e '.[connectors]'`.
+connectors = [
+    "chdb>=4.1",
+    "python-calamine>=0.6",
+    "charset-normalizer>=3.3",
+]
+
+[project.scripts]
+kizen = "kizen_builder.cli:app"
+
+[project.urls]
+Repository = "https://github.com/kizen/builder-cli"
+Changelog = "https://github.com/kizen/builder-cli/blob/main/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# The docs tree ships inside the wheel — `kizen docs show` serves it, and an
+# env folder never gets a copy. Globs are explicit (not `docs/**/*.md`) so
+# tests/test_docs_packaging.py can assert glob↔file coverage 1:1 and stray
+# files can't ride along.
+[tool.setuptools.package-data]
+kizen_builder = ["docs/*.md", "docs/specs/*.md"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# 21 test modules do `from tests.conftest import ...`, and there's no
+# `tests/__init__.py`, so `tests` is only importable with the repo root on
+# sys.path. `python -m pytest` puts cwd there and hides this; the `pytest`
+# console script — which is what `uv run pytest` and CI invoke — does not, and
+# collection fails outright with `ModuleNotFoundError: No module named 'tests'`.
+# Declaring it here makes every invocation behave the same way.
+pythonpath = ["."]
+markers = [
+    "live: test requires a live Kizen API (always skipped in this repo)",
+    "wheel: builds/installs a real wheel — slow, opt-in via `-m wheel`",
+    "drift: hits a real Kizen environment (and writes to it) — opt-in via `-m drift`",
+]
+# Wheel tests shell out to `build`/`pip` and take seconds, not milliseconds.
+# Keep the default run fast and hermetic; CI runs them as a separate job.
+# Drift tests need live credentials and mutate a disposable environment, so
+# they are excluded here too — a plain `pytest` and CI never reach them.
+addopts = "-m 'not wheel and not drift'"
+
+[tool.coverage.run]
+source = ["src/kizen_builder"]
+# Verbatim vendored product source (see its own PROVENANCE.md) — not ours to
+# cover, and counting it would flatter the number without telling us anything.
+omit = ["src/kizen_builder/vendor/*"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = false
+sort = "Cover"
+
+[tool.ruff]
+target-version = "py312"
+# Verbatim vendored product source (see its own PROVENANCE.md) — not ours to
+# reformat or lint, and doing so would make future upstream diffs noisy.
+extend-exclude = ["src/kizen_builder/vendor"]
+# Without this, the exclusion only applies while ruff is *discovering* files.
+# A path passed explicitly is still processed — which is exactly what an
+# editor's format-on-save and a pre-commit hook both do, one changed file at a
+# time. `ruff format src/kizen_builder/vendor/` would happily reformat two of
+# those files today. For a directory whose whole contract is "byte-identical
+# to upstream," discovery-only exclusion isn't the guarantee we need.
+force-exclude = true
+
+[tool.ruff.lint]
+# Sane, not maximal: pyflakes/pycodestyle errors, import sorting, pyupgrade,
+# bugbear, flake8-simplify, flake8-return, flake8-comprehensions. Deliberately
+# not `D` (docstrings) or `ANN` (annotations) — this is a first pass on a
+# 45k-line codebase with zero prior lint history; either would generate
+# thousands of findings and stall adoption rather than help it.
+select = ["E", "F", "I", "UP", "B", "SIM", "RET", "C4"]
+# E501 (line-too-long) is redundant with `ruff format`, and diverges from it:
+# the formatter already reflows the code ruff format actually wraps
+# (expressions, calls, collections); what's left over is almost entirely
+# prose it deliberately never touches — docstrings, Typer help/epilog
+# strings, error messages, URLs. On this codebase that was 162 hits across
+# ~20 files, none of them a real readability problem, all of them requiring
+# hand-wrapping user-facing text for no functional gain. This is Ruff's own
+# documented recommendation when the formatter is in use.
+ignore = ["E501"]
+
+[tool.ruff.lint.flake8-bugbear]
+# Typer's documented pattern is `param: T = typer.Option(...)` /
+# `typer.Argument(...)` — the call in the default *is* the API, not a mutable-
+# default bug B008 is meant to catch. Every one of this codebase's 27 B008
+# hits was this pattern; telling ruff the calls are immutable silences them
+# without disabling B008 for genuine mutable-default bugs elsewhere.
+extend-immutable-calls = ["typer.Argument", "typer.Option"]
+
+[tool.mypy]
+python_version = "3.12"
+exclude = ["^src/kizen_builder/vendor/"]
+ignore_missing_imports = true
+
+# `exclude` above only stops mypy's own directory *discovery* — a lazy,
+# function-local import of a vendor module from a checked file (e.g.
+# tools/smart_connectors.py importing vendor.connector_runtime.script_runner)
+# still gets pulled in and type-checked as a dependency, and can start or stop
+# surfacing errors just from unrelated changes elsewhere in the import graph
+# shifting mypy's processing order. `follow_imports = "skip"` makes the vendor
+# exclusion hold regardless of how a module is reached, matching CLAUDE.md's
+# vendor/ rule: byte-identical to upstream, never touched to satisfy a local
+# tool.
+[[tool.mypy.overrides]]
+module = "kizen_builder.vendor.*"
+follow_imports = "skip"

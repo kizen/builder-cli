@@ -1,0 +1,408 @@
+"""`kizen records` — record mutations, plus the spec and `--field` parsing
+they share.
+"""
+
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+from typing import Any
+
+import typer
+
+from kizen_builder.cli._mutations import _run_mutation
+from kizen_builder.cli._shared import err_console
+from kizen_builder.cli.records import records_app
+from kizen_builder.tools.planners import pipeline_stages as stage_planners
+from kizen_builder.tools.planners import records as record_planners
+
+
+def _coerce_cell(value: str) -> Any:
+    """Parse a scalar cell/flag value; JSON-decode list/object literals.
+
+    A value that starts with `[` or `{` is parsed as JSON so multi-select
+    lists and explicit `{"id": ...}` refs can be authored inline; anything
+    else stays a string (the record planner coerces by field type).
+    """
+    s = value.strip()
+    if s[:1] in "[{":
+        try:
+            return json.loads(s)
+        except json.JSONDecodeError:
+            return value
+    return value
+
+
+def _parse_field_flags(fields: list[str]) -> dict[str, Any]:
+    """Turn repeatable `--field name=value` into a record mapping."""
+    mapping: dict[str, Any] = {}
+    for item in fields:
+        name, sep, value = item.partition("=")
+        if not sep or not name:
+            raise typer.BadParameter(f"--field must be name=value (got {item!r}).")
+        mapping[name] = _coerce_cell(value)
+    return mapping
+
+
+def _read_records_spec(spec_file: str) -> tuple[list[dict[str, Any]], bool]:
+    """Read a batch of record mappings from a CSV or JSON file (or stdin).
+
+    JSON may be a single object or a list of objects. CSV uses the header row
+    as field api_names; blank cells are skipped (so a sparse wide sheet only
+    sets the columns it fills). Returns `(records, from_stdin)`.
+    """
+    if spec_file:
+        text = Path(spec_file).read_text()
+        is_csv = spec_file.lower().endswith(".csv")
+        from_stdin = False
+    else:
+        if sys.stdin.isatty():
+            err_console.print(
+                "[red]error:[/red] no records provided. Pass --field, "
+                "--spec-file, or pipe CSV/JSON to stdin."
+            )
+            raise typer.Exit(code=2)
+        text = sys.stdin.read()
+        is_csv = False
+        from_stdin = True
+
+    stripped = text.lstrip()
+    if not is_csv and stripped[:1] in "[{":
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError as e:
+            err_console.print(f"[red]error parsing JSON records:[/red] {e}")
+            raise typer.Exit(code=2) from e
+        records = data if isinstance(data, list) else [data]
+        return [dict(r) for r in records], from_stdin
+
+    import csv
+    import io
+
+    reader = csv.DictReader(io.StringIO(text))
+    records = []
+    for row in reader:
+        mapping = {
+            k: _coerce_cell(v)
+            for k, v in row.items()
+            if k and (k == "id" or (v is not None and v.strip() != ""))
+        }
+        if mapping:
+            records.append(mapping)
+    if not records:
+        err_console.print("[red]error:[/red] no records found in the CSV/JSON input.")
+        raise typer.Exit(code=2)
+    return records, from_stdin
+
+
+@records_app.command(
+    "create",
+    epilog="Bulk spec shape (CSV or JSON rows): see `kizen docs show records`",
+)
+def records_create(
+    object_api_name: str = typer.Argument(
+        ..., help="Object api_name (e.g. client_client)."
+    ),
+    field: list[str] = typer.Option(
+        [],
+        "--field",
+        "-f",
+        help="Set a field: --field api_name=value (repeatable). One record.",
+    ),
+    spec_file: str = typer.Option(
+        "",
+        "--spec-file",
+        help="Path to a CSV or JSON file of records for a bulk create (or pipe to stdin).",
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Create one record (via --field) or many (via CSV/JSON spec).
+
+    Field values are resolved against the live object schema: dropdown/status
+    option labels become option ids, relationship values become record refs,
+    and booleans/numbers are coerced. Provide a full wire `fields` list per
+    record in a JSON spec if you need exact control.
+    """
+    from_stdin = False
+    if field and spec_file:
+        err_console.print("[red]error:[/red] pass --field or --spec-file, not both.")
+        raise typer.Exit(code=2)
+    if field:
+        records = [_parse_field_flags(field)]
+    else:
+        records, from_stdin = _read_records_spec(spec_file)
+
+    _run_mutation(
+        lambda: record_planners.plan_create_records(object_api_name, records),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+        stdin_consumed=from_stdin,
+    )
+
+
+@records_app.command(
+    "update",
+    epilog="Bulk spec shape (CSV/JSON rows; each needs an id): see `kizen docs show records`",
+)
+def records_update(
+    object_api_name: str = typer.Argument(..., help="Object api_name."),
+    record_id: str = typer.Argument(
+        None, help="Record UUID (single update). Omit for a bulk spec."
+    ),
+    field: list[str] = typer.Option(
+        [],
+        "--field",
+        "-f",
+        help="Set a field: --field api_name=value (repeatable).",
+    ),
+    spec_file: str = typer.Option(
+        "",
+        "--spec-file",
+        help="Path to a CSV or JSON file of records (each with an 'id') for a bulk update (or stdin).",
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Update one record (UUID + --field) or many (CSV/JSON spec with 'id').
+
+    Only the fields you set are changed. Bulk specs identify each target row
+    by an `id` column/key.
+    """
+    from_stdin = False
+    if record_id:
+        if spec_file:
+            err_console.print(
+                "[red]error:[/red] pass a record UUID or --spec-file, not both."
+            )
+            raise typer.Exit(code=2)
+        if not field:
+            err_console.print("[red]error:[/red] give at least one --field to change.")
+            raise typer.Exit(code=2)
+        mapping = _parse_field_flags(field)
+        mapping["id"] = record_id
+        records = [mapping]
+    else:
+        if field:
+            err_console.print(
+                "[red]error:[/red] --field needs a record UUID; use --spec-file for bulk."
+            )
+            raise typer.Exit(code=2)
+        records, from_stdin = _read_records_spec(spec_file)
+
+    _run_mutation(
+        lambda: record_planners.plan_update_records(object_api_name, records),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+        stdin_consumed=from_stdin,
+    )
+
+
+@records_app.command(
+    "upsert",
+    epilog="Bulk spec shape (CSV/JSON rows; each needs lookup_value): see `kizen docs show records`",
+)
+def records_upsert(
+    object_api_name: str = typer.Argument(..., help="Object api_name."),
+    lookup_value: str = typer.Argument(
+        None,
+        help="Value to match an existing record (name/email). Omit for a bulk spec.",
+    ),
+    field: list[str] = typer.Option(
+        [],
+        "--field",
+        "-f",
+        help="Set a field: --field api_name=value (repeatable). One record.",
+    ),
+    spec_file: str = typer.Option(
+        "",
+        "--spec-file",
+        help=(
+            "Path to a CSV or JSON file of records (each with a 'lookup_value') "
+            "for a bulk upsert (or stdin)."
+        ),
+    ),
+    oncreate_unarchive: str = typer.Option(
+        None,
+        "--oncreate-unarchive",
+        help="On create, if an archived record matches: prompt|unarchive|overwrite.",
+    ),
+    onupdate_conflict: str = typer.Option(
+        None,
+        "--onupdate-conflict",
+        help="On update, let an archived-record naming conflict proceed: overwrite.",
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Create-or-update one record (lookup_value + --field) or many (CSV/JSON spec).
+
+    Kizen matches `lookup_value` against the record's name field (email for
+    contacts): a hit updates it, a miss creates it. This is the idempotent
+    load primitive — re-running a `records create` load duplicates records,
+    re-running `records upsert` with the same lookup values does not.
+    """
+    from_stdin = False
+    if lookup_value:
+        if spec_file:
+            err_console.print(
+                "[red]error:[/red] pass a lookup_value or --spec-file, not both."
+            )
+            raise typer.Exit(code=2)
+        if not field:
+            err_console.print("[red]error:[/red] give at least one --field to set.")
+            raise typer.Exit(code=2)
+        mapping = _parse_field_flags(field)
+        mapping["lookup_value"] = lookup_value
+        records = [mapping]
+    else:
+        if field:
+            err_console.print(
+                "[red]error:[/red] --field needs a lookup_value; use --spec-file for bulk."
+            )
+            raise typer.Exit(code=2)
+        records, from_stdin = _read_records_spec(spec_file)
+
+    _run_mutation(
+        lambda: record_planners.plan_upsert_records(
+            object_api_name,
+            records,
+            oncreate_unarchive=oncreate_unarchive,
+            onupdate_archived_conflict=onupdate_conflict,
+        ),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+        stdin_consumed=from_stdin,
+    )
+
+
+@records_app.command("delete")
+def records_delete(
+    object_api_name: str = typer.Argument(..., help="Object api_name."),
+    record_id: list[str] = typer.Argument(
+        None, help="One or more record UUIDs to delete."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Delete one or more records by UUID. Deletion removes the record's data."""
+    ids = list(record_id or [])
+    if not ids:
+        err_console.print("[red]error:[/red] pass at least one record UUID to delete.")
+        raise typer.Exit(code=2)
+
+    _run_mutation(
+        lambda: record_planners.plan_delete_records(object_api_name, ids),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+    )
+
+
+@records_app.command("set-field")
+def records_set_field(
+    object_api_name: str = typer.Argument(..., help="Object api_name."),
+    record_id: list[str] = typer.Argument(
+        None, help="One or more record UUIDs to update."
+    ),
+    field: str = typer.Option(..., "--field", help="Field api_name to set."),
+    value: str = typer.Option(
+        ...,
+        "--value",
+        help="New value (resolved against the field's type, same coercion as `records create`).",
+    ),
+    resolution: str = typer.Option(
+        "overwrite",
+        "--resolution",
+        help="overwrite | add_only | remove_only | update_if_blank | overwrite_except_null "
+        "(add_only/remove_only apply to multi-select fields).",
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Set one field to one value across many records in a single API call.
+
+    Wraps the bulk-change-field-value endpoint — a single request instead of
+    N per-record PATCHes. Targets an explicit list of record UUIDs; filtering
+    a large record set to build that list first is `records list --filter`'s
+    job (there's no server-side bulk-by-filter wired up here yet — see
+    `kizen docs show automation`).
+    """
+    ids = list(record_id or [])
+    if not ids:
+        err_console.print("[red]error:[/red] pass at least one record UUID.")
+        raise typer.Exit(code=2)
+
+    _run_mutation(
+        lambda: record_planners.plan_set_field(
+            object_api_name, ids, field, value, field_resolution=resolution
+        ),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+    )
+
+
+@records_app.command("move")
+def records_move(
+    object_api_name: str = typer.Argument(
+        ..., help="Pipeline object api_name (or UUID)."
+    ),
+    record_id: str = typer.Argument(..., help="Record UUID to move."),
+    stage: str = typer.Option(..., "--stage", help="Target stage name or UUID."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Move a pipeline record to a different stage."""
+    _run_mutation(
+        lambda: stage_planners.plan_move_record(object_api_name, record_id, stage),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+    )

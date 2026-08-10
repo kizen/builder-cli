@@ -1,0 +1,412 @@
+{
+  "id": "714f5af6-62d6-4e43-9883-142a2954e60a",
+  "name": "Daily Trigger",
+  "api_name": "daily_trigger",
+  "ai_description": null,
+  "active": false,
+  "type": "global",
+  "custom_object": null,
+  "user_description": "",
+  "folder": {
+    "id": "e1bddbfd-770a-4c24-bec3-7afddf299358",
+    "name": "Ticker Update"
+  },
+  "triggers": [
+    {
+      "id": "74e1b1ac-f0df-4887-93eb-f4c6fd2bf7b2",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 14
+      }
+    },
+    {
+      "id": "570b6ace-d9c3-4306-830f-6c16a0aac265",
+      "order": 1,
+      "description": "Scheduled for every day",
+      "user_description": "",
+      "trigger_type": "schedule",
+      "trigger_schedule": {
+        "rrule": "DTSTART:20260331T173230Z\nRRULE:FREQ=DAILY;INTERVAL=1",
+        "is_advanced": false
+      },
+      "stats": {
+        "number_completed": 0
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "afb69d89-b983-4f6e-80e7-8b9b0ae1bb1c",
+      "step_type": "initialize_variable",
+      "order": 0,
+      "description": "ticker_list = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 14,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "babb485a-efe4-4601-a72c-ee9d9c0df298",
+          "name": "ticker_list",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-31T20:36:10.962449Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "1e8a17a2-adf9-4408-8341-d94b88ea3b9d",
+      "step_type": "initialize_variable",
+      "order": 1,
+      "description": "price_map = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 14,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "afb69d89-b983-4f6e-80e7-8b9b0ae1bb1c",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "9743b40e-4fc5-49a9-8085-737ce5b2ec81",
+          "name": "price_map",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-31T20:36:10.970850Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "1789a70d-ef4f-492d-ae0d-e0334599c81a",
+      "step_type": "initialize_variable",
+      "order": 2,
+      "description": "update_summary = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 14,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "1e8a17a2-adf9-4408-8341-d94b88ea3b9d",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "ef7b0028-a339-4cc5-be97-84fbb370201f",
+          "name": "update_summary",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-31T20:36:10.978929Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "0458820c-9086-404a-b1e1-524f86cad7c3",
+      "step_type": "initialize_variable",
+      "order": 3,
+      "description": "ticker_records = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 3,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "1789a70d-ef4f-492d-ae0d-e0334599c81a",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "2351eae5-ea33-42c7-a243-7366863e2677",
+          "name": "ticker_records",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-31T21:12:19.082764Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "f42a3214-fd56-449e-a875-996c0e727182",
+      "step_type": "code_step",
+      "order": 4,
+      "description": "Run Python 3.13 Code on (0 inputs) and set (ticker_list, and 1 more)",
+      "user_description": "",
+      "stats": {
+        "number_completed": 11,
+        "number_failed": 0,
+        "number_pending": 3
+      },
+      "parent_step_id": "0458820c-9086-404a-b1e1-524f86cad7c3",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "cf08a5ff-c860-4a7f-92e8-24f2173a30a5",
+            "name": "kizen_api",
+            "deleted": false
+          }
+        ],
+        "inputs": [],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "ticker_list",
+            "variable": {
+              "name": "ticker_list",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "ticker_records",
+            "variable": {
+              "name": "ticker_records",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "script": "import requests\nimport json\n\nBASE_URL = \"https://app.go.kizen.com/api\"\n\nbusiness_id, user_id, api_key = secrets[\"kizen_api\"].split(\":\")\n\ns = requests.Session()\ns.headers.update(\n    {\n        \"X-BUSINESS-ID\": business_id,\n        \"X-USER-ID\": user_id,\n        \"X-API-KEY\": api_key,\n        \"accept\": \"application/json\",\n        \"Content-Type\": \"application/json\",\n    }\n)\n\nTAX_LOT_OBJECT = \"tax_lot\"\nTICKER_FIELD = \"ticker_symbol\"\n\npage = 1\npage_size = 100\nticker_records = {}  # { \"VTI\": [\"uuid1\", \"uuid2\"], \"BND\": [\"uuid3\"] }\n\nwhile True:\n    resp = s.post(\n        f\"{BASE_URL}/records/{TAX_LOT_OBJECT}/search\",\n        params={\"page\": page, \"page_size\": page_size},\n        json={\n            \"field_names\": [TICKER_FIELD],\n            \"query\": [],\n            \"and\": True,\n        },\n    )\n    resp.raise_for_status()\n    data = resp.json()\n\n    outputs.log(f\"Page {page}: {len(data.get('results', []))} results\")\n\n    for record in data.get(\"results\", []):\n        record_id = record[\"id\"]\n        for field in record.get(\"fields\", {}).values():\n            if field.get(\"name\") == TICKER_FIELD:\n                val = field.get(\"value\")\n                if val:\n                    ticker = val.strip().upper()\n                    ticker_records.setdefault(ticker, []).append(record_id)\n\n    if not data.get(\"next\"):\n        break\n    page += 1\n\noutputs.log(f\"Found tickers: {sorted(ticker_records.keys())}\")\noutputs.ticker_list = json.dumps(sorted(ticker_records.keys()))\noutputs.ticker_records = json.dumps(ticker_records)"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "268173c3-8241-44b8-b26b-4cc51f329072",
+      "step_type": "code_step",
+      "order": 5,
+      "description": "Run Python 3.13 Code on (ticker_list) and set (price_map)",
+      "user_description": "",
+      "stats": {
+        "number_completed": 5,
+        "number_failed": 0,
+        "number_pending": 6
+      },
+      "parent_step_id": "f42a3214-fd56-449e-a875-996c0e727182",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "ticker_list",
+            "variable": {
+              "name": "ticker_list",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "price_map",
+            "variable": {
+              "name": "price_map",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "script": "# Step 2 - Fetch prices from Yahoo Finance\nimport requests\nimport json\n\ntickers = json.loads(inputs.ticker_list)\n\nprices = {}\n\nfor ticker in tickers:\n    try:\n        url = \"https://query1.finance.yahoo.com/v8/finance/chart/\" + ticker\n        resp = requests.get(\n            url,\n            params={\"interval\": \"1d\", \"range\": \"1d\"},\n            headers={\"User-Agent\": \"Mozilla/5.0\"},\n            timeout=10,\n        )\n        resp.raise_for_status()\n        data = resp.json()\n        close = data[\"chart\"][\"result\"][0][\"meta\"][\"regularMarketPrice\"]\n        prices[ticker] = round(float(close), 4)\n        outputs.log(f\"{ticker}: {prices[ticker]}\")\n    except Exception as e:\n        outputs.log(f\"{ticker}: failed - {e}\")\n        prices[ticker] = None\n\noutputs.price_map = json.dumps(prices)"
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "4d17d259-87bb-4b78-9ca7-4fba97ab38f3",
+      "step_type": "code_step",
+      "order": 6,
+      "description": "Run Python 3.13 Code on (price_map, and 2 more) and set (update_summary)",
+      "user_description": "",
+      "stats": {
+        "number_completed": 3,
+        "number_failed": 0,
+        "number_pending": 2
+      },
+      "parent_step_id": "268173c3-8241-44b8-b26b-4cc51f329072",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "cf08a5ff-c860-4a7f-92e8-24f2173a30a5",
+            "name": "kizen_api",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "price_map",
+            "variable": {
+              "name": "price_map",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "ticker_list",
+            "variable": {
+              "name": "ticker_list",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "ticker_records",
+            "variable": {
+              "name": "ticker_records",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "update_summary",
+            "variable": {
+              "name": "update_summary",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "script": "import requests\nimport json\n\nBASE_URL = \"https://app.go.kizen.com/api\"\n\nbusiness_id, user_id, api_key = secrets[\"kizen_api\"].split(\":\")\n\ns = requests.Session()\ns.headers.update(\n    {\n        \"X-BUSINESS-ID\": business_id,\n        \"X-USER-ID\": user_id,\n        \"X-API-KEY\": api_key,\n        \"accept\": \"application/json\",\n        \"Content-Type\": \"application/json\",\n    }\n)\n\nTAX_LOT_OBJECT = \"tax_lot\"\nPRICE_FIELD = \"current_value\"\n\nticker_records = json.loads(inputs.ticker_records)  # { \"VTI\": [\"uuid1\", ...], ... }\nprices = json.loads(inputs.price_map)\n\nupdated = 0\nskipped = 0\nerrors = []\n\nfor ticker, record_ids in ticker_records.items():\n    price = prices.get(ticker)\n    if price is None:\n        outputs.log(f\"{ticker}: no price, skipping {len(record_ids)} records\")\n        skipped += len(record_ids)\n        continue\n\n    for record_id in record_ids:\n        update_resp = s.patch(\n            f\"{BASE_URL}/records/{TAX_LOT_OBJECT}/{record_id}\",\n            json={\n                \"fields\": [\n                    {\n                        \"name\": PRICE_FIELD,\n                        \"value\": price,\n                    }\n                ]\n            },\n        )\n        if update_resp.ok:\n            updated += 1\n            outputs.log(f\"{ticker} record {record_id}: updated to {price}\")\n        else:\n            errors.append(\n                {\n                    \"record_id\": record_id,\n                    \"ticker\": ticker,\n                    \"status\": update_resp.status_code,\n                    \"detail\": update_resp.text[:200],\n                }\n            )\n            outputs.log(f\"{ticker} record {record_id}: ERROR {update_resp.status_code}\")\n\noutputs.log(f\"Done: {updated} updated, {skipped} skipped, {len(errors)} errors\")\noutputs.update_summary = json.dumps(\n    {\n        \"updated\": updated,\n        \"skipped_no_price\": skipped,\n        \"errors\": errors,\n    }\n)"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [
+    {
+      "id": "babb485a-efe4-4601-a72c-ee9d9c0df298",
+      "name": "ticker_list",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-31T20:36:10.962449Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "9743b40e-4fc5-49a9-8085-737ce5b2ec81",
+      "name": "price_map",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-31T20:36:10.970850Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "ef7b0028-a339-4cc5-be97-84fbb370201f",
+      "name": "update_summary",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-31T20:36:10.978929Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "2351eae5-ea33-42c7-a243-7366863e2677",
+      "name": "ticker_records",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-31T21:12:19.082764Z",
+      "deleted": false,
+      "is_array": false
+    }
+  ],
+  "revision": 20,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 7,
+  "number_paused": 4,
+  "number_completed": 3,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-03-31T12:32:21.749576-05:00",
+  "updated": "2026-03-31T16:18:08.849698-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

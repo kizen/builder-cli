@@ -1,0 +1,17 @@
+{
+  "results": [
+    {
+      "id": "00000000-0000-4000-8000-000000000201",
+      "name": "Sample Group",
+      "user_count": 3,
+      "role_count": 1
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000202",
+      "name": "Other Group",
+      "user_count": 0,
+      "role_count": 0
+    }
+  ],
+  "next": null
+}

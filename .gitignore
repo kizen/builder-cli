@@ -1,0 +1,33 @@
+# Retired local ticket queue — superseded by the maintaining team's tracker.
+# The `kizen feedback` command is gone; this only keeps historical local
+# tickets out of git status.
+.feedback/
+
+# Retired decision log. The `kizen log` command is gone — record-keeping is
+# the user's workflow to choose, not something the CLI imposes. Existing
+# decisions.md files are left on disk as plain markdown; this keeps them out
+# of git status.
+.kizen/decisions.md
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+.DS_Store
+.claude/

@@ -1,0 +1,70 @@
+{
+  "env": "testenv",
+  "id": "11111111-1111-4111-8111-111111111111",
+  "api_name": "deals",
+  "display_name": "Deals",
+  "entity_name": "Deal",
+  "object_type": "pipeline",
+  "stages": [
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000001",
+      "name": "Prospecting",
+      "status": "open",
+      "percentage_chance_to_close": 10,
+      "order": 0
+    },
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000002",
+      "name": "Negotiation",
+      "status": "open",
+      "percentage_chance_to_close": 60,
+      "order": 1
+    },
+    {
+      "id": "aaaaaaaa-0000-4000-8000-000000000003",
+      "name": "Closed Won",
+      "status": "won",
+      "percentage_chance_to_close": 100,
+      "order": 2
+    }
+  ],
+  "categories": [
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "name": "Deal Info",
+      "order": 0
+    }
+  ],
+  "fields": [
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "api_name": "stage",
+      "display_name": "Stage",
+      "field_type": "dropdown",
+      "category_id": "22222222-2222-4222-8222-222222222222",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "relation_target": null,
+      "relation_cardinality": null,
+      "options": [
+        {"id": "aaaaaaaa-0000-4000-8000-000000000001", "name": "Prospecting", "code": "prospecting"},
+        {"id": "aaaaaaaa-0000-4000-8000-000000000002", "name": "Negotiation", "code": "negotiation"},
+        {"id": "aaaaaaaa-0000-4000-8000-000000000003", "name": "Closed Won", "code": "closed_won"}
+      ]
+    },
+    {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "api_name": "deal_value",
+      "display_name": "Deal Value",
+      "field_type": "money",
+      "category_id": "22222222-2222-4222-8222-222222222222",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "relation_target": null,
+      "relation_cardinality": null,
+      "options": null
+    }
+  ]
+}

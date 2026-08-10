@@ -1,0 +1,116 @@
+{
+  "env": "testenv",
+  "id": "1d3f7886-8542-4e5c-833e-4023e2d3a8e2",
+  "api_name": "tax_lot",
+  "display_name": "Tax Lot",
+  "entity_name": "Tax Lot",
+  "object_type": "standard",
+  "categories": [
+    {
+      "id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "name": "Tax Lot Info",
+      "order": 0
+    }
+  ],
+  "fields": [
+    {
+      "id": "fa580ba8-ca62-42f5-877a-a2448a6f9da7",
+      "api_name": "name",
+      "display_name": "Tax Lot Name",
+      "field_type": "text",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "fad9bca0-97d9-4f1b-a4a3-c46fd84053ef",
+      "api_name": "created",
+      "display_name": "Date Created",
+      "field_type": "datetime",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "ee3851ca-d88b-499b-81cd-425d5b14665a",
+      "api_name": "owner",
+      "display_name": "Owner",
+      "field_type": "team_selector",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "1e044280-990d-4b57-bee4-e734827a3db7",
+      "api_name": "updated",
+      "display_name": "Last Modified",
+      "field_type": "datetime",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "958bbd40-b89c-4d2d-abc2-4cb381f48557",
+      "api_name": "display_name",
+      "display_name": "Display Name",
+      "field_type": "text",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "104e186e-7bab-4149-b2bc-b9c912518d5e",
+      "api_name": "ticker_symbol",
+      "display_name": "Ticker Symbol",
+      "field_type": "text",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "7a77bf92-67fd-415b-b247-98d48d9c8c63",
+      "api_name": "purchase_price",
+      "display_name": "Purchase Price",
+      "field_type": "money",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "d52c6233-5ea3-4dd0-9902-68a8789afc03",
+      "api_name": "number_of_shares",
+      "display_name": "Number of Shares",
+      "field_type": "decimal",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "f698b684-59ce-4b1e-ba33-f4c982fe52dc",
+      "api_name": "current_value",
+      "display_name": "Current Value",
+      "field_type": "money",
+      "category_id": "1de9b146-0e0d-4269-803e-9575dda43e4f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    }
+  ]
+}

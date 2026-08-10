@@ -1,0 +1,747 @@
+{
+  "env": "testenv",
+  "id": "ceed733b-9dd9-4bf9-8c52-8ba1ac41da45",
+  "api_name": "patients",
+  "display_name": "Patients",
+  "entity_name": "Patient",
+  "object_type": "standard",
+  "categories": [
+    {
+      "id": "32586223-3588-4df6-9e92-225cebfd891d",
+      "name": "Patient Info",
+      "order": 0
+    },
+    {
+      "id": "e523181d-9331-4328-b09f-829d8f2a367f",
+      "name": "Identifiers",
+      "order": 1
+    },
+    {
+      "id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "name": "Demographics",
+      "order": 2
+    },
+    {
+      "id": "ab051589-086f-4b67-9533-04fbda128390",
+      "name": "Contact Info",
+      "order": 3
+    },
+    {
+      "id": "47963a96-bc08-44b7-8c2c-0f7d65738c7c",
+      "name": "Emergency Contacts",
+      "order": 4
+    },
+    {
+      "id": "9b24afa0-6537-4cd6-b4a1-843767a9a6dc",
+      "name": "Clinical Context",
+      "order": 5
+    }
+  ],
+  "fields": [
+    {
+      "id": "c6a1233e-e31d-47c2-ab31-468e79be991c",
+      "api_name": "name",
+      "display_name": "Patient Name",
+      "field_type": "text",
+      "category_id": "32586223-3588-4df6-9e92-225cebfd891d",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "e4cfd10e-23f7-479f-887a-77c7757f3105",
+      "api_name": "created",
+      "display_name": "Date Created",
+      "field_type": "datetime",
+      "category_id": "32586223-3588-4df6-9e92-225cebfd891d",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "35b02ad4-0d62-4cfb-90d4-dbe4b9dc5904",
+      "api_name": "owner",
+      "display_name": "Owner",
+      "field_type": "team_selector",
+      "category_id": "32586223-3588-4df6-9e92-225cebfd891d",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "27932403-18c5-46ad-bb65-1ab2270ea180",
+      "api_name": "updated",
+      "display_name": "Last Modified",
+      "field_type": "datetime",
+      "category_id": "32586223-3588-4df6-9e92-225cebfd891d",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "290227f1-fddc-45d4-92f9-90900ec4dbf9",
+      "api_name": "display_name",
+      "display_name": "Display Name",
+      "field_type": "text",
+      "category_id": "32586223-3588-4df6-9e92-225cebfd891d",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "db489b3e-a880-41f7-90b9-312b8cfdd02b",
+      "api_name": "mrn",
+      "display_name": "Medical Record Number (MRN)",
+      "field_type": "text",
+      "category_id": "e523181d-9331-4328-b09f-829d8f2a367f",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "3ce91ff4-227a-4407-9282-f455142ed15b",
+      "api_name": "ssn",
+      "display_name": "Social Security Number",
+      "field_type": "text",
+      "category_id": "e523181d-9331-4328-b09f-829d8f2a367f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "013f5ebf-3fc5-4dfd-9500-e5d3988257c4",
+      "api_name": "insurance_member_id",
+      "display_name": "Insurance Member ID",
+      "field_type": "text",
+      "category_id": "e523181d-9331-4328-b09f-829d8f2a367f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "54ffa6d1-a310-43a5-8d7e-d6b8370b32fb",
+      "api_name": "insurance_group_number",
+      "display_name": "Insurance Group Number",
+      "field_type": "text",
+      "category_id": "e523181d-9331-4328-b09f-829d8f2a367f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "107925a9-19f0-41b5-8f44-28badfa44e58",
+      "api_name": "patient_first_name",
+      "display_name": "First Name",
+      "field_type": "text",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "e3261b10-2f68-4d4c-a835-72a16d41bccd",
+      "api_name": "patient_middle_name",
+      "display_name": "Middle Name",
+      "field_type": "text",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "52f989a9-e428-4f8d-b330-f1bc801b38db",
+      "api_name": "patient_last_name",
+      "display_name": "Last Name",
+      "field_type": "text",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "de05fa11-6ea1-400c-8349-e4c24543eaa1",
+      "api_name": "date_of_birth",
+      "display_name": "Date of Birth",
+      "field_type": "date",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "7a55629f-6265-435e-b5a3-6c1be2d73164",
+      "api_name": "gender",
+      "display_name": "Gender",
+      "field_type": "dropdown",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "13034409-c8a1-420a-a5d6-11e94a3f5e12",
+          "name": "Male",
+          "code": ""
+        },
+        {
+          "id": "78238cfd-d8f7-4539-ba19-76435a6bd92c",
+          "name": "Female",
+          "code": ""
+        },
+        {
+          "id": "b6b4e91f-3250-4897-b6fe-74152d529221",
+          "name": "Other",
+          "code": ""
+        },
+        {
+          "id": "5c2a35f6-64b2-492d-91f4-c1d7089f24cf",
+          "name": "Unknown",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "6c1317e8-632f-4848-a971-4f750fff6079",
+      "api_name": "race",
+      "display_name": "Race",
+      "field_type": "dropdown",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "4a0b0cd7-f918-40be-8e4e-15257f5ec554",
+          "name": "American Indian or Alaska Native",
+          "code": ""
+        },
+        {
+          "id": "8720d8e9-a139-4d88-9bb6-6f47c586a07e",
+          "name": "Asian",
+          "code": ""
+        },
+        {
+          "id": "7353ef00-dd86-4c78-a0c8-7543481a3050",
+          "name": "Black or African American",
+          "code": ""
+        },
+        {
+          "id": "1cacefbd-7ccf-4c9b-b416-9c978e0ee40b",
+          "name": "Native Hawaiian or Other Pacific Islander",
+          "code": ""
+        },
+        {
+          "id": "6060c83e-02be-4566-aae2-4230f3a366c5",
+          "name": "White",
+          "code": ""
+        },
+        {
+          "id": "6a608a86-30b2-4988-a1b5-2cc98b0fa878",
+          "name": "Other",
+          "code": ""
+        },
+        {
+          "id": "c571602e-42e7-4073-81ce-8ff0e85ec469",
+          "name": "Unknown / Not Reported",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "9877d8b7-05a9-4d09-b079-3483f8f80722",
+      "api_name": "ethnicity",
+      "display_name": "Ethnicity",
+      "field_type": "dropdown",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "14168e6f-4c61-4088-b62d-fa5c1045bf20",
+          "name": "Hispanic or Latino",
+          "code": ""
+        },
+        {
+          "id": "c2682c02-78f1-4b6a-bc72-aba5ffde327a",
+          "name": "Not Hispanic or Latino",
+          "code": ""
+        },
+        {
+          "id": "62722702-ed3e-424c-b0d5-a99db1e58024",
+          "name": "Unknown / Not Reported",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "130c234e-9f1a-4118-bf38-5a895f6444ec",
+      "api_name": "deceased",
+      "display_name": "Deceased",
+      "field_type": "checkbox",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "6eedf059-dddd-4338-a130-c139b7ce9328",
+      "api_name": "date_of_death",
+      "display_name": "Date of Death",
+      "field_type": "date",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "b69f1a9c-3f3b-4c4d-9989-60a83373c0e8",
+      "api_name": "encounters",
+      "display_name": "Encounters",
+      "field_type": "relationship",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "889f65e2-dd31-42f0-a088-c3c1dd8ea484",
+        "related_object": "98649f6d-b809-4c9a-980d-8ee54708a8a6",
+        "related_category": "92fb23c8-d5dc-445e-aed3-411a5566ddd1",
+        "related_name": "Patient",
+        "related_object_name": "Encounters",
+        "related_object_object_name": "encounters",
+        "related_entity_name": "Encounter",
+        "relation_type": "primary_for",
+        "cardinality": "one_to_many",
+        "fetch_url": "standard",
+        "rollup_timeline": false,
+        "rollup_leadsources": true,
+        "inverse_relation_rollup_timeline": false,
+        "inverse_relation_rollup_leadsources": true,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "d651a8a3-0817-4aec-b1fb-ac02c1b09513",
+      "api_name": "primary_phone",
+      "display_name": "Primary Phone",
+      "field_type": "phonenumber",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "a1e2422a-df23-410a-85c1-6c6d30683264",
+      "api_name": "email_address",
+      "display_name": "Email Address",
+      "field_type": "email",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "4e23c78f-e1ae-4f30-a8b0-467e34a2f273",
+      "api_name": "conditions",
+      "display_name": "Conditions",
+      "field_type": "relationship",
+      "category_id": "99d1eb0b-adb7-4a27-948a-21b1aa33fae0",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "9498ea5f-751c-4dbd-bdf0-4b048a43ffd7",
+        "related_object": "76572554-4933-4b8b-b66a-f38fdc986953",
+        "related_category": "387aec76-75e4-4fef-861a-f7b45f7daa50",
+        "related_name": "Patient",
+        "related_object_name": "Conditions",
+        "related_object_object_name": "conditions",
+        "related_entity_name": "Condition",
+        "relation_type": "primary_for",
+        "cardinality": "one_to_many",
+        "fetch_url": "standard",
+        "rollup_timeline": false,
+        "rollup_leadsources": true,
+        "inverse_relation_rollup_timeline": false,
+        "inverse_relation_rollup_leadsources": true,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "53cde68d-4265-42ba-a4c3-15929780daee",
+      "api_name": "address_line_1",
+      "display_name": "Address Line 1",
+      "field_type": "text",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "2ff45d95-4db3-4c29-b2da-1cb74d79174d",
+      "api_name": "address_line_2",
+      "display_name": "Address Line 2",
+      "field_type": "text",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "bb53ebc7-2309-4686-ab2f-afe729ed2ca9",
+      "api_name": "city",
+      "display_name": "City",
+      "field_type": "text",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "a098a482-bd5e-4c0f-863f-9e8798ea175a",
+      "api_name": "state",
+      "display_name": "State",
+      "field_type": "text",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "a3be0e03-0672-4d5c-9ea3-77cbb9f27ea5",
+      "api_name": "zip_code",
+      "display_name": "ZIP Code",
+      "field_type": "text",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "f0632a83-af53-43a4-beb7-6f8c9f2a9856",
+      "api_name": "country",
+      "display_name": "Country",
+      "field_type": "text",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "32745068-dbe0-4101-a68e-cb79f5c26ed1",
+      "api_name": "emergency_contact_name",
+      "display_name": "Emergency Contact Name",
+      "field_type": "text",
+      "category_id": "47963a96-bc08-44b7-8c2c-0f7d65738c7c",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "c347ee7e-00e8-4b56-8e7b-091ba8452c27",
+      "api_name": "emergency_contact_relationship",
+      "display_name": "Emergency Contact Relationship",
+      "field_type": "dropdown",
+      "category_id": "47963a96-bc08-44b7-8c2c-0f7d65738c7c",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "b0713437-e759-42c4-861f-512b726d9238",
+          "name": "Spouse",
+          "code": ""
+        },
+        {
+          "id": "1808aa71-a671-4df9-aa55-a9073ceae39a",
+          "name": "Parent",
+          "code": ""
+        },
+        {
+          "id": "249d1ccb-7f93-43b4-839e-e37074d908d8",
+          "name": "Child",
+          "code": ""
+        },
+        {
+          "id": "9d66bf08-4a73-46ff-9b6f-10740769d17a",
+          "name": "Sibling",
+          "code": ""
+        },
+        {
+          "id": "67a3a524-35bd-44bc-9250-75a9242c163f",
+          "name": "Friend",
+          "code": ""
+        },
+        {
+          "id": "c3172d0c-f78e-42bc-9894-455e52652cfc",
+          "name": "Guardian",
+          "code": ""
+        },
+        {
+          "id": "29d2c113-9acb-4ba1-b08b-7aad4ce9d759",
+          "name": "Other",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "37960f42-2937-4c4f-846d-2c02f89a3375",
+      "api_name": "emergency_contact_phone",
+      "display_name": "Emergency Contact Phone",
+      "field_type": "phonenumber",
+      "category_id": "47963a96-bc08-44b7-8c2c-0f7d65738c7c",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "a2c121d6-35fe-462b-80f8-d3bf5850df16",
+      "api_name": "emergency_contact_email",
+      "display_name": "Emergency Contact Email",
+      "field_type": "email",
+      "category_id": "47963a96-bc08-44b7-8c2c-0f7d65738c7c",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "a3b01c42-be01-424f-a301-8a0103cade09",
+      "api_name": "primary_language",
+      "display_name": "Primary Language",
+      "field_type": "dropdown",
+      "category_id": "9b24afa0-6537-4cd6-b4a1-843767a9a6dc",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "806f59ea-1fbd-43f1-b334-be08e4a15b66",
+          "name": "English",
+          "code": ""
+        },
+        {
+          "id": "a269acf3-ddac-4b35-93d1-0eeb54282fbe",
+          "name": "Spanish",
+          "code": ""
+        },
+        {
+          "id": "bb0bb4e1-faaf-43ea-8dfa-96e9932a2bfe",
+          "name": "French",
+          "code": ""
+        },
+        {
+          "id": "c8dd6d3c-d5d8-4918-ba64-4486aed8a758",
+          "name": "Mandarin",
+          "code": ""
+        },
+        {
+          "id": "cfe2c1e2-3813-474e-a34e-f5f7507b9d53",
+          "name": "Cantonese",
+          "code": ""
+        },
+        {
+          "id": "05cffa85-bbf1-46ba-9c14-bf49beea0c77",
+          "name": "Vietnamese",
+          "code": ""
+        },
+        {
+          "id": "a1246009-fabc-4a97-9cef-461ba844c0b5",
+          "name": "Korean",
+          "code": ""
+        },
+        {
+          "id": "0d843193-0b43-416a-82cb-02cb45332be0",
+          "name": "Arabic",
+          "code": ""
+        },
+        {
+          "id": "fd754ad6-2069-43e3-9744-c201a03f30b9",
+          "name": "Tagalog",
+          "code": ""
+        },
+        {
+          "id": "d11340f8-288d-4650-b972-073e8360df63",
+          "name": "Other",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "4f2df0be-7377-4bf7-b7c8-ff50d00c9758",
+      "api_name": "interpreter_required",
+      "display_name": "Interpreter Required",
+      "field_type": "checkbox",
+      "category_id": "9b24afa0-6537-4cd6-b4a1-843767a9a6dc",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "b517f26a-a23a-4fce-9811-f9745fe91584",
+      "api_name": "marital_status",
+      "display_name": "Marital Status",
+      "field_type": "dropdown",
+      "category_id": "9b24afa0-6537-4cd6-b4a1-843767a9a6dc",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "6f44c14b-a6a5-4a13-993a-9f3890c63b19",
+          "name": "Single",
+          "code": ""
+        },
+        {
+          "id": "994ca7e7-461b-44c5-866f-f86e71694a16",
+          "name": "Married",
+          "code": ""
+        },
+        {
+          "id": "ac23f423-2eed-4a8f-ba6c-532c6d2dc9dd",
+          "name": "Divorced",
+          "code": ""
+        },
+        {
+          "id": "85d187d9-7a37-4256-9bb4-f50e944c6bba",
+          "name": "Widowed",
+          "code": ""
+        },
+        {
+          "id": "39975021-bc6a-4590-9e84-0ad2752b1e73",
+          "name": "Separated",
+          "code": ""
+        },
+        {
+          "id": "cfc4b6f3-e679-40d4-86a4-18f8756fa798",
+          "name": "Domestic Partner",
+          "code": ""
+        },
+        {
+          "id": "40036213-8c7a-4f45-ae0e-99f2eee43ff9",
+          "name": "Unknown",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "8e91e7f3-7453-4292-a2f6-2db1ea966703",
+      "api_name": "primary_care_provider",
+      "display_name": "Primary Care Provider",
+      "field_type": "text",
+      "category_id": "9b24afa0-6537-4cd6-b4a1-843767a9a6dc",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "5b6624dc-1d6c-454b-a6a8-6147b382bab3",
+      "api_name": "active_patient",
+      "display_name": "Active Patient",
+      "field_type": "checkbox",
+      "category_id": "9b24afa0-6537-4cd6-b4a1-843767a9a6dc",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "0a6cfef2-4820-4276-93af-c4c6bfaa9699",
+      "api_name": "pain_level",
+      "display_name": "Pain Level",
+      "field_type": "rating",
+      "category_id": "9b24afa0-6537-4cd6-b4a1-843767a9a6dc",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "relation_target": null,
+      "relation_cardinality": null,
+      "options": [
+        {
+          "id": "7578b50f-c832-38c5-a3ff-39ddbf6e20a1",
+          "name": "1 - Low",
+          "code": "1"
+        },
+        {
+          "id": "9bbcb66c-143c-3991-8e3a-14c8cf3e5b8e",
+          "name": "2",
+          "code": "2"
+        },
+        {
+          "id": "51d7ff02-5c70-31e0-b493-30808c0c9181",
+          "name": "3",
+          "code": "3"
+        },
+        {
+          "id": "2c0e4efc-f967-331d-8497-e5517f839ac6",
+          "name": "4",
+          "code": "4"
+        },
+        {
+          "id": "262e46b8-a344-348f-91db-be79a8e05199",
+          "name": "5 - High",
+          "code": "5"
+        }
+      ]
+    },
+    {
+      "id": "b4f4a397-ad3f-48fd-9a57-5024fbe68349",
+      "api_name": "preferred_contact_method",
+      "display_name": "Preferred Contact Method",
+      "field_type": "radio",
+      "category_id": "ab051589-086f-4b67-9533-04fbda128390",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "relation_target": null,
+      "relation_cardinality": null,
+      "options": [
+        {
+          "id": "b0ae0b23-8223-47b9-9e0e-529cc05189cc",
+          "name": "Phone",
+          "code": "Phone"
+        },
+        {
+          "id": "a0c8f6e3-243c-4527-b9a3-43626e255475",
+          "name": "Email",
+          "code": "Email"
+        },
+        {
+          "id": "a13fafe4-a23b-42b7-9bac-edf045397e90",
+          "name": "Text",
+          "code": "Text"
+        }
+      ]
+    }
+  ]
+}

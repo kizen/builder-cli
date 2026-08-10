@@ -1,0 +1,12 @@
+{
+  "results": [
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "name": "Sales Rep",
+      "user_count": 5,
+      "permission_groups": ["00000000-0000-4000-8000-000000000201"],
+      "default_for_new_users": false
+    }
+  ],
+  "next": null
+}

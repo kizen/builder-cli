@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Runtime deps (pydantic, httpx, typer, python-dotenv, rich, tomli-w) plus
+  # dev/connectors extras all live in pyproject.toml. Nothing currently
+  # watches any of them for CVEs.
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # The workflows pin action versions exactly (see the comment in
+  # .github/workflows/ci.yml on astral-sh/setup-uv) and are never bumped by
+  # hand. Dependabot is the only thing that would ever move them.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"

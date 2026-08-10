@@ -1,0 +1,1394 @@
+{
+  "_meta": {
+    "base_url": "https://app.go.kizen.com",
+    "captured": "2026-08-06",
+    "contracts_tracked": 64,
+    "how_to_refresh": "KIZEN_DRIFT_PROFILE=<profile> KIZEN_DRIFT_UPDATE_SNAPSHOT=1 uv run pytest -m drift",
+    "info": {
+      "title": "Kizen API",
+      "version": "1.0.0"
+    },
+    "openapi": "3.0.3"
+  },
+  "contracts": {
+    "DELETE /api/automation2/automations/{automation_identifier}": {
+      "label": "delete automation",
+      "operation_id": "automation2_automations_destroy",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_schema": null,
+      "responses": [
+        "204"
+      ],
+      "surface": "automations"
+    },
+    "DELETE /api/custom-objects/{id}": {
+      "label": "delete custom object",
+      "operation_id": "custom_objects_destroy",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_schema": null,
+      "responses": [
+        "204"
+      ],
+      "surface": "objects"
+    },
+    "DELETE /api/custom-objects/{object_pk}/fields/{id}": {
+      "label": "delete field",
+      "operation_id": "custom_objects_fields_destroy",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_schema": null,
+      "responses": [
+        "204"
+      ],
+      "surface": "fields"
+    },
+    "DELETE /api/permission-group/{id}": {
+      "label": "delete permission group",
+      "operation_id": "permission_group_destroy",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_schema": null,
+      "responses": [
+        "204"
+      ],
+      "surface": "permissions"
+    },
+    "DELETE /api/records/{object_identifier}/{entity_id}": {
+      "label": "delete record",
+      "operation_id": "records_destroy",
+      "present": true,
+      "query_params": [],
+      "request_schema": null,
+      "responses": [
+        "204"
+      ],
+      "surface": "records"
+    },
+    "DELETE /api/role/{id}": {
+      "label": "delete role",
+      "operation_id": "role_destroy",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_schema": null,
+      "responses": [
+        "204"
+      ],
+      "surface": "permissions"
+    },
+    "PATCH /api/custom-objects/{id}": {
+      "label": "update custom object",
+      "operation_id": "custom_objects_partial_update",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "action_override_create": "string?",
+          "ai_confidence_threshold": "string<decimal>",
+          "allow_on_forms": "boolean?",
+          "association_source": "CustomObjectAssociationSourceEnum",
+          "association_source_fields": "array[AssociationSourceFieldRequest]?",
+          "default_color": "string",
+          "default_icon": "string",
+          "default_on_activities": "boolean",
+          "description": "string?",
+          "entity_display_name_pattern_html": "string",
+          "entity_display_name_pattern_text": "string",
+          "entity_name": "string",
+          "entity_search_text_pattern": "string",
+          "has_commerce_data": "boolean",
+          "include_percentage_to_close": "boolean",
+          "meta": "any",
+          "name": "string",
+          "object_name": "string",
+          "object_type": "CustomObjectObjectTypeEnum",
+          "pipeline": "CustomObjectPipelineRequest",
+          "quick_filtering_enabled": "boolean?",
+          "reasons_disqualified": "array[EmbededFieldOptionRequest]",
+          "reasons_lost": "array[EmbededFieldOptionRequest]",
+          "related_objects": "array[CustomObjectRelatedObjectsRequest]",
+          "rollup_related_leadsources": "boolean?",
+          "track_entity_value": "boolean",
+          "use_ai_to_update_percentage": "boolean"
+        },
+        "required": [],
+        "type": "object"
+      },
+      "request_required": false,
+      "request_schema": "PatchedCustomObjectRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "objects"
+    },
+    "PATCH /api/custom-objects/{object_pk}/fields/{id}": {
+      "label": "update field",
+      "operation_id": "custom_objects_fields_partial_update",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "allows_empty": "boolean",
+          "allows_nulls": "boolean",
+          "category": "string<uuid>",
+          "decimal_options": "FieldDecimalOptionRequest?",
+          "description": "string",
+          "description_visibility": "DescriptionVisibilityEnum",
+          "display_name": "string",
+          "field_type": "FieldTypeEnum",
+          "is_deletable": "boolean",
+          "is_hidden": "boolean",
+          "is_hideable": "boolean",
+          "is_read_only": "boolean",
+          "is_required": "boolean",
+          "is_suppressed": "boolean",
+          "meta": "any",
+          "money_options": "FieldMoneyOptionRequest",
+          "name": "string",
+          "options": "array[FieldOptionRequest]",
+          "order": "integer",
+          "phonenumber_options": "FieldPhoneNumberOptionRequest",
+          "rating": "FieldRatingRequest",
+          "relation": "CustomObjectFieldRelationRequest"
+        },
+        "required": [],
+        "type": "object"
+      },
+      "request_required": false,
+      "request_schema": "PatchedCustomObjectFieldWriteRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "fields"
+    },
+    "PATCH /api/permission-group/{id}": {
+      "label": "update permission group sections",
+      "operation_id": "permission_group_partial_update",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_schema": null,
+      "responses": [
+        "200"
+      ],
+      "surface": "permissions"
+    },
+    "PATCH /api/permission-group/{permission_group_id}/object-update": {
+      "label": "set one object/field access level",
+      "operation_id": "permission_group_object_update_partial_update",
+      "present": true,
+      "query_params": [],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "custom_object": "_CustomObjectRequest",
+          "field": "_FieldRequest?",
+          "key": "string?",
+          "permission_level": "integer"
+        },
+        "required": [],
+        "type": "object"
+      },
+      "request_required": false,
+      "request_schema": "Patched_ObjectUpdateRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "permissions"
+    },
+    "PATCH /api/records/{object_identifier}/{entity_id}": {
+      "label": "update record",
+      "operation_id": "records_partial_update",
+      "present": true,
+      "query_params": [
+        "return_all_fields"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "archived_conflict": "oneOf(ArchivedConflictEnum,NullEnum)",
+          "fields": "array[FieldRequest]"
+        },
+        "required": [],
+        "type": "object"
+      },
+      "request_required": false,
+      "request_schema": "PatchedEntityRecordUpdateRequest",
+      "responses": [
+        "200",
+        "400"
+      ],
+      "surface": "records"
+    },
+    "PATCH /api/role/{id}": {
+      "label": "update role",
+      "operation_id": "role_partial_update",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "default_for_new_users": "boolean",
+          "name": "string",
+          "permission_groups": "array[string<uuid>]",
+          "permissions": "array[string]"
+        },
+        "required": [],
+        "type": "object"
+      },
+      "request_required": false,
+      "request_schema": "PatchedRoleRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "permissions"
+    },
+    "POST /api/automation2/automations": {
+      "label": "create automation",
+      "operation_id": "automation2_automations_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "active": "boolean",
+          "api_name": "string",
+          "custom_object_id": "string<uuid>?",
+          "debug_next_n_executions": "integer",
+          "error_notification_email": "string<email>?",
+          "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum",
+          "folder_id": "string<uuid>",
+          "id": "string<uuid>?",
+          "last_revision": "integer",
+          "name": "string",
+          "priority_rank": "integer",
+          "skip_non_working_days": "boolean",
+          "steps": "array[WriteStepRequest] (writeOnly)",
+          "trigger_throttle_seconds": "number<double>",
+          "triggers": "array[WriteTriggerRequest] (writeOnly)",
+          "type": "AutomationTypeEnum",
+          "user_description": "string"
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "WriteAutomationRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "automations"
+    },
+    "POST /api/custom-objects": {
+      "label": "create custom object",
+      "operation_id": "custom_objects_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "action_override_create": "string?",
+          "ai_confidence_threshold": "string<decimal>",
+          "allow_on_forms": "boolean?",
+          "association_source": "CustomObjectAssociationSourceEnum",
+          "association_source_fields": "array[AssociationSourceFieldRequest]?",
+          "default_color": "string",
+          "default_icon": "string",
+          "default_on_activities": "boolean",
+          "description": "string?",
+          "entity_display_name_pattern_html": "string",
+          "entity_display_name_pattern_text": "string",
+          "entity_name": "string",
+          "entity_search_text_pattern": "string",
+          "has_commerce_data": "boolean",
+          "include_percentage_to_close": "boolean",
+          "meta": "any",
+          "name": "string",
+          "object_name": "string",
+          "object_type": "CustomObjectObjectTypeEnum",
+          "pipeline": "CustomObjectPipelineRequest",
+          "quick_filtering_enabled": "boolean?",
+          "reasons_disqualified": "array[EmbededFieldOptionRequest]",
+          "reasons_lost": "array[EmbededFieldOptionRequest]",
+          "related_objects": "array[CustomObjectRelatedObjectsRequest]",
+          "rollup_related_leadsources": "boolean?",
+          "track_entity_value": "boolean",
+          "use_ai_to_update_percentage": "boolean"
+        },
+        "required": [
+          "default_on_activities",
+          "entity_name",
+          "object_name",
+          "object_type"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "CustomObjectRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "objects"
+    },
+    "POST /api/custom-objects/{object_pk}/bulk-change-field-value": {
+      "label": "bulk change field value",
+      "operation_id": "custom_objects_bulk_change_field_value_create",
+      "present": true,
+      "query_params": [],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "bytes_end_index": "integer?",
+          "bytes_start_index": "integer?",
+          "entity_records_set_key": "string?",
+          "field_id": "string",
+          "field_resolution": "DestinationVariableResolutionEnum",
+          "field_value": "object?",
+          "record_ids": "array[string<uuid>]?",
+          "send_email_notification": "boolean",
+          "tags_to_add": "object",
+          "tags_to_remove": "array[string<uuid>]"
+        },
+        "required": [
+          "field_id"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "CustomObjectBulkChangeFieldValueRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "records"
+    },
+    "POST /api/custom-objects/{object_pk}/categories": {
+      "label": "create field category",
+      "operation_id": "custom_objects_categories_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "meta": "any",
+          "name": "string",
+          "order": "integer"
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "FieldCategoryRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "objects"
+    },
+    "POST /api/custom-objects/{object_pk}/fields": {
+      "label": "create field",
+      "operation_id": "custom_objects_fields_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "allows_empty": "boolean",
+          "allows_nulls": "boolean",
+          "category": "string<uuid>",
+          "decimal_options": "FieldDecimalOptionRequest?",
+          "description": "string",
+          "description_visibility": "DescriptionVisibilityEnum",
+          "display_name": "string",
+          "field_type": "FieldTypeEnum",
+          "is_deletable": "boolean",
+          "is_hidden": "boolean",
+          "is_hideable": "boolean",
+          "is_read_only": "boolean",
+          "is_required": "boolean",
+          "is_suppressed": "boolean",
+          "meta": "any",
+          "money_options": "FieldMoneyOptionRequest",
+          "name": "string",
+          "options": "array[FieldOptionRequest]",
+          "order": "integer",
+          "phonenumber_options": "FieldPhoneNumberOptionRequest",
+          "rating": "FieldRatingRequest",
+          "relation": "CustomObjectFieldRelationRequest"
+        },
+        "required": [
+          "category",
+          "display_name",
+          "field_type"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "CustomObjectFieldWriteRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "fields"
+    },
+    "POST /api/custom-objects/{object_pk}/fields/{field_pk}/options": {
+      "label": "add field option",
+      "operation_id": "custom_objects_fields_options_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "meta": "any",
+          "name": "string",
+          "order": "integer"
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "CustomObjectFieldOptionWriteRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "fields"
+    },
+    "POST /api/custom-objects/{object_pk}/fields/{field_pk}/options/{id}/replace": {
+      "label": "replace field option",
+      "operation_id": "custom_objects_fields_options_replace_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "code": "string",
+          "id": "string<uuid>",
+          "meta": "any",
+          "name": "string",
+          "order": "integer",
+          "percentage_chance_to_close": "integer?",
+          "status": "oneOf(PipelineStageStatusEnum,NullEnum)"
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "FieldOptionRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "fields"
+    },
+    "POST /api/custom-objects/{object_pk}/filter-groups": {
+      "label": "create filter group",
+      "operation_id": "custom_objects_filter_groups_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "config": "any",
+          "hidden": "boolean",
+          "name": "string",
+          "owner": "string<uuid>?",
+          "sharing_settings": "EntityPermissionRequest"
+        },
+        "required": [
+          "config",
+          "name",
+          "sharing_settings"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "CustomObjectFilterGroupDetailedRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "saved_views"
+    },
+    "POST /api/custom-objects/{object_pk}/quick-filters": {
+      "label": "create quick filter",
+      "operation_id": "custom_objects_quick_filters_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "filter_count": "integer",
+          "filters": "any",
+          "name": "string",
+          "owner": "string<uuid>?",
+          "sharing_settings": "EntityPermissionRequest"
+        },
+        "required": [
+          "name",
+          "sharing_settings"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "QuickFilterTemplateRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "saved_views"
+    },
+    "POST /api/permission-group": {
+      "label": "create permission group",
+      "operation_id": "permission_group_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "name": "string"
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "PermissionGroupRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "permissions"
+    },
+    "POST /api/pipelines/{object_pk}/stages": {
+      "label": "create pipeline stage",
+      "operation_id": "pipelines_stages_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "id": "string<uuid>",
+          "name": "string",
+          "order": "integer",
+          "percentage_chance_to_close": "integer?",
+          "status": "PipelineStageStatusEnum"
+        },
+        "required": [
+          "name",
+          "order",
+          "status"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "PipelineStageRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "objects"
+    },
+    "POST /api/records/{object_identifier}/add": {
+      "label": "create record",
+      "operation_id": "records_add_create",
+      "present": true,
+      "query_params": [],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "fields": "array[FieldRequest]",
+          "unarchive": "oneOf(UnarchiveEnum,NullEnum)"
+        },
+        "required": [
+          "fields"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "EntityRecordAddRequest",
+      "responses": [
+        "200",
+        "400"
+      ],
+      "surface": "records"
+    },
+    "POST /api/records/{object_identifier}/upsert": {
+      "label": "upsert record",
+      "operation_id": "records_upsert_create",
+      "present": true,
+      "query_params": [
+        "return_all_fields"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "lookup_value": "string",
+          "oncreate_unarchive": "oneOf(OncreateUnarchiveEnum,NullEnum)",
+          "onupdate_archived_conflict": "oneOf(OnupdateArchivedConflictEnum,NullEnum)"
+        },
+        "required": [
+          "lookup_value"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "EntityRecordUpsertRequest",
+      "responses": [
+        "200",
+        "201",
+        "400"
+      ],
+      "surface": "records"
+    },
+    "POST /api/role": {
+      "label": "create role",
+      "operation_id": "role_create",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "default_for_new_users": "boolean",
+          "name": "string",
+          "permission_groups": "array[string<uuid>]",
+          "permissions": "array[string]"
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "RoleRequest",
+      "responses": [
+        "201"
+      ],
+      "surface": "permissions"
+    },
+    "PUT /api/automation2/automations/{automation_identifier}": {
+      "label": "replace automation",
+      "operation_id": "automation2_automations_update",
+      "present": true,
+      "query_params": [
+        "ordering"
+      ],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "active": "boolean",
+          "api_name": "string",
+          "custom_object_id": "string<uuid>?",
+          "debug_next_n_executions": "integer",
+          "error_notification_email": "string<email>?",
+          "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum",
+          "folder_id": "string<uuid>",
+          "id": "string<uuid>?",
+          "last_revision": "integer",
+          "name": "string",
+          "priority_rank": "integer",
+          "skip_non_working_days": "boolean",
+          "steps": "array[WriteStepRequest] (writeOnly)",
+          "trigger_throttle_seconds": "number<double>",
+          "triggers": "array[WriteTriggerRequest] (writeOnly)",
+          "type": "AutomationTypeEnum",
+          "user_description": "string"
+        },
+        "required": [
+          "name"
+        ],
+        "type": "object"
+      },
+      "request_required": true,
+      "request_schema": "WriteAutomationRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "automations"
+    },
+    "schema:WriteAutomationRequest": {
+      "label": "automation write body",
+      "present": true,
+      "properties": {
+        "active": "boolean",
+        "api_name": "string",
+        "custom_object_id": "string<uuid>?",
+        "debug_next_n_executions": "integer",
+        "error_notification_email": "string<email>?",
+        "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum",
+        "folder_id": "string<uuid>",
+        "id": "string<uuid>?",
+        "last_revision": "integer",
+        "name": "string",
+        "priority_rank": "integer",
+        "skip_non_working_days": "boolean",
+        "steps": "array[WriteStepRequest] (writeOnly)",
+        "trigger_throttle_seconds": "number<double>",
+        "triggers": "array[WriteTriggerRequest] (writeOnly)",
+        "type": "AutomationTypeEnum",
+        "user_description": "string"
+      },
+      "required": [
+        "name"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest": {
+      "label": "step envelope",
+      "present": true,
+      "properties": {
+        "action_archive_record": "WriteActionArchiveRecordRequest?",
+        "action_assign_team_member": "AssignTeamMemberWriteRequest?",
+        "action_audio_transcription": "WriteActionAudioTranscriptionRequest?",
+        "action_change_field_value": "WriteActionChangeFieldValuesRequest?",
+        "action_change_tags": "WriteActionChangeTagsRequest?",
+        "action_code_step": "ActionCodeStepRequest?",
+        "action_create_related_entity": "WriteActionCreateRelatedEntityRequest?",
+        "action_delete_scheduled_activity": "ActionDeleteScheduledActivityRequest?",
+        "action_file_content_extraction": "WriteActionFileContentExtractionRequest?",
+        "action_go_to_automation_step": "WriteActionGoToAutomationStepRequest?",
+        "action_http_request": "WriteActionHttpRequestRequest?",
+        "action_initialize_variable": "ActionInitializeVariableRequest?",
+        "action_llm_call": "WriteActionLLMCallRequest?",
+        "action_math_operator": "ActionMathOperatorRequest?",
+        "action_modify_automation": "WriteActionModifyAutomationRequest?",
+        "action_modify_related_entities": "WriteActionModifyRelatedEntitiesRequest?",
+        "action_modify_related_entities_automation": "WriteActionModifyRelatedEntitiesAutomationRequest?",
+        "action_notify_member_via_email": "WriteActionNotifyMemberViaEmailRequest?",
+        "action_notify_member_via_text": "ActionNotifyMemberViaTextRequest?",
+        "action_on_failure": "ActionOnFailureEnum",
+        "action_plugin_code_step": "ActionPluginCodeStepRequest?",
+        "action_request_info_via_text": "WriteActionRequestInfoViaTextRequest?",
+        "action_schedule_activity": "ActionScheduleActivityRequest?",
+        "action_search_records": "SearchRecordsRequest?",
+        "action_send_email": "WriteActionSendEmailRequest?",
+        "action_send_related_contact_email": "WriteActionSendRelatedContactEmailRequest?",
+        "action_send_related_contact_text": "WriteActionSendRelatedContactTextRequest?",
+        "action_send_text": "WriteActionSendTextRequest?",
+        "action_start_automation": "WriteActionStartAutomationRequest?",
+        "action_update_pipeline_status": "WriteActionUpdatePipelineStatusRequest?",
+        "action_update_variable": "ActionUpdateVariableRequest?",
+        "continue_with_branch": "oneOf(ContinueWithBranchEnum,NullEnum)",
+        "description": "string",
+        "error_notification_severity_level": "WriteStepErrorNotificationSeverityLevelEnum",
+        "is_branch_group_initiator": "boolean",
+        "order": "integer",
+        "should_skip_execution": "boolean",
+        "step_condition": "WriteStepConditionRequest?",
+        "step_delay": "WriteStepDelayRequest?",
+        "step_goal": "WriteStepGoalRequest?",
+        "step_type": "AutomationStepTypeEnum",
+        "user_description": "string"
+      },
+      "required": [
+        "step_type"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_archive_record": {
+      "label": "step config: archive_record",
+      "present": true,
+      "properties": {
+        "automation_variable_name": "string?",
+        "record_source": "RecordSourceEnum",
+        "relationship_field_ids": "array[string<uuid>]?"
+      },
+      "required": [],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_assign_team_member": {
+      "label": "step config: assign_team_member",
+      "present": true,
+      "properties": {
+        "employee_id": "string<uuid>?",
+        "employee_ids": "array[string<uuid>]?",
+        "field_id": "string<uuid>?",
+        "related_field_id": "string<uuid>?",
+        "role_id": "string<uuid>?",
+        "type": "AssignTeamMemberWriteTypeEnum"
+      },
+      "required": [
+        "type"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_audio_transcription": {
+      "label": "step config: audio_transcription",
+      "present": true,
+      "properties": {
+        "business_plugin_app_id": "string<uuid>?",
+        "data_type": "MediaContentDataTypeEnum",
+        "destinations": "array[ActionDestinationRequest]",
+        "html_prompt": "string?",
+        "input_field": "string<uuid>?",
+        "is_advanced": "boolean",
+        "merge_field_validation": "MergeFieldValidationEnum",
+        "model_name": "string",
+        "prompt": "string"
+      },
+      "required": [
+        "destinations",
+        "model_name",
+        "prompt"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_call_llm": {
+      "label": "step config: call_llm",
+      "present": false,
+      "surface": "automations"
+    },
+    "schema:WriteStepRequest.action_change_field_value": {
+      "label": "step config: change_field_value",
+      "present": true,
+      "properties": {
+        "actions": "array[WriteActionChangeFieldValueRequest]"
+      },
+      "required": [
+        "actions"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_code_step": {
+      "label": "step config: code_step",
+      "present": true,
+      "properties": {
+        "inputs": "array[CodeStepInputRequest]",
+        "outputs": "array[CodeStepOutputRequest]",
+        "runtime": "RuntimeEnum",
+        "script": "string",
+        "secrets": "array[CodeStepSecretRequest]"
+      },
+      "required": [
+        "runtime"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_create_related_entity": {
+      "label": "step config: create_related_entity",
+      "present": true,
+      "properties": {
+        "archived_record_found_action": "ArchivedRecordFoundActionEnum",
+        "automations_to_start": "array[string<uuid>]",
+        "context_entity_field": "string<uuid>?",
+        "context_entity_field_resolution": "oneOf(ContextEntityFieldResolutionEnum,NullEnum)",
+        "existing_record_found_action": "ExistingRecordFoundActionEnum",
+        "new_entity_name": "string",
+        "new_entity_name_html": "string",
+        "new_entity_owner_employees": "array[string<uuid>]",
+        "new_entity_owner_role": "string<uuid>?",
+        "new_entity_owner_sub_type": "oneOf(NewEntityOwnerSubTypeEnum,NullEnum)",
+        "new_entity_owner_type": "NewEntityOwnerTypeEnum",
+        "new_entity_owner_variable": "string?",
+        "new_entity_stage": "string<uuid>?",
+        "target_custom_object": "string<uuid>",
+        "target_variable": "string?",
+        "variable_field_resolution": "oneOf(VariableFieldResolutionEnum,NullEnum)"
+      },
+      "required": [
+        "new_entity_name",
+        "new_entity_name_html",
+        "new_entity_owner_type",
+        "target_custom_object"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_file_content_extraction": {
+      "label": "step config: file_content_extraction",
+      "present": true,
+      "properties": {
+        "business_plugin_app_id": "string<uuid>?",
+        "data_type": "MediaContentDataTypeEnum",
+        "destinations": "array[ActionDestinationRequest]",
+        "html_prompt": "string?",
+        "input_field": "string<uuid>?",
+        "is_advanced": "boolean",
+        "merge_field_validation": "MergeFieldValidationEnum",
+        "model_name": "string",
+        "prompt": "string"
+      },
+      "required": [
+        "destinations",
+        "model_name",
+        "prompt"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_go_to_automation_step": {
+      "label": "step config: go_to_automation_step",
+      "present": true,
+      "properties": {
+        "step_key": "string",
+        "trigger_key": "string"
+      },
+      "required": [],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_initialize_variable": {
+      "label": "step config: initialize_variable",
+      "present": true,
+      "properties": {
+        "array_aggregation_mode": "oneOf(ArrayAggregationModeEnum,NullEnum)",
+        "deduplicate_array": "boolean",
+        "is_required": "boolean",
+        "sources": "array[VariableSourceRequest]",
+        "variable": "AutomationVariableRequest"
+      },
+      "required": [
+        "sources",
+        "variable"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_math_operator": {
+      "label": "step config: math_operator",
+      "present": true,
+      "properties": {
+        "field_id": "string<uuid>? (writeOnly)",
+        "simple_builder_arguments": "array[BuilderArgumentRequest]",
+        "subtype": "SubtypeEnum",
+        "type": "ActionMathOperatorTypeEnum",
+        "variable": "VariableRequest?"
+      },
+      "required": [
+        "subtype",
+        "type"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_modify_related_entities": {
+      "label": "step config: modify_related_entities",
+      "present": true,
+      "properties": {
+        "automation_target_relationship_fields": "array[string<uuid>]",
+        "fields_to_modify": "array[WriteRelatedEntityFieldToModifyRequest]",
+        "id": "string<uuid>",
+        "object_to_modify": "string<uuid>",
+        "record_source": "WriteActionModifyRelatedEntitiesRecordSourceEnum",
+        "record_source_variables": "array[string]"
+      },
+      "required": [
+        "fields_to_modify",
+        "object_to_modify"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_notify_member_via_email": {
+      "label": "step config: notify_member_via_email",
+      "present": true,
+      "properties": {
+        "cc_team_member": "TeamMemberRequest?",
+        "id": "string<uuid>",
+        "team_member": "TeamMemberRequest"
+      },
+      "required": [
+        "id",
+        "team_member"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_notify_member_via_text": {
+      "label": "step config: notify_member_via_text",
+      "present": true,
+      "properties": {
+        "base_message_id": "string<uuid>?",
+        "content": "string",
+        "html_content": "string",
+        "team_member": "TeamMemberRequest"
+      },
+      "required": [
+        "content",
+        "team_member"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_schedule_activity": {
+      "label": "step config: schedule_activity",
+      "present": true,
+      "properties": {
+        "activity_type_id": "string<uuid> (writeOnly)",
+        "assigned_to": "ScheduleActivityAssignmentRequest",
+        "association_configs": "array[ScheduleActivityAssociationConfigRequest] (writeOnly)",
+        "html_note": "string?",
+        "note": "string?",
+        "notifications": "array[ActionScheduleActivityNotificationRequest] (writeOnly)",
+        "schedule": "ActionScheduleActivityScheduleDetailRequest"
+      },
+      "required": [
+        "activity_type_id",
+        "assigned_to",
+        "schedule"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_search_records": {
+      "label": "step config: search_records",
+      "present": true,
+      "properties": {
+        "custom_object": "_CustomObjectRequest",
+        "destination_variable": "_VariableRequest",
+        "destination_variable_resolution": "DestinationVariableResolutionEnum",
+        "filter_config": "any?",
+        "filter_groups": "array[_FilterGroupRequest]?",
+        "filter_type": "SearchRecordsFilterTypeEnum"
+      },
+      "required": [
+        "custom_object",
+        "destination_variable",
+        "filter_type"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_send_related_contact_email": {
+      "label": "step config: send_related_contact_email",
+      "present": true,
+      "properties": {
+        "cc_team_member": "TeamMemberRequest?",
+        "email": "EmailMessageAssociationRequest",
+        "send_from_owner": "boolean",
+        "send_to_contact_field": "string<uuid>?"
+      },
+      "required": [
+        "email"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_send_related_contact_text": {
+      "label": "step config: send_related_contact_text",
+      "present": true,
+      "properties": {
+        "send_from_owner": "boolean",
+        "send_to_contact_field": "string<uuid>?",
+        "text": "TextMessageAssociationRequest"
+      },
+      "required": [
+        "text"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_start_automation": {
+      "label": "step config: start_automation",
+      "present": true,
+      "properties": {
+        "automation_ids": "array[string<uuid>]",
+        "automation_variable_name": "string?",
+        "automation_variable_overrides": "array[AutomationVariableOverridesRequest]",
+        "record_source": "RecordSourceEnum",
+        "relationship_field_ids": "array[string<uuid>]?",
+        "resume_paused_automations": "boolean?"
+      },
+      "required": [],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.action_stop_execution": {
+      "label": "step config: stop_execution",
+      "present": false,
+      "surface": "automations"
+    },
+    "schema:WriteStepRequest.action_update_variable": {
+      "label": "step config: update_variable",
+      "present": true,
+      "properties": {
+        "array_aggregation_mode": "oneOf(ArrayAggregationModeEnum,NullEnum)",
+        "deduplicate_array": "boolean",
+        "is_required": "boolean",
+        "sources": "array[VariableSourceRequest]",
+        "variable": "string"
+      },
+      "required": [
+        "sources",
+        "variable"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.step_condition": {
+      "label": "step config: condition",
+      "present": true,
+      "properties": {
+        "filter_config": "object",
+        "group_ids": "array[string<uuid>]?",
+        "llm_decision": "WriteLLMDecisionRequest?",
+        "no_step_ids": "array[string<uuid>]?",
+        "type": "RecordFilterTypeEnum",
+        "yes_step_ids": "array[string<uuid>]?"
+      },
+      "required": [
+        "type"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.step_delay": {
+      "label": "step config: delay",
+      "present": true,
+      "properties": {
+        "days": "integer",
+        "days_specific_time": "DaysSpecificTimeRequest",
+        "duration_unit": "oneOf(DurationUnitEnum,NullEnum)",
+        "hours": "integer",
+        "minutes": "integer",
+        "months": "integer",
+        "skip_non_working_days": "boolean?",
+        "time": "string<time>?",
+        "value_origin": "ValueOriginEnum",
+        "variable": "string?",
+        "weeks": "integer",
+        "years": "integer"
+      },
+      "required": [],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteStepRequest.step_goal": {
+      "label": "step config: goal",
+      "present": true,
+      "properties": {
+        "delay_amount": "integer?",
+        "delay_type": "oneOf(DurationUnitEnum,BlankEnum)",
+        "specific_datetime": "string<date-time>?",
+        "triggers": "array[any] (writeOnly)",
+        "value_origin": "oneOf(ValueOriginEnum,NullEnum)",
+        "variable": "string?",
+        "wait_type": "WaitTypeEnum"
+      },
+      "required": [
+        "triggers",
+        "wait_type"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest": {
+      "label": "trigger envelope",
+      "present": true,
+      "properties": {
+        "description": "string",
+        "key": "string (writeOnly)",
+        "order": "integer",
+        "should_skip_execution": "boolean",
+        "skip_non_working_days": "boolean?",
+        "trigger_activity_logged": "WriteTriggerActivityLoggedRequest?",
+        "trigger_contact_tag_added_removed": "WriteTriggerContactTagAddedRemovedRequest?",
+        "trigger_email_delivered": "WriteTriggerEmailDeliveredRequest?",
+        "trigger_email_interaction": "WriteTriggerEmailInteractionRequest?",
+        "trigger_email_link_clicked": "WriteTriggerEmailLinkClickedRequest?",
+        "trigger_email_received_from_contact": "WriteTriggerEmailReceivedRequest?",
+        "trigger_field_updated": "WriteTriggerFieldUpdatedRequest?",
+        "trigger_form_submitted": "WriteTriggerFormSubmittedRequest?",
+        "trigger_interaction_occurred": "WriteTriggerInteractionOccurredRequest?",
+        "trigger_new_entity_created": "WriteTriggerEntityCreatedRequest?",
+        "trigger_on_or_around_date": "WriteTriggerOnOrAroundDateRequest?",
+        "trigger_schedule": "TriggerScheduleRequest?",
+        "trigger_scheduled_activity_overdue": "WriteTriggerScheduledActivityOverdueRequest?",
+        "trigger_stage_updated": "WriteTriggerStageUpdatedRequest?",
+        "trigger_survey_submitted": "WriteTriggerSurveySubmittedRequest?",
+        "trigger_type": "string",
+        "trigger_webhook": "TriggerWebhookRequest?",
+        "trigger_website_visited": "WriteTriggerWebsiteVisitedRequest?",
+        "user_description": "string"
+      },
+      "required": [
+        "trigger_type"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_activity_logged": {
+      "label": "trigger config: activity_logged",
+      "present": true,
+      "properties": {
+        "activity_type_id": "string<uuid>"
+      },
+      "required": [
+        "activity_type_id"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_field_updated": {
+      "label": "trigger config: field_updated",
+      "present": true,
+      "properties": {
+        "field_id": "string<uuid>",
+        "fire_on_create": "boolean",
+        "from_match_mode": "FromMatchModeEnum",
+        "from_value": "any?",
+        "to_match_mode": "ToMatchModeEnum",
+        "to_value": "any?"
+      },
+      "required": [
+        "field_id"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_form_submitted": {
+      "label": "trigger config: form_submitted",
+      "present": true,
+      "properties": {
+        "form_id": "string<uuid>"
+      },
+      "required": [
+        "form_id"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_manual": {
+      "label": "trigger config: manual",
+      "present": false,
+      "surface": "automations"
+    },
+    "schema:WriteTriggerRequest.trigger_new_entity_created": {
+      "label": "trigger config: new_entity_created",
+      "present": true,
+      "properties": {
+        "action": "WriteTriggerEntityCreatedActionEnum"
+      },
+      "required": [
+        "action"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_on_or_around_date": {
+      "label": "trigger config: on_or_around_date",
+      "present": true,
+      "properties": {
+        "date_offset": "TriggerOnOrAroundDateOffsetEnum",
+        "date_offset_days": "integer",
+        "every_year": "boolean",
+        "field_id": "string<uuid>",
+        "past_date_action": "oneOf(PastDateActionEnum,NullEnum)",
+        "period": "oneOf(PeriodEnum,BlankEnum,NullEnum)",
+        "skip_non_working_days": "boolean?",
+        "time": "string<time>?"
+      },
+      "required": [
+        "date_offset",
+        "field_id"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_schedule": {
+      "label": "trigger config: schedule",
+      "present": true,
+      "properties": {
+        "is_advanced": "boolean",
+        "rrule": "string"
+      },
+      "required": [
+        "rrule"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_scheduled_activity_overdue": {
+      "label": "trigger config: scheduled_activity_overdue",
+      "present": true,
+      "properties": {
+        "activity": "ReadEmbedActivityRequest",
+        "skip_non_working_days": "boolean?"
+      },
+      "required": [
+        "activity"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_survey_submitted": {
+      "label": "trigger config: survey_submitted",
+      "present": true,
+      "properties": {
+        "survey_id": "string<uuid>"
+      },
+      "required": [
+        "survey_id"
+      ],
+      "surface": "automations",
+      "type": "object"
+    },
+    "schema:WriteTriggerRequest.trigger_webhook": {
+      "label": "trigger config: webhook",
+      "present": true,
+      "properties": {
+        "content_type": "oneOf(ContentTypeEnum,NullEnum)",
+        "extract_raw_body_content": "boolean",
+        "extract_url_query_string": "boolean",
+        "extractors": "array[JSONValueExtractorRequest] (writeOnly)",
+        "http_method": "HttpMethodEnum",
+        "name": "string",
+        "sample_post_body": "string?"
+      },
+      "required": [
+        "name"
+      ],
+      "surface": "automations",
+      "type": "object"
+    }
+  }
+}

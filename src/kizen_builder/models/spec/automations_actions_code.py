@@ -1,0 +1,165 @@
+"""Automation step config models: HTTP, code execution, LLM/AI steps."""
+
+from __future__ import annotations
+
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from kizen_builder.models.spec.automations_shared import (
+    CodeStepInputConfig,
+    CodeStepOutputConfig,
+    LlmDestinationConfig,
+)
+
+
+class ActionHttpRequestConfig(BaseModel):
+    """Config for `step_type: http_request`."""
+
+    model_config = ConfigDict(extra="allow")
+
+    method: Literal["GET", "POST", "PUT", "DELETE", "PATCH"]
+    url: str
+    html_url: str | None = None
+    content_type: str | None = None
+    headers: dict[str, str] = Field(default_factory=dict)
+    body: str | None = None
+    html_body: str | None = None
+    encode_merge_fields_in_body: bool = False
+
+
+class ActionCodeStepConfig(BaseModel):
+    """Config for `step_type: code_step`.
+
+    Note: the wire field for the code is `script`, not `code`.
+    This model uses `script` to match the API.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    script: str = Field(
+        description="Python code to execute. Use `inputs` dict for input values and `outputs` dict to return results."
+    )
+    runtime: Literal["python-3-13", "python-3-12"] = "python-3-13"
+    inputs: list[CodeStepInputConfig] = Field(default_factory=list)
+    outputs: list[CodeStepOutputConfig] = Field(default_factory=list)
+    # Secret NAMES (env-specific bindings; the target env must have a secret
+    # configured under the same name). Accepts either bare strings or
+    # ``{"name": "..."}`` dicts; the planner normalizes to the wire form.
+    secrets: list[Any] = Field(default_factory=list)
+
+
+class ActionPluginCodeStepConfig(BaseModel):
+    """Config for `step_type: plugin_code_step`."""
+
+    model_config = ConfigDict(extra="allow")
+
+    business_plugin_app_id: str = Field(description="UUID of the plugin app.")
+    inputs: list[dict[str, Any]] = Field(default_factory=list)
+    outputs: list[dict[str, Any]] = Field(default_factory=list)
+
+
+class ActionLlmCallConfig(BaseModel):
+    """Config for `step_type: call_llm`."""
+
+    model_config = ConfigDict(extra="allow")
+
+    model_name: str = Field(
+        description=(
+            "A free string, unvalidated client-side. Run `kizen automations "
+            "llm-models` for the live catalog of what this business has "
+            "enabled — each row's model_value is this field's value, paired "
+            "with the business_plugin_app_id it needs (None for kizen/* "
+            "native models). 'gemini/...' and 'openai/...' models need the "
+            "provider prefix; Claude models are bare, e.g. "
+            "'claude-3-7-sonnet-20250219' (no 'claude/' prefix)."
+        )
+    )
+    prompt: str | None = None
+    html_prompt: str | None = None
+    destinations: list[LlmDestinationConfig] = Field(default_factory=list)
+    is_advanced: bool = False
+    data_type: str | None = None
+    business_plugin_app_id: str | None = Field(
+        default=None,
+        description=(
+            "Required for any non-native model_name (anything not "
+            "'kizen/...') — the business's installed instance of that "
+            "provider's plugin app. Get it from `kizen automations "
+            "llm-models`, NOT from GET /api/external-integrations/bootstrap "
+            "(that returns the plugin catalog's app-definition id, which is "
+            "identical across every business and is rejected with "
+            "'Business plugin app not found')."
+        ),
+    )
+    merge_field_validation: (
+        Literal["error_if_required", "default_to_unknown", "blank"] | None
+    ) = Field(
+        default=None,
+        description=(
+            "How to handle a blank merge field in prompt/html_prompt. UI "
+            "labels: 'error_if_required' = \"Error if any merge field is "
+            "blank\" (server default when unset), 'default_to_unknown' = "
+            "\"Default to 'Unknown'\" (fixed literal, not configurable), "
+            "'blank' = \"Leave Blank\". Same enum on file_content_extraction, "
+            "audio_transcription, and a condition step's llm_decision block."
+        ),
+    )
+
+
+class ActionAudioTranscriptionConfig(BaseModel):
+    """Config for `step_type: audio_transcription`. See
+    ActionLlmCallConfig.model_name for confirmed model_name values."""
+
+    model_config = ConfigDict(extra="allow")
+
+    model_name: str
+    prompt: str | None = None
+    html_prompt: str | None = None
+    input_field_ref: str | None = Field(
+        default=None,
+        description="'object.field' for the audio file field. Resolved to UUID at apply time.",
+    )
+    input_field_id: str | None = None
+    destinations: list[LlmDestinationConfig] = Field(default_factory=list)
+    is_advanced: bool = False
+    data_type: str | None = None
+    business_plugin_app_id: str | None = Field(
+        default=None,
+        description="See ActionLlmCallConfig.business_plugin_app_id.",
+    )
+    merge_field_validation: (
+        Literal["error_if_required", "default_to_unknown", "blank"] | None
+    ) = Field(
+        default=None,
+        description="See ActionLlmCallConfig.merge_field_validation.",
+    )
+
+
+class ActionFileContentExtractionConfig(BaseModel):
+    """Config for `step_type: file_content_extraction`. See
+    ActionLlmCallConfig.model_name for confirmed model_name values."""
+
+    model_config = ConfigDict(extra="allow")
+
+    model_name: str
+    prompt: str | None = None
+    html_prompt: str | None = None
+    input_field_ref: str | None = Field(
+        default=None,
+        description="'object.field' for the file field. Resolved to UUID at apply time.",
+    )
+    input_field_id: str | None = None
+    destinations: list[LlmDestinationConfig] = Field(default_factory=list)
+    is_advanced: bool = False
+    data_type: str | None = None
+    business_plugin_app_id: str | None = Field(
+        default=None,
+        description="See ActionLlmCallConfig.business_plugin_app_id.",
+    )
+    merge_field_validation: (
+        Literal["error_if_required", "default_to_unknown", "blank"] | None
+    ) = Field(
+        default=None,
+        description="See ActionLlmCallConfig.merge_field_validation.",
+    )

@@ -1,0 +1,6 @@
+# Review routing. Nothing else in the repo assigns reviewers, so unowned
+# paths would otherwise get no automatic reviewer at all.
+#
+# One catch-all owner for now; split this out by directory if/when more than
+# one person is regularly maintaining the CLI.
+* @jbedient-kizen

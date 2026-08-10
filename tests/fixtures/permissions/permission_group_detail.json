@@ -1,0 +1,31 @@
+{
+  "id": "00000000-0000-4000-8000-000000000201",
+  "name": "Sample Group",
+  "summary": {"nb_none": 0, "nb_view": 3, "nb_edit": 2, "nb_remove": 0},
+  "dashboards_section": {
+    "enabled": true,
+    "view_all_dashboards": true
+  },
+  "automations_section": {
+    "enabled": true,
+    "manage_automations": {"view": true, "edit": false, "remove": false}
+  },
+  "contacts_section": {
+    "records": {"view": true, "edit": true, "remove": false},
+    "default_fields": {
+      "email": {"view": true, "edit": true}
+    },
+    "custom_fields": [
+      {"id": "00000000-0000-4000-8000-000000000401", "view": true, "edit": false}
+    ]
+  },
+  "custom_objects": [
+    {
+      "custom_object_id": "00000000-0000-4000-8000-000000000301",
+      "records": {"view": true, "edit": false, "remove": false},
+      "fields": [
+        {"id": "00000000-0000-4000-8000-000000000402", "view": true, "edit": true}
+      ]
+    }
+  ]
+}

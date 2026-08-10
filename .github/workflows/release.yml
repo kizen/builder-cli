@@ -1,0 +1,101 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # creating the GitHub Release
+
+jobs:
+  release:
+    name: build, verify, publish the GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # the changelog step reads the whole file, not the diff
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+
+      # A tag that disagrees with pyproject.toml would ship a wheel whose
+      # `kizen --version` contradicts the release it came from, and
+      # `kizen upgrade --check` compares exactly those two numbers.
+      - name: The tag must match the version in pyproject.toml
+        run: |
+          set -euo pipefail
+          tagged="${GITHUB_REF_NAME#v}"
+          declared="$(python3 -c 'import tomllib,pathlib; print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+          if [ "$tagged" != "$declared" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match pyproject version $declared"
+            exit 1
+          fi
+
+      - name: Install the locked dev environment
+        run: uv sync --locked --extra dev
+
+      - name: Run the suite
+        run: uv run pytest -q
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Check the distribution metadata
+        run: uvx twine check dist/*
+
+      - name: Packaging tests
+        run: uv run pytest -m wheel -q
+
+      - name: Extract this version's changelog section
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          python3 - > release-notes.md <<'PY'
+          import os, pathlib, re
+
+          version = os.environ["VERSION"].lstrip("v")
+          text = pathlib.Path("CHANGELOG.md").read_text()
+          match = re.search(
+              rf"^## \[{re.escape(version)}\][^\n]*\n(.*?)(?=^## |\Z)",
+              text,
+              re.MULTILINE | re.DOTALL,
+          )
+          print(
+              match.group(1).strip()
+              if match
+              else f"No CHANGELOG.md section for {version}."
+          )
+          PY
+          cat release-notes.md
+
+      - name: Create the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --title "$GITHUB_REF_NAME" \
+            --notes-file release-notes.md
+
+  # ---------------------------------------------------------------------------
+  # Publishing to an index is deliberately not wired up: the distribution
+  # channel is still undecided, and `pyproject.toml` carries the
+  # `Private :: Do Not Upload` classifier so an accidental upload fails
+  # server-side. Turning a channel on is this block plus removing that
+  # classifier — nothing else in the build changes.
+  #
+  # publish:
+  #   needs: release
+  #   runs-on: ubuntu-latest
+  #   environment: release
+  #   permissions:
+  #     id-token: write            # PyPI trusted publishing — no API token
+  #   steps:
+  #     - uses: actions/checkout@v7
+  #     - uses: astral-sh/setup-uv@v9.0.0
+  #     - run: uv build
+  #     - run: uv publish          # resolves OIDC credentials automatically
+  # ---------------------------------------------------------------------------

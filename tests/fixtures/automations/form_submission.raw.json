@@ -1,0 +1,2782 @@
+{
+  "id": "1800a96e-fb22-4ec3-a912-ca1795744b7a",
+  "name": "1. Link or Create Organization",
+  "api_name": "form_submission",
+  "ai_description": "\nTriggered when a new CD Activity record is created or run manually, this 12-step automation processes the submission to find or create an associated Organization record. The workflow begins by initializing five variables, including setting an `org_match` flag to 'No'. It then runs a Python script to search for an existing Organization based on the CD Activity's details. A condition subsequently checks if the `org_match` variable is 'Yes'. If a matching organization was found, the automation starts a separate workflow named '2. Associate to Assessment Area' and then ends. If no match is found, the workflow calls a Large Language Model (LLM) acting as a Community Reinvestment Act specialist to analyze the activity and generate a qualification summary. Following the analysis, it creates a new Organization record, updates its address and nine other fields with information from the CD Activity, and then starts the '2. Associate to Assessment Area' automation.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "e8093798-e46c-4306-852f-d3be48c1dc3f",
+    "name": "cd_activity",
+    "description": null,
+    "entity_name": "CD Activity",
+    "object_name": "CD Activity",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "9321c59e-14f9-422a-8aa7-72191e36f152",
+    "name": "Activity Submission"
+  },
+  "triggers": [
+    {
+      "id": "27c14e63-ebe5-4f6d-a682-e4b9f8e70434",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 17
+      }
+    },
+    {
+      "id": "bf78bc40-2de2-4bd1-9757-48dbe4a04164",
+      "order": 1,
+      "description": "New CD Activity Created",
+      "user_description": "",
+      "trigger_type": "new_entity_created",
+      "trigger_new_entity_created": {
+        "action": "create_only"
+      },
+      "stats": {
+        "number_completed": 2
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "6bb3e780-1bb2-41ce-a24b-6b78b07ad200",
+      "step_type": "initialize_variable",
+      "order": 0,
+      "description": "org_match = \u2018No\u2019",
+      "user_description": "",
+      "stats": {
+        "number_completed": 12,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "boolean",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "False",
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "dcc3354c-a83c-4ef0-836e-0e036fbc0933",
+          "name": "org_match",
+          "data_type": "boolean",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "yes_no",
+          "created": "2026-03-17T21:30:03.691668Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "3b30317d-ec44-47bc-9db9-a2f66afbb8a3",
+      "step_type": "initialize_variable",
+      "order": 1,
+      "description": "llm_org_purpose = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "6bb3e780-1bb2-41ce-a24b-6b78b07ad200",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "d205505b-829e-4497-9729-f9bf6dbc1d6e",
+          "name": "llm_org_purpose",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-18T15:24:21.188272Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "24824a45-3b58-4d7a-b536-766a646f0e56",
+      "step_type": "initialize_variable",
+      "order": 2,
+      "description": "llm_notes = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "3b30317d-ec44-47bc-9db9-a2f66afbb8a3",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "29602d96-854b-4a85-8093-22243313b641",
+          "name": "llm_notes",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-18T15:24:21.195875Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "2a1a4f41-03fe-4050-a006-83086809ede9",
+      "step_type": "initialize_variable",
+      "order": 3,
+      "description": "llm_is_qualified = \u2018No\u2019",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "24824a45-3b58-4d7a-b536-766a646f0e56",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "boolean",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "False",
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "ba39880e-274d-4a4a-a04b-58a247774c94",
+          "name": "llm_is_qualified",
+          "data_type": "boolean",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "yes_no",
+          "created": "2026-03-18T15:24:21.205382Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "31fbfc96-4eee-42a5-8094-87a0a38a318f",
+      "step_type": "initialize_variable",
+      "order": 4,
+      "description": "llm_qual_justification = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "2a1a4f41-03fe-4050-a006-83086809ede9",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "09b9f014-f216-4d05-9f2e-60caf43a1780",
+          "name": "llm_qual_justification",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-18T15:24:21.213450Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "e30964db-3c87-405e-b86a-2cd495f644fc",
+      "step_type": "code_step",
+      "order": 5,
+      "description": "Run Python 3.13 Code on (organization_name, and 4 more) and set (primary_organization_record, and 1 more)",
+      "user_description": "",
+      "stats": {
+        "number_completed": 15,
+        "number_failed": 3,
+        "number_pending": 0
+      },
+      "parent_step_id": "31fbfc96-4eee-42a5-8094-87a0a38a318f",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "9dbf9623-9922-46ce-83e4-cc28abca40b4",
+            "name": "api_key_demo",
+            "deleted": false
+          },
+          {
+            "id": "fac4a709-46e1-4746-9b5e-7fbd458e7f7e",
+            "name": "business_id",
+            "deleted": false
+          },
+          {
+            "id": "c034703c-13aa-4ae1-b117-978e8b2e18dd",
+            "name": "user_id_demo",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "field",
+            "name": "organization_name",
+            "field": {
+              "id": "f9265f76-577f-42e0-a9ab-0b7baa8e1fa6",
+              "name": "organization_name",
+              "display_name": "Organization Name",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "street_address",
+            "field": {
+              "id": "65536e58-8f15-4387-b4cb-c1cd5f297799",
+              "name": "street_address",
+              "display_name": "Street Address",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "city",
+            "field": {
+              "id": "31be82f8-d702-4576-95b6-2ba6f30f055a",
+              "name": "city",
+              "display_name": "City",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "state",
+            "field": {
+              "id": "de7bbb58-41d1-44f6-9016-8275f07f43c6",
+              "name": "state",
+              "display_name": "State",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "postal_code",
+            "field": {
+              "id": "476b122b-139b-4454-8376-7031286158f0",
+              "name": "postal_code",
+              "display_name": "Postal Code",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "field",
+            "name": "primary_organization_record",
+            "field": {
+              "id": "7195e452-5a46-4900-8849-e2be0dba218e",
+              "name": "primary_organization_record",
+              "display_name": "Primary Organization Record",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "entity",
+            "is_list": true
+          },
+          {
+            "output_type": "variable",
+            "name": "org_match",
+            "variable": {
+              "name": "org_match",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "boolean",
+            "is_list": false
+          }
+        ],
+        "script": "import requests\n\nfrom difflib import SequenceMatcher\n\n# \u2500\u2500 Configuration \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n# Replace these with your actual API name identifiers from Kizen object settings\n\nORG_OBJECT_API_NAME = \"organization\"       # Object API Name of your Organization object (confirmed)\n\n# Kizen API base URL \u2014 change region prefix if your business is on a different environment\n\nBASE_URL = \"https://app.go.kizen.com\"\n\n# Scoring weights \u2014 must sum to 1.0\n\nWEIGHT_NAME    = 0.50\n\nWEIGHT_STREET  = 0.20\n\nWEIGHT_CITY    = 0.15\n\nWEIGHT_STATE   = 0.10\n\nWEIGHT_POSTAL  = 0.05\n\n# Minimum score (0.0\u20131.0) required to accept a match\n\nMIN_SCORE = 0.60\n\n# \u2500\u2500 Helpers \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\ndef normalize(val) -> str:\n\n    \"\"\"Lowercase and strip a string; return '' for None/missing.\"\"\"\n\n    if val is None:\n\n        return \"\"\n\n    return str(val).strip().lower()\n\ndef similarity(a: str, b: str) -> float:\n\n    \"\"\"Fuzzy similarity ratio between two strings (0.0 \u2013 1.0).\"\"\"\n\n    if not a and not b:\n\n        return 1.0\n\n    if not a or not b:\n\n        return 0.0\n\n    return SequenceMatcher(None, a, b).ratio()\n\ndef score_candidate(activity_fields: dict, org_fields: dict) -> float:\n\n    \"\"\"\n\n    Compute a weighted fuzzy-match score between the activity fields\n\n    and a candidate org record's fields.\n\n    \"\"\"\n\n    s_name   = similarity(activity_fields[\"name\"],    org_fields.get(\"name\", \"\"))\n\n    s_street = similarity(activity_fields[\"street\"],  org_fields.get(\"street\", \"\"))\n\n    s_city   = similarity(activity_fields[\"city\"],    org_fields.get(\"city\", \"\"))\n\n    s_state  = similarity(activity_fields[\"state\"],   org_fields.get(\"state\", \"\"))\n\n    s_postal = similarity(activity_fields[\"postal\"],  org_fields.get(\"postal\", \"\"))\n\n    return (\n\n        WEIGHT_NAME   * s_name   +\n\n        WEIGHT_STREET * s_street +\n\n        WEIGHT_CITY   * s_city   +\n\n        WEIGHT_STATE  * s_state  +\n\n        WEIGHT_POSTAL * s_postal\n\n    )\n\ndef get_field_value(record: dict, field_name: str) -> str:\n\n    \"\"\"\n\n    Safely extract a field's value from a Kizen record response.\n\n    Fields are keyed by UUID but each has a 'name' property matching\n\n    the field API name. Handles plain strings and dropdown/option objects.\n\n    \"\"\"\n\n    for fdata in record.get(\"fields\", {}).values():\n\n        if not isinstance(fdata, dict) or fdata.get(\"name\") != field_name:\n\n            continue\n\n        val = fdata.get(\"value\")\n\n        if val is None:\n\n            return \"\"\n\n        # Dropdown/option fields return {\"id\": ..., \"name\": ..., \"code\": ...}\n\n        if isinstance(val, dict):\n\n            return normalize(val.get(\"name\") or val.get(\"value\") or \"\")\n\n        return normalize(val)\n\n    return \"\"\n\n# \u2500\u2500 Main logic \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n\n# Unpack auth credentials from the integration secret\n\napi_key     = secrets[\"api_key_demo\"]\n\nbusiness_id = secrets[\"business_id\"]\n\nuser_id     = secrets[\"user_id_demo\"]\n\nauth_headers = {\n\n    \"X-API-KEY\":     api_key,\n\n    \"X-BUSINESS-ID\": business_id,\n\n    \"X-USER-ID\":     user_id,\n\n    \"Content-Type\":  \"application/json\",\n\n    \"Accept\":        \"application/json\",\n\n}\n\n# Collect and normalize the CD Activity input fields\n\nactivity = {\n\n    \"name\":   normalize(inputs.organization_name),\n\n    \"street\": normalize(inputs.street_address),\n\n    \"city\":   normalize(inputs.city),\n\n    \"state\":  normalize(inputs.state),\n\n    \"postal\": normalize(inputs.postal_code),\n\n}\n\noutputs.log(f\"Activity fields: {activity}\")\n\nif not activity[\"name\"]:\n\n    outputs.log(\"No organization_name provided \u2014 skipping match.\")\n\nelse:\n\n    # Search the Organization object using the name as the primary filter.\n\n    # We cast a broad net here and let our scoring logic do the fine selection.\n\n    search_payload = {\n\n        \"field_names\": [\n\n            \"name\",\n\n            \"street_address\",\n\n            \"city\",\n\n            \"state\",\n\n            \"postal_code\",\n\n        ],        \"and\": True,\n\n        \"query\": [\n\n            {\n\n                \"id\": \"group-0\",\n\n                \"and\": True,\n\n                \"filters\": [\n\n                    {\n\n                        \"type\": \"fields\",\n\n                        \"subtype\": \"non_custom\",\n\n                        \"field\": \"name\",\n\n                        \"condition\": \"contains\",\n\n                        # Search on the first meaningful token of the name\n\n                        # to avoid over-constraining; scoring handles the rest.\n\n                        \"value\": activity[\"name\"].split()[0] if activity[\"name\"] else \"\",\n\n                    }\n\n                ],\n\n            }\n\n        ],\n\n    }\n\n    search_url = f\"{BASE_URL}/api/records/{ORG_OBJECT_API_NAME}/search\"\n\n    resp = requests.post(search_url, headers=auth_headers, json=search_payload)\n\n    if not resp.ok:\n\n        raise RuntimeError(\n\n            f\"Search API error {resp.status_code}: {resp.text[:500]}\"\n\n        )\n\n    candidates = resp.json().get(\"results\", [])\n\n    outputs.log(f\"Candidates returned from search: {len(candidates)}\")\n\n    if not candidates:\n\n        outputs.log(\"No candidate organizations found \u2014 skipping link.\")\n\n    else:\n\n        # Score every candidate and pick the best one above the threshold\n\n        best_score = -1.0\n\n        best_id    = None\n\n        best_name  = None\n\n        for rec in candidates:\n\n            org = {\n\n                \"name\":   get_field_value(rec, \"name\"),\n\n                \"street\": get_field_value(rec, \"street_address\"),\n\n                \"city\":   get_field_value(rec, \"city\"),\n\n                \"state\":  get_field_value(rec, \"state\"),\n\n                \"postal\": get_field_value(rec, \"postal_code\"),\n\n            }\n\n            score = score_candidate(activity, org)\n\n            outputs.log(\n\n                f\"  Org '{org['name']}' (id={rec['id']}) \u2192 score={score:.3f}\"\n\n            )\n\n            if score > best_score:\n\n                best_score = score\n\n                best_id    = rec[\"id\"]\n\n                best_name  = org[\"name\"]\n\n        if best_score < MIN_SCORE:\n\n            outputs.log(\n\n                f\"Best match score {best_score:.3f} is below threshold \"\n\n                f\"{MIN_SCORE} \u2014 skipping link.\"\n\n            )\n            outputs.org_match = \"NO\"\n        else:\n\n            outputs.log(\n\n                f\"Matched org '{best_name}' (id={best_id}) \"\n\n                f\"with score {best_score:.3f}\"\n\n            )\n\n            outputs.primary_organization_record = best_id\n            outputs.org_match = \"YES\""
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "e57f4bcf-b7db-4e09-a613-e3556f5328c0",
+      "step_type": "condition",
+      "order": 6,
+      "description": "CD Activity Variable Value 'org_match' Is Yes",
+      "user_description": "",
+      "stats": {
+        "number_completed": 11,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 6,
+        "number_no": 5
+      },
+      "parent_step_id": "e30964db-3c87-405e-b86a-2cd495f644fc",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "e8093798-e46c-4306-852f-d3be48c1dc3f"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "f6a89dd0-7e37-42fb-92f6-eef59ddade10"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "org_match",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'org_match' Is Yes",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "org_match"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "092479d6-f764-4985-8098-033325bf70a2"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "c48eca5b-3c2e-40b5-900f-5935eb905058"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "092479d6-f764-4985-8098-033325bf70a2",
+      "step_type": "start_automation",
+      "order": 7,
+      "description": "Start Automations '2. Associate to Assessment Area'",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "e57f4bcf-b7db-4e09-a613-e3556f5328c0",
+      "parent_condition": "yes",
+      "action_start_automation": {
+        "record_source": "this_record",
+        "relationship_fields": [],
+        "automation_variable": null,
+        "automations": [
+          {
+            "id": "4de6ec47-f39d-468d-af47-f3f9e194708b",
+            "name": "2. Associate to Assessment Area",
+            "deleted": false,
+            "active": true
+          }
+        ],
+        "resume_paused_automations": false,
+        "automation_variable_overrides": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "c48eca5b-3c2e-40b5-900f-5935eb905058",
+      "step_type": "call_llm",
+      "order": 8,
+      "description": "Call LLM  \u2018You are a Community Reinvestment Act (CRA) compliance specialist at a financial institution. Your job is to evaluate organizations and produce a structured qualification summary that a compliance team member can use to populate an organization record \u2014 without needing to conduct their own research.You will be given the following information:Organization Name: {{ custom_objects.organization_name }}Organization Type: {{ custom_objects.organization_type }}Primary Population Served (as submitted): {{ custom_objects.primary_population_served }}Mission / Primary Purpose (as submitted): {{ custom_objects.organization_primary_purpose }}Geographic info: {{ custom_objects.city }}{{ custom_objects.state }}{{ custom_objects.postal_code }}Your OutputReturn your response using exactly the following structure and labels:PRIMARY PURPOSE Using the submitted mission and all other available information about the organization, write 2\u20133 sentences describing what this organization does and who it serves. Refine or expand on the submitted text where the organization name, type, or geography suggest additional context. This should be a clean, accurate summary suitable for storing on the organization record.QUALIFICATION RATIONALE Write 2\u20134 sentences explaining why this organization does or does not qualify under the CRA. Reference the organization's mission, population served, and geography. Where applicable, cite relevant CRA-qualifying categories (e.g., affordable housing, financial literacy, community services for LMI individuals, economic development, small business support). If the organization operates outside the United States or in a geography with no plausible domestic CRA assessment area overlap, state that clearly and explain why this limits or eliminates CRA credit potential.IS QUALIFIED Answer Yes or No only.NOTES Flag any gray areas, ambiguities, or caveats a compliance reviewer should be aware of \u2014 for example, if the organization serves a mixed population (some LMI, some not), if the geography is partially outside a typical assessment area, if the org type is unclear, or if the mission is broad enough that CRA relevance depends on the specific activity. If there are no caveats, write \"None.\"\u2019",
+      "user_description": "",
+      "stats": {
+        "number_completed": 5,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "e57f4bcf-b7db-4e09-a613-e3556f5328c0",
+      "parent_condition": "no",
+      "action_call_llm": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "business_plugin_app": {
+          "id": "92dfef31-8b9b-49dc-b54b-3e47cd6b4523",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are a Community Reinvestment Act (CRA) compliance specialist at a financial institution. Your job is to evaluate organizations and produce a structured qualification summary that a compliance team member can use to populate an organization record \u2014 without needing to conduct their own research.You will be given the following information:Organization Name: {{ custom_objects.organization_name }}Organization Type: {{ custom_objects.organization_type }}Primary Population Served (as submitted): {{ custom_objects.primary_population_served }}Mission / Primary Purpose (as submitted): {{ custom_objects.organization_primary_purpose }}Geographic info: {{ custom_objects.city }}{{ custom_objects.state }}{{ custom_objects.postal_code }}Your OutputReturn your response using exactly the following structure and labels:PRIMARY PURPOSE Using the submitted mission and all other available information about the organization, write 2\u20133 sentences describing what this organization does and who it serves. Refine or expand on the submitted text where the organization name, type, or geography suggest additional context. This should be a clean, accurate summary suitable for storing on the organization record.QUALIFICATION RATIONALE Write 2\u20134 sentences explaining why this organization does or does not qualify under the CRA. Reference the organization's mission, population served, and geography. Where applicable, cite relevant CRA-qualifying categories (e.g., affordable housing, financial literacy, community services for LMI individuals, economic development, small business support). If the organization operates outside the United States or in a geography with no plausible domestic CRA assessment area overlap, state that clearly and explain why this limits or eliminates CRA credit potential.IS QUALIFIED Answer Yes or No only.NOTES Flag any gray areas, ambiguities, or caveats a compliance reviewer should be aware of \u2014 for example, if the organization serves a mixed population (some LMI, some not), if the geography is partially outside a typical assessment area, if the org type is unclear, or if the mission is broad enough that CRA relevance depends on the specific activity. If there are no caveats, write \"None.\"",
+        "html_prompt": "<p>You are a Community Reinvestment Act (CRA) compliance specialist at a financial institution. Your job is to evaluate organizations and produce a structured qualification summary that a compliance team member can use to populate an organization record \u2014 without needing to conduct their own research.</p><p>You will be given the following information:</p><p>Organization Name: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Organization Name\" data-merge-field-relationship=\"custom_objects.organization_name\">{{ custom_objects.organization_name }}</span></p><p>Organization Type: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Organization Type\" data-merge-field-relationship=\"custom_objects.organization_type\">{{ custom_objects.organization_type }}</span></p><p>Primary Population Served (as submitted): <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Primary Population Served\" data-merge-field-relationship=\"custom_objects.primary_population_served\">{{ custom_objects.primary_population_served }}</span></p><p>Mission / Primary Purpose (as submitted): <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Organization Primary Purpose\" data-merge-field-relationship=\"custom_objects.organization_primary_purpose\">{{ custom_objects.organization_primary_purpose }}</span></p><p>Geographic info: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"City\" data-merge-field-relationship=\"custom_objects.city\">{{ custom_objects.city }}</span><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"State\" data-merge-field-relationship=\"custom_objects.state\">{{ custom_objects.state }}</span><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Postal Code\" data-merge-field-relationship=\"custom_objects.postal_code\">{{ custom_objects.postal_code }}</span></p><p>Your Output</p><p>Return your response using exactly the following structure and labels:</p><p>PRIMARY PURPOSE Using the submitted mission and all other available information about the organization, write 2\u20133 sentences describing what this organization does and who it serves. Refine or expand on the submitted text where the organization name, type, or geography suggest additional context. This should be a clean, accurate summary suitable for storing on the organization record.</p><p>QUALIFICATION RATIONALE Write 2\u20134 sentences explaining why this organization does or does not qualify under the CRA. Reference the organization's mission, population served, and geography. Where applicable, cite relevant CRA-qualifying categories (e.g., affordable housing, financial literacy, community services for LMI individuals, economic development, small business support). If the organization operates outside the United States or in a geography with no plausible domestic CRA assessment area overlap, state that clearly and explain why this limits or eliminates CRA credit potential.</p><p>IS QUALIFIED Answer Yes or No only.</p><p>NOTES Flag any gray areas, ambiguities, or caveats a compliance reviewer should be aware of \u2014 for example, if the organization serves a mixed population (some LMI, some not), if the geography is partially outside a typical assessment area, if the org type is unclear, or if the mission is broad enough that CRA relevance depends on the specific activity. If there are no caveats, write \"None.\"</p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "d205505b-829e-4497-9729-f9bf6dbc1d6e",
+              "name": "llm_org_purpose",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          },
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "29602d96-854b-4a85-8093-22243313b641",
+              "name": "llm_notes",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          },
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "ba39880e-274d-4a4a-a04b-58a247774c94",
+              "name": "llm_is_qualified",
+              "data_type": "boolean",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          },
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "09b9f014-f216-4d05-9f2e-60caf43a1780",
+              "name": "llm_qual_justification",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": true
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "2c74e316-999c-4eab-9d0d-2a045fa7d06c",
+      "step_type": "create_related_entity",
+      "order": 9,
+      "description": "Create New Entity in \u2018Organization\u2019",
+      "user_description": "",
+      "stats": {
+        "number_completed": 3,
+        "number_failed": 2,
+        "number_pending": 0
+      },
+      "parent_step_id": "c48eca5b-3c2e-40b5-900f-5935eb905058",
+      "parent_condition": "",
+      "action_create_related_entity": {
+        "new_entity_name": "{{ entity_record.organization_name }}",
+        "new_entity_name_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Organization Name\" data-merge-field-relationship=\"entity_record.organization_name\">{{ entity_record.organization_name }}</span></p>",
+        "new_entity_owner_type": "newly_assigned_owner",
+        "new_entity_owner_sub_type": "specific_team_member",
+        "new_entity_stage": null,
+        "new_entity_owner_role": null,
+        "new_entity_owner_variable": null,
+        "context_entity_field": {
+          "id": "7195e452-5a46-4900-8849-e2be0dba218e",
+          "name": "primary_organization_record",
+          "display_name": "Primary Organization Record",
+          "field_type": "relationship",
+          "deleted": false,
+          "relation": {
+            "related_object_name": "Organization",
+            "related_object_object_name": "organization",
+            "related_entity_name": "Organization",
+            "cardinality": "many_to_one",
+            "relation_type": "primary"
+          }
+        },
+        "target_custom_object": {
+          "id": "ace6410e-4bb5-449b-9edc-17b6da5e598b",
+          "name": "organization",
+          "entity_name": "Organization",
+          "object_name": "Organization",
+          "object_type": "standard",
+          "deleted": false
+        },
+        "target_variable": null,
+        "variable_field_resolution": "overwrite",
+        "context_entity_field_resolution": "overwrite",
+        "new_entity_owner_employees": [
+          {
+            "id": "916dac1b-5640-4268-9324-06132f342488",
+            "name": "Alex Example",
+            "full_name": "Alex Example",
+            "display_name": "Alex Example (alex@example.com)",
+            "email": "alex@example.com",
+            "deleted": false
+          }
+        ],
+        "automations_to_start": [],
+        "existing_record_found_action": "error_do_not_create",
+        "archived_record_found_action": "unarchive"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "c3979d37-e38b-4c96-843c-34f880a1808e",
+      "step_type": "modify_related_entities",
+      "order": 10,
+      "description": "Change Related Entity \u2018Organization: Organization\u2019 \u2018Street Address\u2019 Field on \u2018Primary Organization Record\u2019 to Value of \u2018CD Activity: Street Address\u2019 Field, and 9 Additional Field Updates",
+      "user_description": "",
+      "stats": {
+        "number_completed": 5,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "2c74e316-999c-4eab-9d0d-2a045fa7d06c",
+      "parent_condition": "",
+      "action_modify_related_entities": {
+        "id": "74a426e8-240f-4ab5-ab12-432916a69b30",
+        "object_to_modify": {
+          "id": "ace6410e-4bb5-449b-9edc-17b6da5e598b",
+          "name": "organization",
+          "description": null,
+          "entity_name": "Organization",
+          "object_name": "Organization",
+          "object_class": "custom_objects",
+          "object_type": "standard",
+          "default_on_activities": false,
+          "deleted": false
+        },
+        "automation_target_relationship_fields": [
+          {
+            "id": "7195e452-5a46-4900-8849-e2be0dba218e",
+            "name": "primary_organization_record",
+            "display_name": "Primary Organization Record",
+            "deleted": false,
+            "field_type": "relationship",
+            "options": [],
+            "relation": {
+              "id": "2119bc10-d365-481b-b6b5-1401f86bdca2",
+              "related_field": "ece18db9-581f-4a04-9cea-2722dc2273db",
+              "related_object": "ace6410e-4bb5-449b-9edc-17b6da5e598b",
+              "related_object_name": "Organization",
+              "related_object_object_name": "organization",
+              "related_entity_name": "Organization",
+              "related_category": "fcb2e06f-4517-48b8-9d2b-d4a043274615",
+              "related_name": "Related CD Activity Records",
+              "relation_type": "primary",
+              "cardinality": "many_to_one",
+              "fetch_url": "standard"
+            },
+            "rating": null
+          }
+        ],
+        "fields_to_modify": [
+          {
+            "field_to_modify": {
+              "id": "da016f1b-0f50-4237-98f3-66c68d861641",
+              "name": "street_address",
+              "display_name": "Street Address",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "65536e58-8f15-4387-b4cb-c1cd5f297799",
+              "name": "street_address",
+              "display_name": "Street Address",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-03-18T15:46:05.961455-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "6eea1b09-1e00-4c0b-864d-4081c134eb01"
+          },
+          {
+            "field_to_modify": {
+              "id": "15e853e7-e5ad-4097-ac65-f03430cc91ad",
+              "name": "city",
+              "display_name": "City",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "31be82f8-d702-4576-95b6-2ba6f30f055a",
+              "name": "city",
+              "display_name": "City",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-03-18T15:46:05.985395-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "bc3b5c91-109b-4d3b-becd-306edf0a32ba"
+          },
+          {
+            "field_to_modify": {
+              "id": "8ddcaad3-ea6e-4815-8172-64813086692a",
+              "name": "postal_code",
+              "display_name": "Postal Code",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "476b122b-139b-4454-8376-7031286158f0",
+              "name": "postal_code",
+              "display_name": "Postal Code",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-03-18T15:46:06.008312-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "cf5399ef-0c96-43a2-aea5-b2e6381e4ea0"
+          },
+          {
+            "field_to_modify": {
+              "id": "f3ea6c6a-c200-4dcb-a732-5d3b93efc3d1",
+              "name": "state",
+              "display_name": "State",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "f9804a75-9f50-4ae4-9b65-c03f99ff425a",
+                  "code": "",
+                  "name": "AL",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "6429ff90-d653-4c38-92ca-9a2c1d610548",
+                  "code": "",
+                  "name": "AK",
+                  "order": 2,
+                  "meta": {}
+                },
+                {
+                  "id": "25ac9e75-071b-4191-bbde-76097aeb89d9",
+                  "code": "",
+                  "name": "AZ",
+                  "order": 3,
+                  "meta": {}
+                },
+                {
+                  "id": "d96d8455-575d-4492-a19e-effcb8733ac8",
+                  "code": "",
+                  "name": "AR",
+                  "order": 4,
+                  "meta": {}
+                },
+                {
+                  "id": "243806b2-6a69-4694-9599-eb85d5868afe",
+                  "code": "",
+                  "name": "CA",
+                  "order": 5,
+                  "meta": {}
+                },
+                {
+                  "id": "d5c320c0-f7bb-470b-ba4f-a3d7768f1d30",
+                  "code": "",
+                  "name": "CO",
+                  "order": 6,
+                  "meta": {}
+                },
+                {
+                  "id": "3df83ca5-36d1-442d-8903-0316d609f36e",
+                  "code": "",
+                  "name": "CT",
+                  "order": 7,
+                  "meta": {}
+                },
+                {
+                  "id": "e7a509b6-ad7c-43c5-a22a-3d82e2d0d045",
+                  "code": "",
+                  "name": "DE",
+                  "order": 8,
+                  "meta": {}
+                },
+                {
+                  "id": "3ffcf232-61ce-4b88-8985-c853bd9e7c67",
+                  "code": "",
+                  "name": "FL",
+                  "order": 9,
+                  "meta": {}
+                },
+                {
+                  "id": "8a7bf899-767f-40c8-bb48-d1b422848e93",
+                  "code": "",
+                  "name": "GA",
+                  "order": 10,
+                  "meta": {}
+                },
+                {
+                  "id": "045e0888-87f2-4c05-a577-c01a314d0953",
+                  "code": "",
+                  "name": "HI",
+                  "order": 11,
+                  "meta": {}
+                },
+                {
+                  "id": "dfdbdfb5-55df-4ef4-8bee-d87a553dd404",
+                  "code": "",
+                  "name": "ID",
+                  "order": 12,
+                  "meta": {}
+                },
+                {
+                  "id": "85b51779-dbf3-4c59-9461-c8fdf5691347",
+                  "code": "",
+                  "name": "IL",
+                  "order": 13,
+                  "meta": {}
+                },
+                {
+                  "id": "b2ae36ba-4ea8-4108-b036-7b2e09044df4",
+                  "code": "",
+                  "name": "IN",
+                  "order": 14,
+                  "meta": {}
+                },
+                {
+                  "id": "092e1fd0-eeb6-4e14-9206-6f66cdd273c3",
+                  "code": "",
+                  "name": "IA",
+                  "order": 15,
+                  "meta": {}
+                },
+                {
+                  "id": "f7b690cf-14c7-4b8c-addd-7171cd6517a8",
+                  "code": "",
+                  "name": "KS",
+                  "order": 16,
+                  "meta": {}
+                },
+                {
+                  "id": "e3b27ebf-6c51-41cc-acd8-9463c1370074",
+                  "code": "",
+                  "name": "KY",
+                  "order": 17,
+                  "meta": {}
+                },
+                {
+                  "id": "846a60a1-73ed-412a-a1c2-5c83f1d620a2",
+                  "code": "",
+                  "name": "LA",
+                  "order": 18,
+                  "meta": {}
+                },
+                {
+                  "id": "ce9b4fdc-b44b-4072-b157-d1c1bc7895aa",
+                  "code": "",
+                  "name": "ME",
+                  "order": 19,
+                  "meta": {}
+                },
+                {
+                  "id": "60d1cb10-cd72-40bc-8a6d-529f01b9144e",
+                  "code": "",
+                  "name": "MD",
+                  "order": 20,
+                  "meta": {}
+                },
+                {
+                  "id": "54129885-29f9-43a9-9d39-8492eb2b6cfb",
+                  "code": "",
+                  "name": "MA",
+                  "order": 21,
+                  "meta": {}
+                },
+                {
+                  "id": "18502331-6b84-4cfa-9af6-16c34bf4ed1d",
+                  "code": "",
+                  "name": "MI",
+                  "order": 22,
+                  "meta": {}
+                },
+                {
+                  "id": "010875eb-5903-4c57-a9b3-560bd4b1b998",
+                  "code": "",
+                  "name": "MN",
+                  "order": 23,
+                  "meta": {}
+                },
+                {
+                  "id": "6bf21269-0a55-419e-90d5-4b127c499a68",
+                  "code": "",
+                  "name": "MS",
+                  "order": 24,
+                  "meta": {}
+                },
+                {
+                  "id": "ed2bcc07-464d-4c54-8bf8-cfeb9418aacf",
+                  "code": "",
+                  "name": "MO",
+                  "order": 25,
+                  "meta": {}
+                },
+                {
+                  "id": "41e64b7e-bd88-4442-9066-ca0f4d9b88f9",
+                  "code": "",
+                  "name": "MT",
+                  "order": 26,
+                  "meta": {}
+                },
+                {
+                  "id": "002f99ec-dbe9-4fa6-8708-6eb82a8bc5b5",
+                  "code": "",
+                  "name": "NE",
+                  "order": 27,
+                  "meta": {}
+                },
+                {
+                  "id": "395c2874-f9ab-4f0a-a52f-c167121cd2d4",
+                  "code": "",
+                  "name": "NV",
+                  "order": 28,
+                  "meta": {}
+                },
+                {
+                  "id": "9d09e49c-0951-4ca0-9694-28efc14eb4f6",
+                  "code": "",
+                  "name": "NH",
+                  "order": 29,
+                  "meta": {}
+                },
+                {
+                  "id": "70be514e-18b7-4477-9a9c-83083beb052c",
+                  "code": "",
+                  "name": "NJ",
+                  "order": 30,
+                  "meta": {}
+                },
+                {
+                  "id": "1140cde1-f7e3-4b79-b421-c5f0691e7b03",
+                  "code": "",
+                  "name": "NM",
+                  "order": 31,
+                  "meta": {}
+                },
+                {
+                  "id": "a66648f8-b5f3-46f8-8a19-84b98f4e5eb3",
+                  "code": "",
+                  "name": "NY",
+                  "order": 32,
+                  "meta": {}
+                },
+                {
+                  "id": "690ca9c4-cc25-482a-9900-8187f1f844c4",
+                  "code": "",
+                  "name": "NC",
+                  "order": 33,
+                  "meta": {}
+                },
+                {
+                  "id": "9dcec4eb-399d-4f1e-b524-f5697f416cba",
+                  "code": "",
+                  "name": "ND",
+                  "order": 34,
+                  "meta": {}
+                },
+                {
+                  "id": "35029876-29a2-44a9-a703-860bda609b28",
+                  "code": "",
+                  "name": "OH",
+                  "order": 35,
+                  "meta": {}
+                },
+                {
+                  "id": "c122c3b1-6063-4cf3-8ffb-82b5bc9c73be",
+                  "code": "",
+                  "name": "OK",
+                  "order": 36,
+                  "meta": {}
+                },
+                {
+                  "id": "c45c5847-bfff-4240-b96c-90562f43e9d9",
+                  "code": "",
+                  "name": "OR",
+                  "order": 37,
+                  "meta": {}
+                },
+                {
+                  "id": "c70dec72-c956-4599-b855-e8346e8a574a",
+                  "code": "",
+                  "name": "PA",
+                  "order": 38,
+                  "meta": {}
+                },
+                {
+                  "id": "db6dc44f-d5d3-4003-b5b3-52bfc6f1161f",
+                  "code": "",
+                  "name": "RI",
+                  "order": 39,
+                  "meta": {}
+                },
+                {
+                  "id": "cc170feb-4909-4ac4-98cf-29409637f097",
+                  "code": "",
+                  "name": "SC",
+                  "order": 40,
+                  "meta": {}
+                },
+                {
+                  "id": "ba619e7a-ac68-4306-aaa2-28254ce9df89",
+                  "code": "",
+                  "name": "SD",
+                  "order": 41,
+                  "meta": {}
+                },
+                {
+                  "id": "8cb21dbd-78e1-474c-8e5d-e9b7478b919c",
+                  "code": "",
+                  "name": "TN",
+                  "order": 42,
+                  "meta": {}
+                },
+                {
+                  "id": "bd858d0e-4a10-4e71-80ed-044e77b4bfbd",
+                  "code": "",
+                  "name": "TX",
+                  "order": 43,
+                  "meta": {}
+                },
+                {
+                  "id": "2d8a6605-4cab-459f-bb52-a47902cf5545",
+                  "code": "",
+                  "name": "UT",
+                  "order": 44,
+                  "meta": {}
+                },
+                {
+                  "id": "58819def-913f-4194-8af5-f7564a27f3e8",
+                  "code": "",
+                  "name": "VT",
+                  "order": 45,
+                  "meta": {}
+                },
+                {
+                  "id": "ef1e3726-6c88-460f-b6ec-3952d9551391",
+                  "code": "",
+                  "name": "VA",
+                  "order": 46,
+                  "meta": {}
+                },
+                {
+                  "id": "55f1b7f6-a522-48e1-9437-90f8093a0877",
+                  "code": "",
+                  "name": "WA",
+                  "order": 47,
+                  "meta": {}
+                },
+                {
+                  "id": "2865072c-2215-4456-9b2c-9c5bc9504487",
+                  "code": "",
+                  "name": "WV",
+                  "order": 48,
+                  "meta": {}
+                },
+                {
+                  "id": "fd833334-db66-4afb-b85c-908d34972f99",
+                  "code": "",
+                  "name": "WI",
+                  "order": 49,
+                  "meta": {}
+                },
+                {
+                  "id": "da2b5cfd-3d1d-4d22-a904-952076eba323",
+                  "code": "",
+                  "name": "WY",
+                  "order": 50,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "de7bbb58-41d1-44f6-9016-8275f07f43c6",
+              "name": "state",
+              "display_name": "State",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "13609ac9-9056-4015-8089-f2ba5fa74958",
+                  "code": "",
+                  "name": "Option 1",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "8a1b5c17-633d-4561-bf0a-a7ba8ffb8bc5",
+                  "code": "",
+                  "name": "AL",
+                  "order": 2,
+                  "meta": {}
+                },
+                {
+                  "id": "01b4fdda-58bf-4af0-b1f9-c2cad4f2d5f9",
+                  "code": "",
+                  "name": "AK",
+                  "order": 3,
+                  "meta": {}
+                },
+                {
+                  "id": "59c01f97-c195-4830-bcae-b0c37c1eec2e",
+                  "code": "",
+                  "name": "AZ",
+                  "order": 4,
+                  "meta": {}
+                },
+                {
+                  "id": "c57c8c13-dc7e-4f9c-9e95-84db48714a12",
+                  "code": "",
+                  "name": "AR",
+                  "order": 5,
+                  "meta": {}
+                },
+                {
+                  "id": "d89784b0-7d45-45fd-95d1-68ac2ecd2217",
+                  "code": "",
+                  "name": "CA",
+                  "order": 6,
+                  "meta": {}
+                },
+                {
+                  "id": "f51aa37a-9c9c-4fc1-bc3e-d3e74e3a0f01",
+                  "code": "",
+                  "name": "CO",
+                  "order": 7,
+                  "meta": {}
+                },
+                {
+                  "id": "d3f1ab5b-c25c-4951-81ad-a084993fd88e",
+                  "code": "",
+                  "name": "CT",
+                  "order": 8,
+                  "meta": {}
+                },
+                {
+                  "id": "13b6231e-e3a7-4939-ae72-12f7292373cc",
+                  "code": "",
+                  "name": "DE",
+                  "order": 9,
+                  "meta": {}
+                },
+                {
+                  "id": "8c495e24-af70-4f0d-b10b-d4fb24806ce5",
+                  "code": "",
+                  "name": "FL",
+                  "order": 10,
+                  "meta": {}
+                },
+                {
+                  "id": "b64f2a79-4d5b-49f6-a57d-f18e345f4aa7",
+                  "code": "",
+                  "name": "GA",
+                  "order": 11,
+                  "meta": {}
+                },
+                {
+                  "id": "60ba39e8-6fd0-4930-9c96-f70c84e42e64",
+                  "code": "",
+                  "name": "HI",
+                  "order": 12,
+                  "meta": {}
+                },
+                {
+                  "id": "93666ecd-c6fc-4505-8235-7d82152d914f",
+                  "code": "",
+                  "name": "ID",
+                  "order": 13,
+                  "meta": {}
+                },
+                {
+                  "id": "b79bc065-2bc4-4b43-bf4d-89ddbac6ff5f",
+                  "code": "",
+                  "name": "IL",
+                  "order": 14,
+                  "meta": {}
+                },
+                {
+                  "id": "587ba1de-c07a-4b7f-a3ea-bd758a85cdaa",
+                  "code": "",
+                  "name": "IN",
+                  "order": 15,
+                  "meta": {}
+                },
+                {
+                  "id": "c2505078-9780-4b42-bc7f-a84b9c4764bc",
+                  "code": "",
+                  "name": "IA",
+                  "order": 16,
+                  "meta": {}
+                },
+                {
+                  "id": "07e29433-89c0-482a-8092-b039dbdf91fb",
+                  "code": "",
+                  "name": "KS",
+                  "order": 17,
+                  "meta": {}
+                },
+                {
+                  "id": "6e1edd3d-ad37-4afd-8e01-4e15440630c3",
+                  "code": "",
+                  "name": "KY",
+                  "order": 18,
+                  "meta": {}
+                },
+                {
+                  "id": "2bed0ad9-cb7f-4632-aa43-179f466217d6",
+                  "code": "",
+                  "name": "LA",
+                  "order": 19,
+                  "meta": {}
+                },
+                {
+                  "id": "3440f508-d0a1-4661-9105-12e2d6e179bc",
+                  "code": "",
+                  "name": "ME",
+                  "order": 20,
+                  "meta": {}
+                },
+                {
+                  "id": "1a9710da-3963-49d6-912e-38243b24909e",
+                  "code": "",
+                  "name": "MD",
+                  "order": 21,
+                  "meta": {}
+                },
+                {
+                  "id": "a796614e-4223-4216-b634-55d3dc6b33ce",
+                  "code": "",
+                  "name": "MA",
+                  "order": 22,
+                  "meta": {}
+                },
+                {
+                  "id": "6196f50d-cf29-48ba-82f1-27bc915ac925",
+                  "code": "",
+                  "name": "MI",
+                  "order": 23,
+                  "meta": {}
+                },
+                {
+                  "id": "4b3abfe1-c8c8-46bd-8ec1-2c732ff79580",
+                  "code": "",
+                  "name": "MN",
+                  "order": 24,
+                  "meta": {}
+                },
+                {
+                  "id": "f3413fb2-7010-4d87-9b3b-8d8ee0ca3f5b",
+                  "code": "",
+                  "name": "MS",
+                  "order": 25,
+                  "meta": {}
+                },
+                {
+                  "id": "1b8f3d20-5a9b-45dd-a092-cc691cda9086",
+                  "code": "",
+                  "name": "MO",
+                  "order": 26,
+                  "meta": {}
+                },
+                {
+                  "id": "f8fe9f37-a9ba-4d26-97a7-96eeb6dbff59",
+                  "code": "",
+                  "name": "MT",
+                  "order": 27,
+                  "meta": {}
+                },
+                {
+                  "id": "9b57825d-4cb1-4203-9075-4b83248feb85",
+                  "code": "",
+                  "name": "NE",
+                  "order": 28,
+                  "meta": {}
+                },
+                {
+                  "id": "1466c279-bf55-417e-9ce9-1cf87d9cb9e2",
+                  "code": "",
+                  "name": "NV",
+                  "order": 29,
+                  "meta": {}
+                },
+                {
+                  "id": "f5563e29-8801-4e13-8824-208fc0363fdd",
+                  "code": "",
+                  "name": "NH",
+                  "order": 30,
+                  "meta": {}
+                },
+                {
+                  "id": "961fa988-8c23-461b-8760-9d72605f4406",
+                  "code": "",
+                  "name": "NJ",
+                  "order": 31,
+                  "meta": {}
+                },
+                {
+                  "id": "3a82797f-d79f-46e2-a5ca-ad9b979b4e2b",
+                  "code": "",
+                  "name": "NM",
+                  "order": 32,
+                  "meta": {}
+                },
+                {
+                  "id": "b82f3bed-e94b-44f6-a71d-e1b212692e3f",
+                  "code": "",
+                  "name": "NY",
+                  "order": 33,
+                  "meta": {}
+                },
+                {
+                  "id": "a3f695c4-19c5-49be-bd3b-713159ce5a26",
+                  "code": "",
+                  "name": "NC",
+                  "order": 34,
+                  "meta": {}
+                },
+                {
+                  "id": "2abe86ea-25dd-4747-90e7-183f7a2a9941",
+                  "code": "",
+                  "name": "ND",
+                  "order": 35,
+                  "meta": {}
+                },
+                {
+                  "id": "f703e4d6-96b7-488a-b4ba-3c2b11567b63",
+                  "code": "",
+                  "name": "OH",
+                  "order": 36,
+                  "meta": {}
+                },
+                {
+                  "id": "efe20aea-f319-4851-abe7-f91be0207d45",
+                  "code": "",
+                  "name": "OK",
+                  "order": 37,
+                  "meta": {}
+                },
+                {
+                  "id": "7347b446-333f-4c9e-a5b1-e2259bc4d937",
+                  "code": "",
+                  "name": "OR",
+                  "order": 38,
+                  "meta": {}
+                },
+                {
+                  "id": "c9b3161f-c368-4933-9cfc-f48dbc2769f2",
+                  "code": "",
+                  "name": "PA",
+                  "order": 39,
+                  "meta": {}
+                },
+                {
+                  "id": "14491e9d-3711-4e37-a9f4-760057142ed9",
+                  "code": "",
+                  "name": "RI",
+                  "order": 40,
+                  "meta": {}
+                },
+                {
+                  "id": "db19b5a8-d49c-4f40-8123-9e646f1fca0d",
+                  "code": "",
+                  "name": "SC",
+                  "order": 41,
+                  "meta": {}
+                },
+                {
+                  "id": "e21b1c85-1034-4305-ad89-bcc89baf1ad8",
+                  "code": "",
+                  "name": "SD",
+                  "order": 42,
+                  "meta": {}
+                },
+                {
+                  "id": "5c792488-fc46-49ef-8a07-e967e29cee28",
+                  "code": "",
+                  "name": "TN",
+                  "order": 43,
+                  "meta": {}
+                },
+                {
+                  "id": "20b0aee3-a276-42c3-8984-596f948c343c",
+                  "code": "",
+                  "name": "TX",
+                  "order": 44,
+                  "meta": {}
+                },
+                {
+                  "id": "6ca0cef8-9614-4bd6-96f2-d85a16beeb4e",
+                  "code": "",
+                  "name": "UT",
+                  "order": 45,
+                  "meta": {}
+                },
+                {
+                  "id": "37a220d3-3f4b-42ba-9ccd-a3a9fd5f562a",
+                  "code": "",
+                  "name": "VT",
+                  "order": 46,
+                  "meta": {}
+                },
+                {
+                  "id": "dc11d6fb-1ed8-42fd-bef4-f54ba835f991",
+                  "code": "",
+                  "name": "VA",
+                  "order": 47,
+                  "meta": {}
+                },
+                {
+                  "id": "381e4feb-962e-44bf-bfa2-14ce4f0d1fe0",
+                  "code": "",
+                  "name": "WA",
+                  "order": 48,
+                  "meta": {}
+                },
+                {
+                  "id": "3ba774f9-d0c4-40e9-b701-6de6390f7f86",
+                  "code": "",
+                  "name": "WV",
+                  "order": 49,
+                  "meta": {}
+                },
+                {
+                  "id": "a8a28dce-4f4c-42d7-8efb-dfd660b0f0ce",
+                  "code": "",
+                  "name": "WI",
+                  "order": 50,
+                  "meta": {}
+                },
+                {
+                  "id": "f5ff626c-f592-41e2-ab50-87758dc9192e",
+                  "code": "",
+                  "name": "WY",
+                  "order": 51,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-03-18T15:46:06.031597-05:00",
+            "field_value_mappings": [
+              {
+                "target_values": [
+                  "f9804a75-9f50-4ae4-9b65-c03f99ff425a"
+                ],
+                "source_values": [
+                  "8a1b5c17-633d-4561-bf0a-a7ba8ffb8bc5"
+                ],
+                "order": 0
+              },
+              {
+                "target_values": [
+                  "6429ff90-d653-4c38-92ca-9a2c1d610548"
+                ],
+                "source_values": [
+                  "01b4fdda-58bf-4af0-b1f9-c2cad4f2d5f9"
+                ],
+                "order": 1
+              },
+              {
+                "target_values": [
+                  "25ac9e75-071b-4191-bbde-76097aeb89d9"
+                ],
+                "source_values": [
+                  "59c01f97-c195-4830-bcae-b0c37c1eec2e"
+                ],
+                "order": 2
+              },
+              {
+                "target_values": [
+                  "d96d8455-575d-4492-a19e-effcb8733ac8"
+                ],
+                "source_values": [
+                  "c57c8c13-dc7e-4f9c-9e95-84db48714a12"
+                ],
+                "order": 3
+              },
+              {
+                "target_values": [
+                  "243806b2-6a69-4694-9599-eb85d5868afe"
+                ],
+                "source_values": [
+                  "d89784b0-7d45-45fd-95d1-68ac2ecd2217"
+                ],
+                "order": 4
+              },
+              {
+                "target_values": [
+                  "d5c320c0-f7bb-470b-ba4f-a3d7768f1d30"
+                ],
+                "source_values": [
+                  "f51aa37a-9c9c-4fc1-bc3e-d3e74e3a0f01"
+                ],
+                "order": 5
+              },
+              {
+                "target_values": [
+                  "3df83ca5-36d1-442d-8903-0316d609f36e"
+                ],
+                "source_values": [
+                  "d3f1ab5b-c25c-4951-81ad-a084993fd88e"
+                ],
+                "order": 6
+              },
+              {
+                "target_values": [
+                  "e7a509b6-ad7c-43c5-a22a-3d82e2d0d045"
+                ],
+                "source_values": [
+                  "13b6231e-e3a7-4939-ae72-12f7292373cc"
+                ],
+                "order": 7
+              },
+              {
+                "target_values": [
+                  "3ffcf232-61ce-4b88-8985-c853bd9e7c67"
+                ],
+                "source_values": [
+                  "8c495e24-af70-4f0d-b10b-d4fb24806ce5"
+                ],
+                "order": 8
+              },
+              {
+                "target_values": [
+                  "8a7bf899-767f-40c8-bb48-d1b422848e93"
+                ],
+                "source_values": [
+                  "b64f2a79-4d5b-49f6-a57d-f18e345f4aa7"
+                ],
+                "order": 9
+              },
+              {
+                "target_values": [
+                  "045e0888-87f2-4c05-a577-c01a314d0953"
+                ],
+                "source_values": [
+                  "60ba39e8-6fd0-4930-9c96-f70c84e42e64"
+                ],
+                "order": 10
+              },
+              {
+                "target_values": [
+                  "dfdbdfb5-55df-4ef4-8bee-d87a553dd404"
+                ],
+                "source_values": [
+                  "93666ecd-c6fc-4505-8235-7d82152d914f"
+                ],
+                "order": 11
+              },
+              {
+                "target_values": [
+                  "85b51779-dbf3-4c59-9461-c8fdf5691347"
+                ],
+                "source_values": [
+                  "b79bc065-2bc4-4b43-bf4d-89ddbac6ff5f"
+                ],
+                "order": 12
+              },
+              {
+                "target_values": [
+                  "b2ae36ba-4ea8-4108-b036-7b2e09044df4"
+                ],
+                "source_values": [
+                  "587ba1de-c07a-4b7f-a3ea-bd758a85cdaa"
+                ],
+                "order": 13
+              },
+              {
+                "target_values": [
+                  "092e1fd0-eeb6-4e14-9206-6f66cdd273c3"
+                ],
+                "source_values": [
+                  "c2505078-9780-4b42-bc7f-a84b9c4764bc"
+                ],
+                "order": 14
+              },
+              {
+                "target_values": [
+                  "f7b690cf-14c7-4b8c-addd-7171cd6517a8"
+                ],
+                "source_values": [
+                  "07e29433-89c0-482a-8092-b039dbdf91fb"
+                ],
+                "order": 15
+              },
+              {
+                "target_values": [
+                  "e3b27ebf-6c51-41cc-acd8-9463c1370074"
+                ],
+                "source_values": [
+                  "6e1edd3d-ad37-4afd-8e01-4e15440630c3"
+                ],
+                "order": 16
+              },
+              {
+                "target_values": [
+                  "846a60a1-73ed-412a-a1c2-5c83f1d620a2"
+                ],
+                "source_values": [
+                  "2bed0ad9-cb7f-4632-aa43-179f466217d6"
+                ],
+                "order": 17
+              },
+              {
+                "target_values": [
+                  "ce9b4fdc-b44b-4072-b157-d1c1bc7895aa"
+                ],
+                "source_values": [
+                  "3440f508-d0a1-4661-9105-12e2d6e179bc"
+                ],
+                "order": 18
+              },
+              {
+                "target_values": [
+                  "60d1cb10-cd72-40bc-8a6d-529f01b9144e"
+                ],
+                "source_values": [
+                  "1a9710da-3963-49d6-912e-38243b24909e"
+                ],
+                "order": 19
+              },
+              {
+                "target_values": [
+                  "54129885-29f9-43a9-9d39-8492eb2b6cfb"
+                ],
+                "source_values": [
+                  "a796614e-4223-4216-b634-55d3dc6b33ce"
+                ],
+                "order": 20
+              },
+              {
+                "target_values": [
+                  "18502331-6b84-4cfa-9af6-16c34bf4ed1d"
+                ],
+                "source_values": [
+                  "6196f50d-cf29-48ba-82f1-27bc915ac925"
+                ],
+                "order": 21
+              },
+              {
+                "target_values": [
+                  "010875eb-5903-4c57-a9b3-560bd4b1b998"
+                ],
+                "source_values": [
+                  "4b3abfe1-c8c8-46bd-8ec1-2c732ff79580"
+                ],
+                "order": 22
+              },
+              {
+                "target_values": [
+                  "6bf21269-0a55-419e-90d5-4b127c499a68"
+                ],
+                "source_values": [
+                  "f3413fb2-7010-4d87-9b3b-8d8ee0ca3f5b"
+                ],
+                "order": 23
+              },
+              {
+                "target_values": [
+                  "ed2bcc07-464d-4c54-8bf8-cfeb9418aacf"
+                ],
+                "source_values": [
+                  "1b8f3d20-5a9b-45dd-a092-cc691cda9086"
+                ],
+                "order": 24
+              },
+              {
+                "target_values": [
+                  "41e64b7e-bd88-4442-9066-ca0f4d9b88f9"
+                ],
+                "source_values": [
+                  "f8fe9f37-a9ba-4d26-97a7-96eeb6dbff59"
+                ],
+                "order": 25
+              },
+              {
+                "target_values": [
+                  "002f99ec-dbe9-4fa6-8708-6eb82a8bc5b5"
+                ],
+                "source_values": [
+                  "9b57825d-4cb1-4203-9075-4b83248feb85"
+                ],
+                "order": 26
+              },
+              {
+                "target_values": [
+                  "395c2874-f9ab-4f0a-a52f-c167121cd2d4"
+                ],
+                "source_values": [
+                  "1466c279-bf55-417e-9ce9-1cf87d9cb9e2"
+                ],
+                "order": 27
+              },
+              {
+                "target_values": [
+                  "9d09e49c-0951-4ca0-9694-28efc14eb4f6"
+                ],
+                "source_values": [
+                  "f5563e29-8801-4e13-8824-208fc0363fdd"
+                ],
+                "order": 28
+              },
+              {
+                "target_values": [
+                  "70be514e-18b7-4477-9a9c-83083beb052c"
+                ],
+                "source_values": [
+                  "961fa988-8c23-461b-8760-9d72605f4406"
+                ],
+                "order": 29
+              },
+              {
+                "target_values": [
+                  "1140cde1-f7e3-4b79-b421-c5f0691e7b03"
+                ],
+                "source_values": [
+                  "3a82797f-d79f-46e2-a5ca-ad9b979b4e2b"
+                ],
+                "order": 30
+              },
+              {
+                "target_values": [
+                  "a66648f8-b5f3-46f8-8a19-84b98f4e5eb3"
+                ],
+                "source_values": [
+                  "b82f3bed-e94b-44f6-a71d-e1b212692e3f"
+                ],
+                "order": 31
+              },
+              {
+                "target_values": [
+                  "690ca9c4-cc25-482a-9900-8187f1f844c4"
+                ],
+                "source_values": [
+                  "a3f695c4-19c5-49be-bd3b-713159ce5a26"
+                ],
+                "order": 32
+              },
+              {
+                "target_values": [
+                  "9dcec4eb-399d-4f1e-b524-f5697f416cba"
+                ],
+                "source_values": [
+                  "2abe86ea-25dd-4747-90e7-183f7a2a9941"
+                ],
+                "order": 33
+              },
+              {
+                "target_values": [
+                  "35029876-29a2-44a9-a703-860bda609b28"
+                ],
+                "source_values": [
+                  "f703e4d6-96b7-488a-b4ba-3c2b11567b63"
+                ],
+                "order": 34
+              },
+              {
+                "target_values": [
+                  "c122c3b1-6063-4cf3-8ffb-82b5bc9c73be"
+                ],
+                "source_values": [
+                  "efe20aea-f319-4851-abe7-f91be0207d45"
+                ],
+                "order": 35
+              },
+              {
+                "target_values": [
+                  "c45c5847-bfff-4240-b96c-90562f43e9d9"
+                ],
+                "source_values": [
+                  "7347b446-333f-4c9e-a5b1-e2259bc4d937"
+                ],
+                "order": 36
+              },
+              {
+                "target_values": [
+                  "c70dec72-c956-4599-b855-e8346e8a574a"
+                ],
+                "source_values": [
+                  "c9b3161f-c368-4933-9cfc-f48dbc2769f2"
+                ],
+                "order": 37
+              },
+              {
+                "target_values": [
+                  "db6dc44f-d5d3-4003-b5b3-52bfc6f1161f"
+                ],
+                "source_values": [
+                  "14491e9d-3711-4e37-a9f4-760057142ed9"
+                ],
+                "order": 38
+              },
+              {
+                "target_values": [
+                  "cc170feb-4909-4ac4-98cf-29409637f097"
+                ],
+                "source_values": [
+                  "db19b5a8-d49c-4f40-8123-9e646f1fca0d"
+                ],
+                "order": 39
+              },
+              {
+                "target_values": [
+                  "ba619e7a-ac68-4306-aaa2-28254ce9df89"
+                ],
+                "source_values": [
+                  "e21b1c85-1034-4305-ad89-bcc89baf1ad8"
+                ],
+                "order": 40
+              },
+              {
+                "target_values": [
+                  "8cb21dbd-78e1-474c-8e5d-e9b7478b919c"
+                ],
+                "source_values": [
+                  "5c792488-fc46-49ef-8a07-e967e29cee28"
+                ],
+                "order": 41
+              },
+              {
+                "target_values": [
+                  "bd858d0e-4a10-4e71-80ed-044e77b4bfbd"
+                ],
+                "source_values": [
+                  "20b0aee3-a276-42c3-8984-596f948c343c"
+                ],
+                "order": 42
+              },
+              {
+                "target_values": [
+                  "2d8a6605-4cab-459f-bb52-a47902cf5545"
+                ],
+                "source_values": [
+                  "6ca0cef8-9614-4bd6-96f2-d85a16beeb4e"
+                ],
+                "order": 43
+              },
+              {
+                "target_values": [
+                  "58819def-913f-4194-8af5-f7564a27f3e8"
+                ],
+                "source_values": [
+                  "37a220d3-3f4b-42ba-9ccd-a3a9fd5f562a"
+                ],
+                "order": 44
+              },
+              {
+                "target_values": [
+                  "ef1e3726-6c88-460f-b6ec-3952d9551391"
+                ],
+                "source_values": [
+                  "dc11d6fb-1ed8-42fd-bef4-f54ba835f991"
+                ],
+                "order": 45
+              },
+              {
+                "target_values": [
+                  "55f1b7f6-a522-48e1-9437-90f8093a0877"
+                ],
+                "source_values": [
+                  "381e4feb-962e-44bf-bfa2-14ce4f0d1fe0"
+                ],
+                "order": 46
+              },
+              {
+                "target_values": [
+                  "2865072c-2215-4456-9b2c-9c5bc9504487"
+                ],
+                "source_values": [
+                  "3ba774f9-d0c4-40e9-b701-6de6390f7f86"
+                ],
+                "order": 47
+              },
+              {
+                "target_values": [
+                  "fd833334-db66-4afb-b85c-908d34972f99"
+                ],
+                "source_values": [
+                  "a8a28dce-4f4c-42d7-8efb-dfd660b0f0ce"
+                ],
+                "order": 48
+              },
+              {
+                "target_values": [
+                  "da2b5cfd-3d1d-4d22-a904-952076eba323"
+                ],
+                "source_values": [
+                  "f5ff626c-f592-41e2-ab50-87758dc9192e"
+                ],
+                "order": 49
+              }
+            ],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "14941fb6-99fe-4c1c-9cfd-fcdc7faeab58"
+          },
+          {
+            "field_to_modify": {
+              "id": "42c5bd60-7ccf-4609-bd15-d4582bf44b46",
+              "name": "organization_type",
+              "display_name": "Organization Type",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "3df5379d-2840-4f6b-9db2-b62aeafe2c4e",
+                  "code": "",
+                  "name": "Nonprofit / Community Organization",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "b017d643-644a-433e-b520-b5c69d3b138e",
+                  "code": "",
+                  "name": "CDFI (Community Development Financial Institution)",
+                  "order": 2,
+                  "meta": {}
+                },
+                {
+                  "id": "49fa0158-20ea-4f06-8be6-0845c1a745a1",
+                  "code": "",
+                  "name": "MDI (Minority Depository Institution)",
+                  "order": 3,
+                  "meta": {}
+                },
+                {
+                  "id": "0dca4753-092f-48a4-9a10-9ab3520ee6d5",
+                  "code": "",
+                  "name": "WDI (Women's Depository Institution)",
+                  "order": 4,
+                  "meta": {}
+                },
+                {
+                  "id": "52469bc9-512f-4137-973f-dc5f647f5e19",
+                  "code": "",
+                  "name": "Low-Income Credit Union (LICU)",
+                  "order": 5,
+                  "meta": {}
+                },
+                {
+                  "id": "06f3f573-1663-410b-9081-fe75c30b3848",
+                  "code": "",
+                  "name": "Government Entity / Public Agency",
+                  "order": 6,
+                  "meta": {}
+                },
+                {
+                  "id": "9f8e18bf-7ac0-4408-84da-238c96a2bd76",
+                  "code": "",
+                  "name": "School / Educational Institution",
+                  "order": 7,
+                  "meta": {}
+                },
+                {
+                  "id": "7304ff32-0fb1-42b0-ab47-131bbc975a46",
+                  "code": "",
+                  "name": "Healthcare Organization",
+                  "order": 8,
+                  "meta": {}
+                },
+                {
+                  "id": "cc12e6b2-d1b0-4220-bfe6-4d0f494f2160",
+                  "code": "",
+                  "name": "Housing Authority / Housing Developer",
+                  "order": 9,
+                  "meta": {}
+                },
+                {
+                  "id": "0f1e59a7-04b0-48de-9acf-3c974a586f8f",
+                  "code": "",
+                  "name": "Small Business Development Organization",
+                  "order": 10,
+                  "meta": {}
+                },
+                {
+                  "id": "4f87d57f-0978-4a3f-a9c9-e4f3ffa0a1e7",
+                  "code": "",
+                  "name": "Faith-Based Organization",
+                  "order": 11,
+                  "meta": {}
+                },
+                {
+                  "id": "664e09ee-e51c-4f57-8fa0-3b0a8253a76b",
+                  "code": "",
+                  "name": "Civic / Professional Association",
+                  "order": 12,
+                  "meta": {}
+                },
+                {
+                  "id": "5e24c7cf-fd93-485e-8fdb-412ee109cff0",
+                  "code": "",
+                  "name": "For-Profit Business",
+                  "order": 13,
+                  "meta": {}
+                },
+                {
+                  "id": "a44f337a-27f9-4a15-bea0-9b9a019fd3e9",
+                  "code": "",
+                  "name": "Othe",
+                  "order": 14,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "819fb6ef-6f29-4c6b-a439-ae86e745be2c",
+              "name": "organization_type",
+              "display_name": "Organization Type",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "b45ea3c7-bcaf-4319-af8c-18181724e719",
+                  "code": "",
+                  "name": "Nonprofit / Community Organization",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "b24be165-d87c-4829-8c9b-89e7bd55c5eb",
+                  "code": "",
+                  "name": "CDFI (Community Development Financial Institution)",
+                  "order": 2,
+                  "meta": {}
+                },
+                {
+                  "id": "64a96d8c-95ad-4d73-940b-8f0d476857a6",
+                  "code": "",
+                  "name": "MDI (Minority Depository Institution)",
+                  "order": 3,
+                  "meta": {}
+                },
+                {
+                  "id": "a929762c-4a96-413b-a453-498b5bbd4419",
+                  "code": "",
+                  "name": "WDI (Women's Depository Institution)",
+                  "order": 4,
+                  "meta": {}
+                },
+                {
+                  "id": "6dbdca77-cd7f-4c17-b341-ac1cf1656da0",
+                  "code": "",
+                  "name": "Low-Income Credit Union (LICU)",
+                  "order": 5,
+                  "meta": {}
+                },
+                {
+                  "id": "568872bf-9127-4494-89fa-416cacd43688",
+                  "code": "",
+                  "name": "Government Entity / Public Agency",
+                  "order": 6,
+                  "meta": {}
+                },
+                {
+                  "id": "0970d2d4-26f9-4976-8136-588b64494e4e",
+                  "code": "",
+                  "name": "School / Educational Institution",
+                  "order": 7,
+                  "meta": {}
+                },
+                {
+                  "id": "a050a4cd-d24b-46a9-988f-73f2d211fc62",
+                  "code": "",
+                  "name": "Healthcare Organization",
+                  "order": 8,
+                  "meta": {}
+                },
+                {
+                  "id": "b29d986c-c86a-4115-be23-1cfb39133067",
+                  "code": "",
+                  "name": "Housing Authority / Housing Developer",
+                  "order": 9,
+                  "meta": {}
+                },
+                {
+                  "id": "757be5da-2ed2-4ad9-971d-8438cb39035b",
+                  "code": "",
+                  "name": "Small Business Development Organization",
+                  "order": 10,
+                  "meta": {}
+                },
+                {
+                  "id": "347530b9-9074-45ff-a7d3-367e4b81662b",
+                  "code": "",
+                  "name": "Faith-Based Organization",
+                  "order": 11,
+                  "meta": {}
+                },
+                {
+                  "id": "29d1fcb9-fba2-4275-a118-eb6ff1e0128f",
+                  "code": "",
+                  "name": "Civic / Professional Association",
+                  "order": 12,
+                  "meta": {}
+                },
+                {
+                  "id": "59156aee-782d-4f4b-8811-154faf66b257",
+                  "code": "",
+                  "name": "For-Profit Business",
+                  "order": 13,
+                  "meta": {}
+                },
+                {
+                  "id": "426d5c67-9dc2-4300-8f49-140398f97886",
+                  "code": "",
+                  "name": "Other",
+                  "order": 14,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-03-18T15:46:06.193355-05:00",
+            "field_value_mappings": [
+              {
+                "target_values": [
+                  "3df5379d-2840-4f6b-9db2-b62aeafe2c4e"
+                ],
+                "source_values": [
+                  "b45ea3c7-bcaf-4319-af8c-18181724e719"
+                ],
+                "order": 0
+              },
+              {
+                "target_values": [
+                  "b017d643-644a-433e-b520-b5c69d3b138e"
+                ],
+                "source_values": [
+                  "b24be165-d87c-4829-8c9b-89e7bd55c5eb"
+                ],
+                "order": 1
+              },
+              {
+                "target_values": [
+                  "49fa0158-20ea-4f06-8be6-0845c1a745a1"
+                ],
+                "source_values": [
+                  "64a96d8c-95ad-4d73-940b-8f0d476857a6"
+                ],
+                "order": 2
+              },
+              {
+                "target_values": [
+                  "0dca4753-092f-48a4-9a10-9ab3520ee6d5"
+                ],
+                "source_values": [
+                  "a929762c-4a96-413b-a453-498b5bbd4419"
+                ],
+                "order": 3
+              },
+              {
+                "target_values": [
+                  "52469bc9-512f-4137-973f-dc5f647f5e19"
+                ],
+                "source_values": [
+                  "6dbdca77-cd7f-4c17-b341-ac1cf1656da0"
+                ],
+                "order": 4
+              },
+              {
+                "target_values": [
+                  "06f3f573-1663-410b-9081-fe75c30b3848"
+                ],
+                "source_values": [
+                  "568872bf-9127-4494-89fa-416cacd43688"
+                ],
+                "order": 5
+              },
+              {
+                "target_values": [
+                  "9f8e18bf-7ac0-4408-84da-238c96a2bd76"
+                ],
+                "source_values": [
+                  "0970d2d4-26f9-4976-8136-588b64494e4e"
+                ],
+                "order": 6
+              },
+              {
+                "target_values": [
+                  "7304ff32-0fb1-42b0-ab47-131bbc975a46"
+                ],
+                "source_values": [
+                  "a050a4cd-d24b-46a9-988f-73f2d211fc62"
+                ],
+                "order": 7
+              },
+              {
+                "target_values": [
+                  "cc12e6b2-d1b0-4220-bfe6-4d0f494f2160"
+                ],
+                "source_values": [
+                  "b29d986c-c86a-4115-be23-1cfb39133067"
+                ],
+                "order": 8
+              },
+              {
+                "target_values": [
+                  "0f1e59a7-04b0-48de-9acf-3c974a586f8f"
+                ],
+                "source_values": [
+                  "757be5da-2ed2-4ad9-971d-8438cb39035b"
+                ],
+                "order": 9
+              },
+              {
+                "target_values": [
+                  "4f87d57f-0978-4a3f-a9c9-e4f3ffa0a1e7"
+                ],
+                "source_values": [
+                  "347530b9-9074-45ff-a7d3-367e4b81662b"
+                ],
+                "order": 10
+              },
+              {
+                "target_values": [
+                  "664e09ee-e51c-4f57-8fa0-3b0a8253a76b"
+                ],
+                "source_values": [
+                  "29d1fcb9-fba2-4275-a118-eb6ff1e0128f"
+                ],
+                "order": 11
+              },
+              {
+                "target_values": [
+                  "5e24c7cf-fd93-485e-8fdb-412ee109cff0"
+                ],
+                "source_values": [
+                  "59156aee-782d-4f4b-8811-154faf66b257"
+                ],
+                "order": 12
+              },
+              {
+                "target_values": [],
+                "source_values": [
+                  "426d5c67-9dc2-4300-8f49-140398f97886"
+                ],
+                "order": 13
+              }
+            ],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "328aec3f-341b-4899-ae98-320447e28d1b"
+          },
+          {
+            "field_to_modify": {
+              "id": "bb22f169-8ca7-4012-83df-c60a02eec39a",
+              "name": "primary_population_served",
+              "display_name": "Primary Population Served",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "ed05e732-fd87-4a9e-9ff7-9405cef30c63",
+                  "code": "",
+                  "name": "LMI Individuals",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "ce1c1392-9ce4-4fd2-b958-96a9641cc313",
+                  "code": "",
+                  "name": "LMI Communities",
+                  "order": 2,
+                  "meta": {}
+                },
+                {
+                  "id": "ca488e89-3141-4685-9a2a-16ae9c2477ee",
+                  "code": "",
+                  "name": "Minority Populations",
+                  "order": 3,
+                  "meta": {}
+                },
+                {
+                  "id": "184efd33-0097-4052-9340-db5d21b352af",
+                  "code": "",
+                  "name": "Women",
+                  "order": 4,
+                  "meta": {}
+                },
+                {
+                  "id": "91a04dfd-3f1a-4c83-ac7f-a37eaf3e687c",
+                  "code": "",
+                  "name": "Small Businesses",
+                  "order": 5,
+                  "meta": {}
+                },
+                {
+                  "id": "e0e53812-306d-4799-b6b6-7d783a3169e4",
+                  "code": "",
+                  "name": "Broader Community Development",
+                  "order": 6,
+                  "meta": {}
+                },
+                {
+                  "id": "75682d85-3671-495d-ab58-7404e7ff1f27",
+                  "code": "",
+                  "name": "No Clear LMI / CRA-Relevant Population",
+                  "order": 7,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "8c3375e2-18e0-4a21-bc87-e0645f1131fb",
+              "name": "primary_population_served",
+              "display_name": "Primary Population Served",
+              "deleted": false,
+              "field_type": "dropdown",
+              "options": [
+                {
+                  "id": "59ef6f70-e1cf-4cd9-98fc-21a563888205",
+                  "code": "",
+                  "name": "LMI Individuals",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "149772b4-5297-40b1-96b6-66006f467f5b",
+                  "code": "",
+                  "name": "LMI Communities",
+                  "order": 2,
+                  "meta": {}
+                },
+                {
+                  "id": "bde5f549-bf5d-428f-98ec-9b6618a41418",
+                  "code": "",
+                  "name": "Minority Populations",
+                  "order": 3,
+                  "meta": {}
+                },
+                {
+                  "id": "d5e2d288-168a-424e-be8c-11bdd451d8e0",
+                  "code": "",
+                  "name": "Women",
+                  "order": 4,
+                  "meta": {}
+                },
+                {
+                  "id": "32f26099-64a9-4a1d-bd7f-dda28d7e6c52",
+                  "code": "",
+                  "name": "Small Businesses",
+                  "order": 5,
+                  "meta": {}
+                },
+                {
+                  "id": "695f4a06-7758-43e9-9cc4-c3e1bc031ce0",
+                  "code": "",
+                  "name": "Broader Community Development",
+                  "order": 6,
+                  "meta": {}
+                },
+                {
+                  "id": "45d628cd-c303-4531-b782-bbd92d298e5f",
+                  "code": "",
+                  "name": "No Clear LMI / CRA-Relevant Population",
+                  "order": 7,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-03-18T15:46:06.253841-05:00",
+            "field_value_mappings": [
+              {
+                "target_values": [
+                  "ed05e732-fd87-4a9e-9ff7-9405cef30c63"
+                ],
+                "source_values": [
+                  "59ef6f70-e1cf-4cd9-98fc-21a563888205"
+                ],
+                "order": 0
+              },
+              {
+                "target_values": [
+                  "ce1c1392-9ce4-4fd2-b958-96a9641cc313"
+                ],
+                "source_values": [
+                  "149772b4-5297-40b1-96b6-66006f467f5b"
+                ],
+                "order": 1
+              },
+              {
+                "target_values": [
+                  "ca488e89-3141-4685-9a2a-16ae9c2477ee"
+                ],
+                "source_values": [
+                  "bde5f549-bf5d-428f-98ec-9b6618a41418"
+                ],
+                "order": 2
+              },
+              {
+                "target_values": [
+                  "184efd33-0097-4052-9340-db5d21b352af"
+                ],
+                "source_values": [
+                  "d5e2d288-168a-424e-be8c-11bdd451d8e0"
+                ],
+                "order": 3
+              },
+              {
+                "target_values": [
+                  "91a04dfd-3f1a-4c83-ac7f-a37eaf3e687c"
+                ],
+                "source_values": [
+                  "32f26099-64a9-4a1d-bd7f-dda28d7e6c52"
+                ],
+                "order": 4
+              },
+              {
+                "target_values": [
+                  "e0e53812-306d-4799-b6b6-7d783a3169e4"
+                ],
+                "source_values": [
+                  "695f4a06-7758-43e9-9cc4-c3e1bc031ce0"
+                ],
+                "order": 5
+              },
+              {
+                "target_values": [
+                  "75682d85-3671-495d-ab58-7404e7ff1f27"
+                ],
+                "source_values": [
+                  "45d628cd-c303-4531-b782-bbd92d298e5f"
+                ],
+                "order": 6
+              }
+            ],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "d645bccb-6290-4845-8058-6604a894913a"
+          },
+          {
+            "field_to_modify": {
+              "id": "a0145882-06cb-4f9d-bdba-93d69dd79946",
+              "name": "organization_primary_purpose",
+              "display_name": "Organization Primary Purpose",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "variable",
+            "specific_field_value": null,
+            "context_entity_field": null,
+            "created": "2026-03-18T15:46:06.297094-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": {
+              "id": "d205505b-829e-4497-9729-f9bf6dbc1d6e",
+              "name": "llm_org_purpose",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-03-18T15:24:21.188272Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "9e123cda-1942-4f23-bc57-ae5205d3a9c1"
+          },
+          {
+            "field_to_modify": {
+              "id": "0b991854-c421-4744-93b7-b12d4bfc85df",
+              "name": "is_qualified_organization",
+              "display_name": "Is Qualified Organization",
+              "deleted": false,
+              "field_type": "checkbox",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "variable",
+            "specific_field_value": null,
+            "context_entity_field": null,
+            "created": "2026-03-18T15:46:06.324389-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": {
+              "id": "ba39880e-274d-4a4a-a04b-58a247774c94",
+              "name": "llm_is_qualified",
+              "data_type": "boolean",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": "yes_no",
+              "created": "2026-03-18T15:24:21.205382Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "5a672677-5865-42a2-949a-0cde7cd479bf"
+          },
+          {
+            "field_to_modify": {
+              "id": "b6e7671f-bcc8-450c-a2eb-dea8fe8fba6a",
+              "name": "qualification_rationale",
+              "display_name": "Qualification Rationale",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "variable",
+            "specific_field_value": null,
+            "context_entity_field": null,
+            "created": "2026-03-18T15:46:06.354251-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": {
+              "id": "09b9f014-f216-4d05-9f2e-60caf43a1780",
+              "name": "llm_qual_justification",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-03-18T15:24:21.213450Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "ed980639-bbf8-47d4-bde8-536a304eeab5"
+          },
+          {
+            "field_to_modify": {
+              "id": "c0991ebc-b7d4-41f1-8250-cd7cfe300805",
+              "name": "longtext_1",
+              "display_name": "Notes",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "variable",
+            "specific_field_value": null,
+            "context_entity_field": null,
+            "created": "2026-03-18T15:46:06.381682-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": {
+              "id": "29602d96-854b-4a85-8093-22243313b641",
+              "name": "llm_notes",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-03-18T15:24:21.195875Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "aac7322d-7da6-47e4-9852-41c215573c5e"
+          }
+        ],
+        "record_source": "related_object_field",
+        "record_source_variables": [],
+        "automation_variables": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "71fcec8b-7915-43cd-a130-6551460fde91",
+      "step_type": "start_automation",
+      "order": 11,
+      "description": "Start Automations '2. Associate to Assessment Area'",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "c3979d37-e38b-4c96-843c-34f880a1808e",
+      "parent_condition": "",
+      "action_start_automation": {
+        "record_source": "this_record",
+        "relationship_fields": [],
+        "automation_variable": null,
+        "automations": [
+          {
+            "id": "4de6ec47-f39d-468d-af47-f3f9e194708b",
+            "name": "2. Associate to Assessment Area",
+            "deleted": false,
+            "active": true
+          }
+        ],
+        "resume_paused_automations": false,
+        "automation_variable_overrides": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [
+    {
+      "id": "dcc3354c-a83c-4ef0-836e-0e036fbc0933",
+      "name": "org_match",
+      "data_type": "boolean",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "yes_no",
+      "created": "2026-03-17T21:30:03.691668Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "d205505b-829e-4497-9729-f9bf6dbc1d6e",
+      "name": "llm_org_purpose",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-18T15:24:21.188272Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "29602d96-854b-4a85-8093-22243313b641",
+      "name": "llm_notes",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-18T15:24:21.195875Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "ba39880e-274d-4a4a-a04b-58a247774c94",
+      "name": "llm_is_qualified",
+      "data_type": "boolean",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "yes_no",
+      "created": "2026-03-18T15:24:21.205382Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "09b9f014-f216-4d05-9f2e-60caf43a1780",
+      "name": "llm_qual_justification",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-18T15:24:21.213450Z",
+      "deleted": false,
+      "is_array": false
+    }
+  ],
+  "revision": 28,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 19,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-03-17T10:10:50.893811-05:00",
+  "updated": "2026-03-18T21:46:37.635412-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

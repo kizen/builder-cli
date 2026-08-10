@@ -1,0 +1,703 @@
+{
+  "env": "testenv",
+  "id": "client_client",
+  "api_name": "client_client",
+  "display_name": "client_client",
+  "entity_name": null,
+  "object_type": null,
+  "categories": [
+    {
+      "id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "name": "Contact Info",
+      "order": 0
+    }
+  ],
+  "fields": [
+    {
+      "id": "321de730-826e-46fc-b507-533fb5386701",
+      "api_name": "first_name",
+      "display_name": "First Name",
+      "field_type": "text",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "27d03bf6-ac68-4e68-a0d1-9b0858dc19f9",
+      "api_name": "last_name",
+      "display_name": "Last Name",
+      "field_type": "text",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "b80bcdf9-76ba-4f45-9258-35a9b2f4dede",
+      "api_name": "email",
+      "display_name": "Email",
+      "field_type": "email",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "ff03441a-e7f0-4dab-842c-18c211cf48e4",
+      "api_name": "created",
+      "display_name": "Date Created",
+      "field_type": "datetime",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "1e02c086-3896-44ba-90a0-bc450f1eaf6e",
+      "api_name": "email_status",
+      "display_name": "Email Status",
+      "field_type": "dropdown",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "f373be02-38fe-4589-b3ad-b5be346aba72",
+          "name": "Opted In",
+          "code": "opted_in"
+        },
+        {
+          "id": "9201ea47-dbea-4941-8d54-a6f1f7374325",
+          "name": "Not Opted In",
+          "code": "not_opted_in"
+        },
+        {
+          "id": "91c7e8e3-f484-4f7f-b948-2301b07f7558",
+          "name": "Unsubscribed From All",
+          "code": "unsubscribed"
+        },
+        {
+          "id": "232d6b9f-9c12-4a4f-bb6b-573cca24a885",
+          "name": "Suppression List",
+          "code": "suppression_list"
+        }
+      ]
+    },
+    {
+      "id": "d4530e5b-18ef-4dc1-a4df-4cda194b0967",
+      "api_name": "business_phone",
+      "display_name": "Business Phone",
+      "field_type": "phonenumber",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "1b89d47e-568b-4aee-a181-575880eedb87",
+      "api_name": "mobile_phone",
+      "display_name": "Mobile Phone",
+      "field_type": "phonenumber",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "46a449ae-0313-4acc-9c7c-6b34c7a05c3e",
+      "api_name": "home_phone",
+      "display_name": "Home Phone",
+      "field_type": "phonenumber",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "efe325a8-346c-40ef-9ccb-d775368e15ca",
+      "api_name": "company_primary",
+      "display_name": "Primary Company Record",
+      "field_type": "relationship",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "9341e57f-5adb-47a0-a382-15c7552c6dd7",
+        "related_object": "f3e8da5e-b7f1-4bc1-9851-3b76dc0a3eea",
+        "related_category": "f87c3ca3-2487-478d-9b81-0a7b82af3b08",
+        "related_name": "Primary for Contact Record",
+        "related_object_name": "Companies",
+        "related_object_object_name": "companies_company",
+        "related_entity_name": "Company",
+        "relation_type": "primary",
+        "cardinality": "many_to_one",
+        "fetch_url": "standard",
+        "rollup_timeline": true,
+        "rollup_leadsources": true,
+        "inverse_relation_rollup_timeline": true,
+        "inverse_relation_rollup_leadsources": true,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "68d9486f-4e34-491a-9807-34ee93bd732c",
+      "api_name": "company_additional",
+      "display_name": "Additional Company Records",
+      "field_type": "relationship",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "2ae7e9b6-310e-4fdb-8ba5-b1cc6d460b65",
+        "related_object": "f3e8da5e-b7f1-4bc1-9851-3b76dc0a3eea",
+        "related_category": "f87c3ca3-2487-478d-9b81-0a7b82af3b08",
+        "related_name": "Additional for Contact Records",
+        "related_object_name": "Companies",
+        "related_object_object_name": "companies_company",
+        "related_entity_name": "Company",
+        "relation_type": "additional",
+        "cardinality": "many_to_many",
+        "fetch_url": "standard",
+        "rollup_timeline": true,
+        "rollup_leadsources": true,
+        "inverse_relation_rollup_timeline": true,
+        "inverse_relation_rollup_leadsources": true,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "549e87d2-38ff-41ea-bfe0-6680d539d43e",
+      "api_name": "titles",
+      "display_name": "Titles",
+      "field_type": "dynamictags",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "f6a89dd0-7e37-42fb-92f6-eef59ddade10",
+      "api_name": "tags",
+      "display_name": "Tags",
+      "field_type": "dynamictags",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "ed93ef45-e00a-4f67-90d8-5ff5c0347167",
+      "api_name": "updated",
+      "display_name": "Last Modified",
+      "field_type": "datetime",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "72edd393-d65c-4fec-b8e4-7907af39f52d",
+      "api_name": "birthday",
+      "display_name": "Birthday",
+      "field_type": "date",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "410b6487-4f4e-40cf-a29e-57a4d98e9a14",
+      "api_name": "timezone",
+      "display_name": "Timezone",
+      "field_type": "timezone",
+      "category_id": "cd92ae94-dded-491f-aa49-c50cd78d603f",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "US/Alaska",
+          "name": "US/Alaska",
+          "code": "US/Alaska"
+        },
+        {
+          "id": "US/Arizona",
+          "name": "US/Arizona",
+          "code": "US/Arizona"
+        },
+        {
+          "id": "US/Central",
+          "name": "US/Central",
+          "code": "US/Central"
+        },
+        {
+          "id": "US/Eastern",
+          "name": "US/Eastern",
+          "code": "US/Eastern"
+        },
+        {
+          "id": "US/Hawaii",
+          "name": "US/Hawaii",
+          "code": "US/Hawaii"
+        },
+        {
+          "id": "US/Mountain",
+          "name": "US/Mountain",
+          "code": "US/Mountain"
+        },
+        {
+          "id": "US/Pacific",
+          "name": "US/Pacific",
+          "code": "US/Pacific"
+        },
+        {
+          "id": "GMT",
+          "name": "GMT",
+          "code": "GMT"
+        },
+        {
+          "id": "America/Anchorage",
+          "name": "America/Anchorage",
+          "code": "America/Anchorage"
+        },
+        {
+          "id": "America/Bogota",
+          "name": "America/Bogota",
+          "code": "America/Bogota"
+        },
+        {
+          "id": "America/Boise",
+          "name": "America/Boise",
+          "code": "America/Boise"
+        },
+        {
+          "id": "America/Chicago",
+          "name": "America/Chicago",
+          "code": "America/Chicago"
+        },
+        {
+          "id": "America/Chihuahua",
+          "name": "America/Chihuahua",
+          "code": "America/Chihuahua"
+        },
+        {
+          "id": "America/Costa_Rica",
+          "name": "America/Costa Rica",
+          "code": "America/Costa_Rica"
+        },
+        {
+          "id": "America/Denver",
+          "name": "America/Denver",
+          "code": "America/Denver"
+        },
+        {
+          "id": "America/Detroit",
+          "name": "America/Detroit",
+          "code": "America/Detroit"
+        },
+        {
+          "id": "America/Edmonton",
+          "name": "America/Edmonton",
+          "code": "America/Edmonton"
+        },
+        {
+          "id": "America/Guatemala",
+          "name": "America/Guatemala",
+          "code": "America/Guatemala"
+        },
+        {
+          "id": "America/Indiana/Indianapolis",
+          "name": "America/Indiana/Indianapolis",
+          "code": "America/Indiana/Indianapolis"
+        },
+        {
+          "id": "America/Jamaica",
+          "name": "America/Jamaica",
+          "code": "America/Jamaica"
+        },
+        {
+          "id": "America/Juneau",
+          "name": "America/Juneau",
+          "code": "America/Juneau"
+        },
+        {
+          "id": "America/Los_Angeles",
+          "name": "America/Los Angeles",
+          "code": "America/Los_Angeles"
+        },
+        {
+          "id": "America/Matamoros",
+          "name": "America/Matamoros",
+          "code": "America/Matamoros"
+        },
+        {
+          "id": "America/Mazatlan",
+          "name": "America/Mazatlan",
+          "code": "America/Mazatlan"
+        },
+        {
+          "id": "America/Merida",
+          "name": "America/Merida",
+          "code": "America/Merida"
+        },
+        {
+          "id": "America/Mexico_City",
+          "name": "America/Mexico City",
+          "code": "America/Mexico_City"
+        },
+        {
+          "id": "America/Monterrey",
+          "name": "America/Monterrey",
+          "code": "America/Monterrey"
+        },
+        {
+          "id": "America/New_York",
+          "name": "America/New York",
+          "code": "America/New_York"
+        },
+        {
+          "id": "America/North_Dakota/Center",
+          "name": "America/North Dakota/Center",
+          "code": "America/North_Dakota/Center"
+        },
+        {
+          "id": "America/Panama",
+          "name": "America/Panama",
+          "code": "America/Panama"
+        },
+        {
+          "id": "America/Phoenix",
+          "name": "America/Phoenix",
+          "code": "America/Phoenix"
+        },
+        {
+          "id": "America/Puerto_Rico",
+          "name": "America/Puerto Rico",
+          "code": "America/Puerto_Rico"
+        },
+        {
+          "id": "America/Santiago",
+          "name": "America/Santiago",
+          "code": "America/Santiago"
+        },
+        {
+          "id": "America/Sao_Paulo",
+          "name": "America/Sao Paulo",
+          "code": "America/Sao_Paulo"
+        },
+        {
+          "id": "America/Tijuana",
+          "name": "America/Tijuana",
+          "code": "America/Tijuana"
+        },
+        {
+          "id": "America/Toronto",
+          "name": "America/Toronto",
+          "code": "America/Toronto"
+        },
+        {
+          "id": "America/Vancouver",
+          "name": "America/Vancouver",
+          "code": "America/Vancouver"
+        },
+        {
+          "id": "America/Winnipeg",
+          "name": "America/Winnipeg",
+          "code": "America/Winnipeg"
+        },
+        {
+          "id": "Asia/Bangkok",
+          "name": "Asia/Bangkok",
+          "code": "Asia/Bangkok"
+        },
+        {
+          "id": "Asia/Beirut",
+          "name": "Asia/Beirut",
+          "code": "Asia/Beirut"
+        },
+        {
+          "id": "Asia/Ho_Chi_Minh",
+          "name": "Asia/Ho Chi Minh",
+          "code": "Asia/Ho_Chi_Minh"
+        },
+        {
+          "id": "Asia/Hong_Kong",
+          "name": "Asia/Hong Kong",
+          "code": "Asia/Hong_Kong"
+        },
+        {
+          "id": "Asia/Macau",
+          "name": "Asia/Macau",
+          "code": "Asia/Macau"
+        },
+        {
+          "id": "Asia/Manila",
+          "name": "Asia/Manila",
+          "code": "Asia/Manila"
+        },
+        {
+          "id": "Asia/Pyongyang",
+          "name": "Asia/Pyongyang",
+          "code": "Asia/Pyongyang"
+        },
+        {
+          "id": "Asia/Qatar",
+          "name": "Asia/Qatar",
+          "code": "Asia/Qatar"
+        },
+        {
+          "id": "Asia/Seoul",
+          "name": "Asia/Seoul",
+          "code": "Asia/Seoul"
+        },
+        {
+          "id": "Asia/Shanghai",
+          "name": "Asia/Shanghai",
+          "code": "Asia/Shanghai"
+        },
+        {
+          "id": "Asia/Singapore",
+          "name": "Asia/Singapore",
+          "code": "Asia/Singapore"
+        },
+        {
+          "id": "Asia/Taipei",
+          "name": "Asia/Taipei",
+          "code": "Asia/Taipei"
+        },
+        {
+          "id": "Asia/Tokyo",
+          "name": "Asia/Tokyo",
+          "code": "Asia/Tokyo"
+        },
+        {
+          "id": "Australia/Brisbane",
+          "name": "Australia/Brisbane",
+          "code": "Australia/Brisbane"
+        },
+        {
+          "id": "Australia/Hobart",
+          "name": "Australia/Hobart",
+          "code": "Australia/Hobart"
+        },
+        {
+          "id": "Australia/Melbourne",
+          "name": "Australia/Melbourne",
+          "code": "Australia/Melbourne"
+        },
+        {
+          "id": "Australia/Perth",
+          "name": "Australia/Perth",
+          "code": "Australia/Perth"
+        },
+        {
+          "id": "Australia/Sydney",
+          "name": "Australia/Sydney",
+          "code": "Australia/Sydney"
+        },
+        {
+          "id": "Canada/Atlantic",
+          "name": "Canada/Atlantic",
+          "code": "Canada/Atlantic"
+        },
+        {
+          "id": "Canada/Central",
+          "name": "Canada/Central",
+          "code": "Canada/Central"
+        },
+        {
+          "id": "Canada/Eastern",
+          "name": "Canada/Eastern",
+          "code": "Canada/Eastern"
+        },
+        {
+          "id": "Canada/Mountain",
+          "name": "Canada/Mountain",
+          "code": "Canada/Mountain"
+        },
+        {
+          "id": "Canada/Newfoundland",
+          "name": "Canada/Newfoundland",
+          "code": "Canada/Newfoundland"
+        },
+        {
+          "id": "Canada/Pacific",
+          "name": "Canada/Pacific",
+          "code": "Canada/Pacific"
+        },
+        {
+          "id": "Europe/Amsterdam",
+          "name": "Europe/Amsterdam",
+          "code": "Europe/Amsterdam"
+        },
+        {
+          "id": "Europe/Athens",
+          "name": "Europe/Athens",
+          "code": "Europe/Athens"
+        },
+        {
+          "id": "Europe/Belgrade",
+          "name": "Europe/Belgrade",
+          "code": "Europe/Belgrade"
+        },
+        {
+          "id": "Europe/Berlin",
+          "name": "Europe/Berlin",
+          "code": "Europe/Berlin"
+        },
+        {
+          "id": "Europe/Brussels",
+          "name": "Europe/Brussels",
+          "code": "Europe/Brussels"
+        },
+        {
+          "id": "Europe/Bucharest",
+          "name": "Europe/Bucharest",
+          "code": "Europe/Bucharest"
+        },
+        {
+          "id": "Europe/Budapest",
+          "name": "Europe/Budapest",
+          "code": "Europe/Budapest"
+        },
+        {
+          "id": "Europe/Copenhagen",
+          "name": "Europe/Copenhagen",
+          "code": "Europe/Copenhagen"
+        },
+        {
+          "id": "Europe/Dublin",
+          "name": "Europe/Dublin",
+          "code": "Europe/Dublin"
+        },
+        {
+          "id": "Europe/Gibraltar",
+          "name": "Europe/Gibraltar",
+          "code": "Europe/Gibraltar"
+        },
+        {
+          "id": "Europe/Istanbul",
+          "name": "Europe/Istanbul",
+          "code": "Europe/Istanbul"
+        },
+        {
+          "id": "Europe/Lisbon",
+          "name": "Europe/Lisbon",
+          "code": "Europe/Lisbon"
+        },
+        {
+          "id": "Europe/London",
+          "name": "Europe/London",
+          "code": "Europe/London"
+        },
+        {
+          "id": "Europe/Luxembourg",
+          "name": "Europe/Luxembourg",
+          "code": "Europe/Luxembourg"
+        },
+        {
+          "id": "Europe/Madrid",
+          "name": "Europe/Madrid",
+          "code": "Europe/Madrid"
+        },
+        {
+          "id": "Europe/Minsk",
+          "name": "Europe/Minsk",
+          "code": "Europe/Minsk"
+        },
+        {
+          "id": "Europe/Monaco",
+          "name": "Europe/Monaco",
+          "code": "Europe/Monaco"
+        },
+        {
+          "id": "Europe/Moscow",
+          "name": "Europe/Moscow",
+          "code": "Europe/Moscow"
+        },
+        {
+          "id": "Europe/Oslo",
+          "name": "Europe/Oslo",
+          "code": "Europe/Oslo"
+        },
+        {
+          "id": "Europe/Paris",
+          "name": "Europe/Paris",
+          "code": "Europe/Paris"
+        },
+        {
+          "id": "Europe/Prague",
+          "name": "Europe/Prague",
+          "code": "Europe/Prague"
+        },
+        {
+          "id": "Europe/Rome",
+          "name": "Europe/Rome",
+          "code": "Europe/Rome"
+        },
+        {
+          "id": "Europe/Stockholm",
+          "name": "Europe/Stockholm",
+          "code": "Europe/Stockholm"
+        },
+        {
+          "id": "Europe/Vienna",
+          "name": "Europe/Vienna",
+          "code": "Europe/Vienna"
+        },
+        {
+          "id": "Europe/Warsaw",
+          "name": "Europe/Warsaw",
+          "code": "Europe/Warsaw"
+        },
+        {
+          "id": "Europe/Zurich",
+          "name": "Europe/Zurich",
+          "code": "Europe/Zurich"
+        },
+        {
+          "id": "Pacific/Guam",
+          "name": "Pacific/Guam",
+          "code": "Pacific/Guam"
+        },
+        {
+          "id": "Pacific/Honolulu",
+          "name": "Pacific/Honolulu",
+          "code": "Pacific/Honolulu"
+        },
+        {
+          "id": "Pacific/Midway",
+          "name": "Pacific/Midway",
+          "code": "Pacific/Midway"
+        },
+        {
+          "id": "Pacific/Norfolk",
+          "name": "Pacific/Norfolk",
+          "code": "Pacific/Norfolk"
+        },
+        {
+          "id": "UTC",
+          "name": "UTC",
+          "code": "UTC"
+        }
+      ]
+    }
+  ]
+}

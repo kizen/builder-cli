@@ -1,0 +1,197 @@
+{
+  "id": "74fc4413-6610-4e5c-bc4e-3fc5378dba17",
+  "name": "Delete Child Docs and Retry",
+  "api_name": "delete_child_docs_and_retry",
+  "ai_description": "\nTriggered manually on a 'Document Sets' record, this 3-step automation resets a document for reprocessing. The workflow begins by archiving all related 'Sub Document Records', effectively deleting any child documents that were previously created. It then changes the 'Indexing Complete' field on the parent record to 'No', resetting its processing status. The automation concludes by starting the 'Document Orchestration v2' workflow to re-initiate the entire document analysis and processing sequence.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+    "name": "document_sets",
+    "description": "The Document Sets object stores and categorizes financial documents for mortgage transactions, classifying them by type like 'Appraisal' or 'W2'. It tracks classification status, records an execution date, and identifies multi-document files. Each set is linked to a primary Deal, Party, and Contact, and supports parent-child hierarchies for grouping related documents.",
+    "entity_name": "Document",
+    "object_name": "Document Sets",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "c030e853-1305-413d-abd4-c2d3ae438675",
+    "name": "v2 Testing"
+  },
+  "triggers": [
+    {
+      "id": "18fe65e6-99dd-4b25-9f3b-6b2dc5ddc11d",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 52
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "30c0cca8-94e7-42b0-b306-ee7375426175",
+      "step_type": "archive_record",
+      "order": 0,
+      "description": "Archive 'Related Record' from 'Sub Document Records'",
+      "user_description": "",
+      "stats": {
+        "number_completed": 52,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_archive_record": {
+        "record_source": "related_object_field",
+        "relationship_fields": [
+          {
+            "id": "bbdd46aa-13e0-45d3-a979-aace7aaa3b5e",
+            "name": "related_document_records",
+            "display_name": "Sub Document Records",
+            "deleted": false,
+            "field_type": "relationship",
+            "options": [],
+            "relation": {
+              "id": "a98b54e0-f88e-43b1-a0d4-4bebee8074c5",
+              "related_field": "850c3a0b-6a18-4bfe-b3ee-86b359ac7089",
+              "related_object": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+              "related_object_name": "Document Sets",
+              "related_object_object_name": "document_sets",
+              "related_entity_name": "Document",
+              "related_category": "14595996-5026-46a9-9c39-208c2f785ef2",
+              "related_name": "Primary Document Record",
+              "relation_type": "primary_for",
+              "cardinality": "one_to_many",
+              "fetch_url": "standard"
+            },
+            "rating": null
+          }
+        ],
+        "automation_variable": null,
+        "deleted": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "e5507a42-4977-4dde-91af-ef403474a605",
+      "step_type": "change_field_value",
+      "order": 1,
+      "description": "Change Field \u2018Indexing Complete\u2019 to \u2018No\u2019",
+      "user_description": "",
+      "stats": {
+        "number_completed": 52,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "30c0cca8-94e7-42b0-b306-ee7375426175",
+      "parent_condition": "",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "742f6695-7863-4a1a-bd38-f3fe14fda117",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "ce1acddb-2b00-4fa4-8d98-4a51c23f738b",
+              "name": "indexing_complete",
+              "display_name": "Indexing Complete",
+              "deleted": false,
+              "field_type": "yesnomaybe",
+              "options": [
+                {
+                  "id": "f05b2aac-31c5-49d3-8e95-1e3823263549",
+                  "code": "yes",
+                  "name": "Yes",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "a9b9dab0-d6e9-4844-9c75-98a9d7d60cc4",
+                  "code": "no",
+                  "name": "No",
+                  "order": 2,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "a9b9dab0-d6e9-4844-9c75-98a9d7d60cc4",
+              "name": "No",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "3fea063a-4960-4e95-9295-6e1314e2852b",
+      "step_type": "start_automation",
+      "order": 2,
+      "description": "Start Agentic Workflows 'Document Orchestration v2'",
+      "user_description": "",
+      "stats": {
+        "number_completed": 49,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "e5507a42-4977-4dde-91af-ef403474a605",
+      "parent_condition": "",
+      "action_start_automation": {
+        "record_source": "this_record",
+        "relationship_fields": [],
+        "automation_variable": null,
+        "automations": [
+          {
+            "id": "3e1d490a-9358-4c7d-ada3-a1f9c9cb9606",
+            "name": "Document Orchestration v2",
+            "deleted": false,
+            "active": false
+          }
+        ],
+        "resume_paused_automations": false,
+        "automation_variable_overrides": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [],
+  "revision": 5,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 52,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-05-04T14:07:36.954062-05:00",
+  "updated": "2026-06-01T14:25:43.134409-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

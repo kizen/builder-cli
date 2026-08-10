@@ -1,0 +1,2180 @@
+{
+  "id": "bcf3bc75-927b-4d0a-9274-5b0fb06dfd31",
+  "name": "Self-Learning Agent",
+  "api_name": "self_learning_agent",
+  "ai_description": "\nTriggered manually or weekly on Saturday from a Business Logic record, this 32-step automation analyzes document processing performance to generate AI improvement rules. The workflow begins by executing a code step to pull and format audit records, calculating the total number of reclassifications. A condition then checks if this total is 15 or more. If the threshold is not met, the analysis is skipped, and the automation jumps to its final steps. If it is met, the workflow proceeds through a series of three conditional checks for detection, indexing, and classification error types. For each error type with a total of 10 or more instances, a dedicated LLM call analyzes the corresponding error patterns and generates new, actionable rules. These generated rules are then saved to pre-approval fields for later review. All paths converge to update the 'Self-Learning Last Run Date' and calculate a new run date 7 days in the future. A final check validates this new date; if valid, the 'Self-Learning Next Run Date' field is updated, and an activity is scheduled for an admin to review the run. If the date is invalid, the automation stops and fails.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "4f977da3-7d94-43f7-947e-7ba7ab065c1e",
+    "name": "business_logic",
+    "description": null,
+    "entity_name": "Business Logic",
+    "object_name": "Business Logic",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "12c476f6-564e-4f54-a4d2-7a9be9d6f22d",
+    "name": "Utility"
+  },
+  "triggers": [
+    {
+      "id": "beb27c1d-f211-4446-a046-bb7efd71d5b4",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 16
+      }
+    },
+    {
+      "id": "f6ca0bbd-05de-4b44-a735-4dd5f76e9ad3",
+      "order": 1,
+      "description": "On Date \u2018Self-Learning Next Run Date\u2019 at 12:00 AM",
+      "user_description": "Run 1x per week on Saturday",
+      "trigger_type": "on_or_around_date",
+      "trigger_on_or_around_date": {
+        "field": {
+          "id": "865e6bf7-5ecb-491e-91e8-1b27c6b30d4e",
+          "name": "self_learning_next_run_date",
+          "category": "5e32a9c8-b298-47a1-9a2d-33f6584e6873",
+          "display_name": "Self-Learning Next Run Date",
+          "is_default": false,
+          "field_type": "date",
+          "is_required": false,
+          "is_read_only": false,
+          "is_hidden": false,
+          "is_deletable": true,
+          "is_hideable": true,
+          "is_suppressed": false,
+          "allows_nulls": true,
+          "allows_empty": false,
+          "order": 3,
+          "meta": {
+            "cols": 2
+          },
+          "description": "",
+          "description_visibility": "all",
+          "properties": {
+            "allow_options": false,
+            "allow_multiple": false,
+            "allow_relations": false,
+            "allow_add": false,
+            "type": "date",
+            "target_column": "value_date"
+          },
+          "options": [],
+          "relation": null,
+          "rating": null,
+          "phonenumber_options": null,
+          "money_options": null,
+          "decimal_options": null,
+          "deleted": false
+        },
+        "date_offset": "on_day",
+        "time": "12:00",
+        "period": "am",
+        "date_offset_days": 0,
+        "every_year": true,
+        "skip_non_working_days": null,
+        "past_date_action": "proceed_down_met_path"
+      },
+      "stats": {
+        "number_completed": 20
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "44350d28-4c69-4d37-b904-6b0bc57188e9",
+      "step_type": "initialize_variable",
+      "order": 0,
+      "description": "total_reclassifications = <i>empty</i>",
+      "user_description": "Grand total of all reclassifications across all types. Informational metric for monitoring the overall volume of corrections in the system.",
+      "stats": {
+        "number_completed": 34,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "09973616-a98b-412b-8f91-85f213b2ce75",
+          "name": "total_reclassifications",
+          "data_type": "number",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "no_comma",
+          "created": "2026-02-20T22:23:11.025559Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "4f5f43fb-6a99-43de-952b-33067a04c928",
+      "step_type": "initialize_variable",
+      "order": 1,
+      "description": "new_run_date = <i>empty</i>",
+      "user_description": "placeholder for updated run date",
+      "stats": {
+        "number_completed": 33,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "44350d28-4c69-4d37-b904-6b0bc57188e9",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "26bb7e38-72ef-4379-a65f-e4aa19bd9a9b",
+          "name": "new_run_date",
+          "data_type": "date",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "%m/%d/%Y",
+          "created": "2026-02-21T17:08:04.980138Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d2dec58f-c8d8-431f-b5f1-084c72b6ef93",
+      "step_type": "initialize_variable",
+      "order": 2,
+      "description": "classification_json = <i>empty</i>",
+      "user_description": "Full JSON containing all Override Classification and Manually Classified correction patterns \u2014 grouped by initial\u2192corrected document type, with occurrence counts, user-provided reasons, and initial classification reasons. Fed into the classification synthesis LLM prompt.",
+      "stats": {
+        "number_completed": 27,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "4f5f43fb-6a99-43de-952b-33067a04c928",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "31ea1b06-0819-4bfa-aa7d-b26aa8a43658",
+          "name": "classification_json",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-03T18:48:29.386988Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "a4446f57-a73f-402d-b02f-ba201d2e3369",
+      "step_type": "initialize_variable",
+      "order": 3,
+      "description": "indexing_json = <i>empty</i>",
+      "user_description": "Full JSON containing all Re-Split Multi Document records \u2014 each with the parsed initial index (system-generated page splits with reasons) and the corrected new index (user-provided page splits). Fed into the indexing synthesis LLM prompt.",
+      "stats": {
+        "number_completed": 27,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "d2dec58f-c8d8-431f-b5f1-084c72b6ef93",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "83bc133f-ac4b-4e83-9cdf-f781265c0b1e",
+          "name": "indexing_json",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-03T18:48:29.394670Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "52d7ab9d-bf75-4f54-a79a-76c68763ea72",
+      "step_type": "initialize_variable",
+      "order": 4,
+      "description": "detection_json = <i>empty</i>",
+      "user_description": "Full JSON containing all Single to Multi Document and Multi Document to Single corrections \u2014 Single\u2192Multi grouped by document type with user-provided indexes, Multi\u2192Single grouped by document type with the incorrect system-generated indexes. Fed into the detection synthesis LLM prompt.",
+      "stats": {
+        "number_completed": 27,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "a4446f57-a73f-402d-b02f-ba201d2e3369",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "df5fb643-1f5f-4178-bdb0-7c0c7b4143b2",
+          "name": "detection_json",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-03T18:48:29.402083Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "1cbaa8f4-583d-476d-9a9a-61e5dbc3028e",
+      "step_type": "initialize_variable",
+      "order": 5,
+      "description": "classification_considerations = <i>empty</i>",
+      "user_description": "Key considerations for single doc. classification",
+      "stats": {
+        "number_completed": 27,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "52d7ab9d-bf75-4f54-a79a-76c68763ea72",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "55228cdc-1f86-4633-9597-f99014305b52",
+          "name": "classification_considerations",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-03T18:57:37.408149Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "79325587-4215-4eb1-8a2d-56ceaf802d9f",
+      "step_type": "initialize_variable",
+      "order": 6,
+      "description": "indexing_considerations = <i>empty</i>",
+      "user_description": "key considerations for document indexing",
+      "stats": {
+        "number_completed": 27,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "1cbaa8f4-583d-476d-9a9a-61e5dbc3028e",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "ddf0eeb2-ba14-4164-8bf8-31516c485a8a",
+          "name": "indexing_considerations",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-03T18:57:37.416085Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "535be44b-fae0-4133-b67a-e35da4e7da57",
+      "step_type": "initialize_variable",
+      "order": 7,
+      "description": "detection_considerations = <i>empty</i>",
+      "user_description": "key considerations for detecting if something is multi-doc or not",
+      "stats": {
+        "number_completed": 27,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "79325587-4215-4eb1-8a2d-56ceaf802d9f",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "cf8242e3-f923-4b70-9dd7-5dc9414dd27e",
+          "name": "detection_considerations",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-03T18:57:37.424071Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d10a38ab-7fd1-48d5-a8bd-0c9156497e62",
+      "step_type": "initialize_variable",
+      "order": 8,
+      "description": "classification_total = <i>empty</i>",
+      "user_description": "Total number of Override Classification + Manually Classified reclassifications across all audit log records. Used as a threshold gate (>= 20) to determine if there's enough data to run the classification synthesis LLM.",
+      "stats": {
+        "number_completed": 25,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "535be44b-fae0-4133-b67a-e35da4e7da57",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "48cbbf3c-aebe-445b-9d24-f16a65ac6c4d",
+          "name": "classification_total",
+          "data_type": "number",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "no_comma",
+          "created": "2026-03-03T20:05:09.480223Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "cd673761-a6b1-4807-805a-66cf3d675d0e",
+      "step_type": "initialize_variable",
+      "order": 9,
+      "description": "classification_patterns = <i>empty</i>",
+      "user_description": "Count of distinct initial\u2192corrected document type pairs that have occurred 3 or more times. Used as a second threshold gate (>= 3) to ensure there are enough repeated patterns before generating classification rules.",
+      "stats": {
+        "number_completed": 25,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "d10a38ab-7fd1-48d5-a8bd-0c9156497e62",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "cd6b55bb-ceaa-4ec6-9e98-35c787bfa15b",
+          "name": "classification_patterns",
+          "data_type": "number",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "no_comma",
+          "created": "2026-03-03T20:05:09.488476Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d5bbeeeb-8936-4bb7-956d-6f86de62f60b",
+      "step_type": "initialize_variable",
+      "order": 10,
+      "description": "indexing_total = <i>empty</i>",
+      "user_description": "Total number of Re-Split Multi Document reclassifications across all audit log records. Used as a threshold gate (>= 20) to determine if there's enough data to run the indexing synthesis LLM.",
+      "stats": {
+        "number_completed": 25,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "cd673761-a6b1-4807-805a-66cf3d675d0e",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "b3e4afbd-c673-43d4-9530-f1e24f81bca4",
+          "name": "indexing_total",
+          "data_type": "number",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "no_comma",
+          "created": "2026-03-03T20:05:09.496351Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "80d708f6-7025-450f-a7ba-3acb911170b5",
+      "step_type": "initialize_variable",
+      "order": 11,
+      "description": "detection_total = <i>empty</i>",
+      "user_description": "Total number of Single to Multi Document + Multi Document to Single reclassifications across all audit log records. Used as a threshold gate (>= 20) to determine if there's enough data to run the detection synthesis LLM.",
+      "stats": {
+        "number_completed": 25,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "d5bbeeeb-8936-4bb7-956d-6f86de62f60b",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "33a8930c-e33a-4b17-996e-cd19c9e6290f",
+          "name": "detection_total",
+          "data_type": "number",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "no_comma",
+          "created": "2026-03-03T20:05:09.504277Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "c5faaa93-9486-486a-a7f5-5cd0f294dee0",
+      "step_type": "code_step",
+      "order": 12,
+      "description": "Run Python 3.13 Code on (0 inputs) and set (total_reclassifications, and 7 more)",
+      "user_description": "Pull and format all audit records",
+      "stats": {
+        "number_completed": 3,
+        "number_failed": 0,
+        "number_pending": 1
+      },
+      "parent_step_id": "80d708f6-7025-450f-a7ba-3acb911170b5",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "180526bb-6b27-4787-aeec-e377c05ddcfb",
+            "name": "kizen_api",
+            "deleted": false
+          }
+        ],
+        "inputs": [],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "total_reclassifications",
+            "variable": {
+              "name": "total_reclassifications",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "indexing_json",
+            "variable": {
+              "name": "indexing_json",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "detection_json",
+            "variable": {
+              "name": "detection_json",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "classification_total",
+            "variable": {
+              "name": "classification_total",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "classification_patterns",
+            "variable": {
+              "name": "classification_patterns",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "indexing_total",
+            "variable": {
+              "name": "indexing_total",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "detection_total",
+            "variable": {
+              "name": "detection_total",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "classification_json",
+            "variable": {
+              "name": "classification_json",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "script": "import requests\n\nimport json\n\nimport ast\n\nfrom collections import defaultdict\n\n# ==================== KIZEN AUTHENTICATION ====================\n\nbusiness_id, user_id, api_key = secrets[\"kizen_api\"].split(\":\")\n\ns = requests.Session()\n\ns.headers.update(\n\n    {\n\n        \"X-BUSINESS-ID\": business_id,\n\n        \"X-USER-ID\": user_id,\n\n        \"X-API-KEY\": api_key,\n\n        \"accept\": \"application/json\",\n\n    }\n\n)\n\n# ==================== CONSTANTS ====================\n\nOBJECT_IDENTIFIER = \"audit_logs\"\n\nSEARCH_URL = f\"https://app.go.kizen.com/api/records/{OBJECT_IDENTIFIER}/search\"\n\nPAGE_SIZE = 200\n\n# Reclassification type values (must match dropdown exactly)\n\nTYPE_OVERRIDE = \"Override Classification\"\n\nTYPE_MANUAL = \"Manually Classified\"\n\nTYPE_RESPLIT = \"Re-Split Multi Document\"\n\nTYPE_SINGLE_TO_MULTI = \"Single to Multi Document\"\n\nTYPE_MULTI_TO_SINGLE = \"Multi Document to Single\"\n\n# Loop groupings\n\nCLASSIFICATION_TYPES = {TYPE_OVERRIDE, TYPE_MANUAL}\n\nINDEXING_TYPES = {TYPE_RESPLIT}\n\nDETECTION_TYPES = {TYPE_SINGLE_TO_MULTI, TYPE_MULTI_TO_SINGLE}\n\n# Minimum occurrences for a from\u2192to pattern to count as \"qualifying\"\n\nMIN_PATTERN_OCCURRENCES = 3\n\n# ==================== HELPERS ====================\n\ndef extract_field(record, field_api_name):\n\n    \"\"\"\n\n    Extract a field value from a Kizen entity record.\n\n    Handles UUID-keyed fields, dropdowns, and relationship values.\n\n    \"\"\"\n\n    fields = record.get(\"fields\", {})\n\n    for field_id, field_data in fields.items():\n\n        if field_data.get(\"name\") == field_api_name:\n\n            value = field_data.get(\"value\")\n\n            # Unwrap dropdown / relationship values\n\n            if isinstance(value, dict):\n\n                return value.get(\"name\", value.get(\"display_name\", str(value)))\n\n            return value\n\n    return None\n\ndef parse_index(raw_index):\n\n    \"\"\"\n\n    Parse an index field into a list of dicts.\n\n    Handles:\n\n      - Already a list (no parsing needed)\n\n      - JSON string (escaped quotes)\n\n      - Python literal string (ast.literal_eval fallback)\n\n      - None / empty \u2192 returns empty list\n\n    Normalizes field names so both initial and new indexes\n\n    use consistent keys: document_type, category, page_start, page_end.\n\n    Initial indexes may also include: reason, confidence_score.\n\n    \"\"\"\n\n    if raw_index is None:\n\n        return []\n\n    # If already a list, use it directly\n\n    if isinstance(raw_index, list):\n\n        entries = raw_index\n\n    elif isinstance(raw_index, str):\n\n        raw_index = raw_index.strip()\n\n        if not raw_index:\n\n            return []\n\n        try:\n\n            entries = json.loads(raw_index)\n\n        except json.JSONDecodeError:\n\n            try:\n\n                entries = ast.literal_eval(raw_index)\n\n            except Exception:\n\n                return []\n\n    else:\n\n        return []\n\n    if not isinstance(entries, list):\n\n        return []\n\n    # Normalize field names across both index formats\n\n    normalized = []\n\n    for entry in entries:\n\n        if not isinstance(entry, dict):\n\n            continue\n\n        norm = {\n\n            \"document_type\": entry.get(\"document_type\") or entry.get(\"classification\") or \"Unknown\",\n\n            \"category\": entry.get(\"document_category\") or entry.get(\"category\") or \"Unknown\",\n\n            \"page_start\": entry.get(\"page_start\"),\n\n            \"page_end\": entry.get(\"page_end\"),\n\n        }\n\n        # Preserve reason and confidence from initial indexes\n\n        if \"reason\" in entry:\n\n            norm[\"reason\"] = entry[\"reason\"]\n\n        if \"confidence_score\" in entry:\n\n            norm[\"confidence_score\"] = entry[\"confidence_score\"]\n\n        normalized.append(norm)\n\n    return normalized\n\n# ==================== PAGINATION: FETCH ALL RECORDS ====================\n\ndef fetch_all_audit_logs(session):\n\n    \"\"\"\n\n    Fetch all audit log records using Kizen's cursor-based pagination.\n\n    \"\"\"\n\n    all_records = []\n\n    url = SEARCH_URL\n\n    page_num = 1\n\n    while url:\n\n        payload = {\"page_size\": PAGE_SIZE}\n\n        response = session.post(url, json=payload)\n\n        response.raise_for_status()\n\n        data = response.json()\n\n        records = data.get(\"results\", [])\n\n        all_records.extend(records)\n\n        outputs.log(\n\n            f\"Page {page_num}: fetched {len(records)} records \"\n\n            f\"(total so far: {len(all_records)} / {data.get('count', '?')})\"\n\n        )\n\n        url = data.get(\"next\")\n\n        page_num += 1\n\n    return all_records\n\n# ==================== ROUTE RECORDS BY TYPE ====================\n\ndef route_records(records):\n\n    \"\"\"\n\n    Sort all re-classified records into the three feedback loops\n\n    based on reclassification_type.\n\n    \"\"\"\n\n    classification_records = []\n\n    indexing_records = []\n\n    detection_records = []\n\n    skipped = 0\n\n    for record in records:\n\n        # Only process re-classified records\n\n        re_classified = extract_field(record, \"re_classified\")\n\n        if str(re_classified).strip().lower() not in (\"yes\", \"true\", \"1\"):\n\n            continue\n\n        reclass_type = (extract_field(record, \"reclassification_type\") or \"\").strip()\n\n        if reclass_type in CLASSIFICATION_TYPES:\n\n            classification_records.append({\n\n                \"reclassification_type\": reclass_type,\n\n                \"initial_document_type\": extract_field(record, \"initial_document_type\"),\n\n                \"new_document_type\": extract_field(record, \"new_document_type\"),\n\n                \"initial_classification_reason\": extract_field(record, \"initial_classification_reason\"),\n\n                \"re_classification_reason\": extract_field(record, \"re_classification_reason\"),\n\n            })\n\n        elif reclass_type in INDEXING_TYPES:\n\n            indexing_records.append({\n\n                \"initial_index\": parse_index(extract_field(record, \"initial_index\")),\n\n                \"new_index\": parse_index(extract_field(record, \"new_index\")),\n\n            })\n\n        elif reclass_type in DETECTION_TYPES:\n\n            detection_records.append({\n\n                \"reclassification_type\": reclass_type,\n\n                \"initial_document_type\": extract_field(record, \"initial_document_type\"),\n\n                \"initial_classification_reason\": extract_field(record, \"initial_classification_reason\"),\n\n                \"initial_index\": parse_index(extract_field(record, \"initial_index\")),\n\n                \"new_index\": parse_index(extract_field(record, \"new_index\")),\n\n            })\n\n        else:\n\n            skipped += 1\n\n            outputs.log(f\"Skipped record with unknown reclassification_type: '{reclass_type}'\")\n\n    return classification_records, indexing_records, detection_records, skipped\n\n# ==================== LOOP 1: CLASSIFICATION FEEDBACK ====================\n\ndef build_classification_output(records):\n\n    \"\"\"\n\n    Build classification feedback JSON.\n\n    Groups by (from \u2192 to) pattern, tags with reclassification type.\n\n    \"\"\"\n\n    pattern_groups = defaultdict(lambda: {\n\n        \"re_classification_reasons\": [],\n\n        \"initial_classification_reasons\": [],\n\n        \"reclassification_types\": [],\n\n        \"count\": 0,\n\n    })\n\n    for rec in records:\n\n        key = (\n\n            rec[\"initial_document_type\"] or \"Unknown\",\n\n            rec[\"new_document_type\"] or \"Unknown\",\n\n        )\n\n        group = pattern_groups[key]\n\n        group[\"count\"] += 1\n\n        reason = rec[\"re_classification_reason\"]\n\n        if reason not in group[\"re_classification_reasons\"]:\n\n            group[\"re_classification_reasons\"].append(reason)\n\n        initial_reason = rec[\"initial_classification_reason\"]\n\n        if initial_reason not in group[\"initial_classification_reasons\"]:\n\n            group[\"initial_classification_reasons\"].append(initial_reason)\n\n        reclass_type = rec[\"reclassification_type\"]\n\n        if reclass_type not in group[\"reclassification_types\"]:\n\n            group[\"reclassification_types\"].append(reclass_type)\n\n    # Build patterns sorted by frequency\n\n    correction_patterns = []\n\n    for (from_type, to_type), group in sorted(\n\n        pattern_groups.items(), key=lambda x: x[1][\"count\"], reverse=True\n\n    ):\n\n        correction_patterns.append({\n\n            \"from\": from_type,\n\n            \"to\": to_type,\n\n            \"occurrence_count\": group[\"count\"],\n\n            \"reclassification_types\": group[\"reclassification_types\"],\n\n            \"re_classification_reasons\": group[\"re_classification_reasons\"],\n\n            \"initial_classification_reasons\": group[\"initial_classification_reasons\"],\n\n        })\n\n    qualifying = sum(\n\n        1 for p in correction_patterns\n\n        if p[\"occurrence_count\"] >= MIN_PATTERN_OCCURRENCES\n\n    )\n\n    override_count = sum(1 for r in records if r[\"reclassification_type\"] == TYPE_OVERRIDE)\n\n    manual_count = sum(1 for r in records if r[\"reclassification_type\"] == TYPE_MANUAL)\n\n    return {\n\n        \"summary\": {\n\n            \"total\": len(records),\n\n            \"override_count\": override_count,\n\n            \"manual_review_count\": manual_count,\n\n            \"distinct_patterns_total\": len(correction_patterns),\n\n            \"distinct_patterns_qualifying\": qualifying,\n\n        },\n\n        \"correction_patterns\": correction_patterns,\n\n    }, qualifying\n\n# ==================== LOOP 2: INDEXING FEEDBACK ====================\n\ndef build_indexing_output(records):\n\n    \"\"\"\n\n    Build indexing feedback JSON.\n\n    Passes parsed and normalized initial_index and new_index pairs.\n\n    \"\"\"\n\n    return {\n\n        \"summary\": {\n\n            \"total_re_splits\": len(records),\n\n        },\n\n        \"re_splits\": records,\n\n    }\n\n# ==================== LOOP 3: DETECTION FEEDBACK ====================\n\ndef build_detection_output(records):\n\n    \"\"\"\n\n    Build detection feedback JSON.\n\n    Single\u2192Multi: grouped by initial_document_type.\n\n    Multi\u2192Single: individual records with parsed indexes.\n\n    \"\"\"\n\n    single_to_multi = []\n\n    multi_to_single = []\n\n    for rec in records:\n\n        if rec[\"reclassification_type\"] == TYPE_SINGLE_TO_MULTI:\n\n            single_to_multi.append({\n\n                \"initial_document_type\": rec[\"initial_document_type\"],\n\n                \"initial_classification_reason\": rec[\"initial_classification_reason\"],\n\n                \"new_index\": rec[\"new_index\"],\n\n            })\n\n        elif rec[\"reclassification_type\"] == TYPE_MULTI_TO_SINGLE:\n\n            multi_to_single.append({\n\n                \"initial_document_type\": rec[\"initial_document_type\"],\n\n                \"initial_index\": rec[\"initial_index\"],\n\n            })\n\n    # Group single_to_multi by initial_document_type\n\n    stm_groups = defaultdict(lambda: {\n\n        \"initial_classification_reasons\": [],\n\n        \"new_indexes\": [],\n\n        \"count\": 0,\n\n    })\n\n    for rec in single_to_multi:\n\n        key = rec[\"initial_document_type\"] or \"Unknown\"\n\n        group = stm_groups[key]\n\n        group[\"count\"] += 1\n\n        group[\"new_indexes\"].append(rec[\"new_index\"])\n\n        reason = rec[\"initial_classification_reason\"]\n\n        if reason not in group[\"initial_classification_reasons\"]:\n\n            group[\"initial_classification_reasons\"].append(reason)\n\n    stm_patterns = []\n\n    for doc_type, group in sorted(\n\n        stm_groups.items(), key=lambda x: x[1][\"count\"], reverse=True\n\n    ):\n\n        stm_patterns.append({\n\n            \"initial_document_type\": doc_type,\n\n            \"occurrence_count\": group[\"count\"],\n\n            \"initial_classification_reasons\": group[\"initial_classification_reasons\"],\n\n            \"new_indexes\": group[\"new_indexes\"],\n\n        })\n\n    # Group multi_to_single by initial_document_type for pattern detection\n\n    mts_groups = defaultdict(lambda: {\n\n        \"initial_indexes\": [],\n\n        \"count\": 0,\n\n    })\n\n    for rec in multi_to_single:\n\n        key = rec[\"initial_document_type\"] or \"Unknown\"\n\n        group = mts_groups[key]\n\n        group[\"count\"] += 1\n\n        group[\"initial_indexes\"].append(rec[\"initial_index\"])\n\n    mts_patterns = []\n\n    for doc_type, group in sorted(\n\n        mts_groups.items(), key=lambda x: x[1][\"count\"], reverse=True\n\n    ):\n\n        mts_patterns.append({\n\n            \"initial_document_type\": doc_type,\n\n            \"occurrence_count\": group[\"count\"],\n\n            \"initial_indexes\": group[\"initial_indexes\"],\n\n        })\n\n    return {\n\n        \"summary\": {\n\n            \"total\": len(records),\n\n            \"single_to_multi_count\": len(single_to_multi),\n\n            \"multi_to_single_count\": len(multi_to_single),\n\n        },\n\n        \"single_to_multi_patterns\": stm_patterns,\n\n        \"multi_to_single_patterns\": mts_patterns,\n\n    }\n\n# ==================== MAIN EXECUTION ====================\n\noutputs.log(\"Starting audit log fetch...\")\n\nall_records = fetch_all_audit_logs(s)\n\noutputs.log(f\"Total audit log records fetched: {len(all_records)}\")\n\nif len(all_records) == 0:\n\n    outputs.log(\"No audit log records found. All outputs will reflect empty state.\")\n\n# --- Route records into three loops ---\n\nclassification_recs, indexing_recs, detection_recs, skipped = route_records(all_records)\n\noutputs.log(\n\n    f\"Routed: classification={len(classification_recs)}, \"\n\n    f\"indexing={len(indexing_recs)}, detection={len(detection_recs)}, \"\n\n    f\"skipped={skipped}\"\n\n)\n\n# --- Build outputs for each loop ---\n\nclassification_result, classification_qualifying = build_classification_output(classification_recs)\n\nindexing_result = build_indexing_output(indexing_recs)\n\ndetection_result = build_detection_output(detection_recs)\n\n# --- Serialize ---\n\nclassification_json = json.dumps(classification_result, indent=2, default=str)\n\nindexing_json = json.dumps(indexing_result, indent=2, default=str)\n\ndetection_json = json.dumps(detection_result, indent=2, default=str)\n\n# --- Log previews ---\n\noutputs.log(f\"Classification JSON preview:\\n{classification_json[:2000]}\")\n\noutputs.log(f\"Indexing JSON preview:\\n{indexing_json[:2000]}\")\n\noutputs.log(f\"Detection JSON preview:\\n{detection_json[:2000]}\")\n\n# ==================== SET OUTPUTS ====================\n\n# Configure these output fields on the code step:\n\n#\n\n# JSON outputs (type: text):\n\n#   classification_json   \u2014 for classification synthesis prompt\n\n#   indexing_json          \u2014 for indexing synthesis prompt\n\n#   detection_json         \u2014 for detection synthesis prompt\n\n#\n\n# Threshold outputs (type: number):\n\n#   classification_total       \u2014 condition: >= 20\n\n#   classification_patterns    \u2014 condition: >= 3 (distinct from\u2192to with 3+ occurrences)\n\n#   indexing_total              \u2014 condition: >= 20\n\n#   detection_total             \u2014 condition: >= 20\n\n#   total_reclassifications    \u2014 grand total across all types\n\noutputs.classification_json = classification_json\n\noutputs.indexing_json = indexing_json\n\noutputs.detection_json = detection_json\n\noutputs.classification_total = len(classification_recs)\n\noutputs.classification_patterns = classification_qualifying\n\noutputs.indexing_total = len(indexing_recs)\n\noutputs.detection_total = len(detection_recs)\n\noutputs.total_reclassifications = len(classification_recs) + len(indexing_recs) + len(detection_recs)"
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": true,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "12ae13ba-3f14-4c40-9b04-1b38eb919105",
+      "step_type": "code_step",
+      "order": 13,
+      "description": "Run Python 3.13 Code on (0 inputs) and set (total_reclassifications, and 7 more)",
+      "user_description": "Pull and format all audit records",
+      "stats": {
+        "number_completed": 22,
+        "number_failed": 0,
+        "number_pending": 1
+      },
+      "parent_step_id": "c5faaa93-9486-486a-a7f5-5cd0f294dee0",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "180526bb-6b27-4787-aeec-e377c05ddcfb",
+            "name": "kizen_api",
+            "deleted": false
+          }
+        ],
+        "inputs": [],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "total_reclassifications",
+            "variable": {
+              "name": "total_reclassifications",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "indexing_json",
+            "variable": {
+              "name": "indexing_json",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "detection_json",
+            "variable": {
+              "name": "detection_json",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "classification_total",
+            "variable": {
+              "name": "classification_total",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "classification_patterns",
+            "variable": {
+              "name": "classification_patterns",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "indexing_total",
+            "variable": {
+              "name": "indexing_total",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "detection_total",
+            "variable": {
+              "name": "detection_total",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "number",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "classification_json",
+            "variable": {
+              "name": "classification_json",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "script": "import requests\nimport json\nimport ast\nfrom collections import defaultdict\n\n# ==================== KIZEN AUTHENTICATION ====================\n\nbusiness_id, user_id, api_key = secrets[\"kizen_api\"].split(\":\")\n\ns = requests.Session()\ns.headers.update(\n    {\n        \"X-BUSINESS-ID\": business_id,\n        \"X-USER-ID\": user_id,\n        \"X-API-KEY\": api_key,\n        \"accept\": \"application/json\",\n    }\n)\n\n# ==================== CONSTANTS ====================\n\nOBJECT_IDENTIFIER = \"audit_logs\"\nBASE_URL = \"https://app.go.kizen.com\"\nSEARCH_URL = f\"{BASE_URL}/api/records/{OBJECT_IDENTIFIER}/search\"\nPAGE_SIZE = 200\n\n# Reclassification type values (must match dropdown exactly)\nTYPE_OVERRIDE = \"Override Classification\"\nTYPE_MANUAL = \"Manually Classified\"\nTYPE_RESPLIT = \"Re-Split Multi Document\"\nTYPE_SINGLE_TO_MULTI = \"Single to Multi Document\"\nTYPE_MULTI_TO_SINGLE = \"Multi Document to Single\"\n\n# Loop groupings\nCLASSIFICATION_TYPES = {TYPE_OVERRIDE, TYPE_MANUAL}\nINDEXING_TYPES = {TYPE_RESPLIT}\nDETECTION_TYPES = {TYPE_SINGLE_TO_MULTI, TYPE_MULTI_TO_SINGLE}\n\n# Minimum occurrences for a from\u2192to pattern to count as \"qualifying\"\nMIN_PATTERN_OCCURRENCES = 3\n\n\n# ==================== HELPERS ====================\n\ndef extract_field(record, field_api_name):\n    \"\"\"\n    Extract a field value from a Kizen entity record.\n    Handles UUID-keyed fields, dropdowns, and relationship values.\n    \"\"\"\n    fields = record.get(\"fields\", {})\n    for field_id, field_data in fields.items():\n        if field_data.get(\"name\") == field_api_name:\n            value = field_data.get(\"value\")\n            # Unwrap dropdown / relationship values\n            if isinstance(value, dict):\n                return value.get(\"name\", value.get(\"display_name\", str(value)))\n            return value\n    return None\n\n\ndef parse_structured_insights(raw_value):\n    \"\"\"\n    Parse a structured insights field (JSON or Python literal string) into a dict.\n    LLM outputs may use single-quoted Python dict syntax rather than valid JSON,\n    so we use the same json.loads \u2192 ast.literal_eval fallback as parse_index.\n    Returns the parsed dict/list, or None if empty/unparseable.\n    \"\"\"\n    if raw_value is None:\n        return None\n\n    # Already parsed (dict or list) \u2014 return as-is\n    if isinstance(raw_value, (dict, list)):\n        return raw_value\n\n    if not isinstance(raw_value, str):\n        return None\n\n    raw_value = raw_value.strip()\n    if not raw_value:\n        return None\n\n    try:\n        return json.loads(raw_value)\n    except (json.JSONDecodeError, ValueError):\n        pass\n\n    try:\n        return ast.literal_eval(raw_value)\n    except Exception:\n        pass\n\n    # Unparseable \u2014 return the raw string so data isn't silently lost\n    return raw_value\n\n\ndef parse_index(raw_index):\n    \"\"\"\n    Parse an index field into a list of dicts.\n    Handles:\n      - Already a list (no parsing needed)\n      - JSON string (escaped quotes)\n      - Python literal string (ast.literal_eval fallback)\n      - None / empty \u2192 returns empty list\n\n    Normalizes field names so both initial and new indexes\n    use consistent keys: document_type, category, page_start, page_end.\n    Initial indexes may also include: reason, confidence_score.\n    \"\"\"\n    if raw_index is None:\n        return []\n\n    # If already a list, use it directly\n    if isinstance(raw_index, list):\n        entries = raw_index\n    elif isinstance(raw_index, str):\n        raw_index = raw_index.strip()\n        if not raw_index:\n            return []\n        try:\n            entries = json.loads(raw_index)\n        except json.JSONDecodeError:\n            try:\n                entries = ast.literal_eval(raw_index)\n            except Exception:\n                return []\n    else:\n        return []\n\n    if not isinstance(entries, list):\n        return []\n\n    # Normalize field names across both index formats\n    normalized = []\n    for entry in entries:\n        if not isinstance(entry, dict):\n            continue\n        norm = {\n            \"document_type\": entry.get(\"document_type\") or entry.get(\"classification\") or \"Unknown\",\n            \"category\": entry.get(\"document_category\") or entry.get(\"category\") or \"Unknown\",\n            \"page_start\": entry.get(\"page_start\"),\n            \"page_end\": entry.get(\"page_end\"),\n        }\n        # Preserve reason and confidence from initial indexes\n        if \"reason\" in entry:\n            norm[\"reason\"] = entry[\"reason\"]\n        if \"confidence_score\" in entry:\n            norm[\"confidence_score\"] = entry[\"confidence_score\"]\n        normalized.append(norm)\n\n    return normalized\n\n\n# ==================== FIELD RESOLUTION ====================\n\n\ndef resolve_field_uuid(session, object_api_name, field_api_name, field_type=None):\n    \"\"\"\n    Resolve a field's UUID from its API name using the Custom Object Fields Search API.\n    This avoids hardcoding environment-specific UUIDs.\n\n    Uses field_type as a query parameter to narrow results, then matches by\n    API name ('name') client-side since the 'search' param may only match\n    display_name rather than the API name.\n\n    Args:\n        session: authenticated requests.Session\n        object_api_name: the object's API name (e.g., \"audit_logs\")\n        field_api_name: the field's API name (e.g., \"re_classified\")\n        field_type: optional field_type filter (e.g., \"checkbox\") to narrow results\n\n    Returns:\n        The field UUID string\n\n    Raises:\n        ValueError if the field cannot be found\n    \"\"\"\n    url = f\"{BASE_URL}/api/custom-objects/{object_api_name}/fields/search\"\n    params = {}\n    if field_type:\n        params[\"field_type\"] = field_type\n\n    response = session.post(url, params=params, json={})\n    response.raise_for_status()\n    fields = response.json()\n\n    # Match by API name (the 'name' property on each field object)\n    for field in fields:\n        if field.get(\"name\") == field_api_name:\n            return field[\"id\"]\n\n    raise ValueError(\n        f\"Field '{field_api_name}' (type={field_type}) not found on object '{object_api_name}'. \"\n        f\"Fields search returned {len(fields)} result(s). \"\n        f\"Available names: {[f.get('name') for f in fields[:20]]}\"\n    )\n\n\ndef build_reclassified_filter(field_uuid):\n    \"\"\"\n    Build the search filter payload for re_classified = true.\n    Structure matches the Kizen UI's fields_v2 filter format.\n    \"\"\"\n    return {\n        \"and\": True,\n        \"query\": [\n            {\n                \"and\": False,\n                \"query\": [\n                    {\n                        \"and\": False,\n                        \"filters\": [\n                            {\n                                \"type\": \"fields_v2\",\n                                \"subtype\": \"custom\",\n                                \"field\": f'\"custom\"::{field_uuid}',\n                                \"condition\": \"=\",\n                                \"value\": True,\n                            }\n                        ],\n                        \"id\": \"query-0\",\n                    }\n                ],\n            }\n        ],\n    }\n\n\n# ==================== PAGINATION: FETCH ALL RECORDS ====================\n\n\ndef fetch_all_audit_logs(session):\n    \"\"\"\n    Fetch all reclassified audit log records using Kizen's cursor-based pagination.\n    Resolves the re_classified field UUID at runtime, then applies a server-side\n    filter so only re_classified=true records are returned.\n    \"\"\"\n    # Resolve field UUID from API name (portable across environments)\n    re_classified_uuid = resolve_field_uuid(\n        session, OBJECT_IDENTIFIER, \"re_classified\", field_type=\"checkbox\"\n    )\n    outputs.log(f\"Resolved re_classified field UUID: {re_classified_uuid}\")\n\n    reclassified_filter = build_reclassified_filter(re_classified_uuid)\n\n    all_records = []\n    url = SEARCH_URL\n    page_num = 1\n\n    while url:\n        payload = {\n            \"page_size\": PAGE_SIZE,\n            **reclassified_filter,\n        }\n        response = session.post(url, json=payload)\n        response.raise_for_status()\n        data = response.json()\n        records = data.get(\"results\", [])\n        all_records.extend(records)\n\n        outputs.log(\n            f\"Page {page_num}: fetched {len(records)} records \"\n            f\"(total so far: {len(all_records)} / {data.get('count', '?')})\"\n        )\n\n        url = data.get(\"next\")\n        page_num += 1\n\n    return all_records\n\n\n# ==================== ROUTE RECORDS BY TYPE ====================\n\ndef route_records(records):\n    \"\"\"\n    Sort all re-classified records into the three feedback loops\n    based on reclassification_type.\n    \"\"\"\n    classification_records = []\n    indexing_records = []\n    detection_records = []\n    skipped = 0\n\n    for record in records:\n        record_id = record.get(\"id\", \"unknown\")\n\n        # Only process re-classified records\n        re_classified = extract_field(record, \"re_classified\")\n        if str(re_classified).strip().lower() not in (\"yes\", \"true\", \"1\"):\n            # Diagnostic: flag records that have structural insights but aren't marked re-classified\n            structural_insight = extract_field(record, \"structural_reclassification_insights\")\n            if structural_insight:\n                outputs.log(\n                    f\"DIAGNOSTIC: Record {record_id} has structural_reclassification_insights \"\n                    f\"but re_classified={re_classified!r} \u2014 not being processed\"\n                )\n            continue\n\n        reclass_type = (extract_field(record, \"reclassification_type\") or \"\").strip()\n\n        if reclass_type in CLASSIFICATION_TYPES:\n            classification_records.append({\n                \"reclassification_type\": reclass_type,\n                \"initial_document_type\": extract_field(record, \"initial_document_type\"),\n                \"new_document_type\": extract_field(record, \"new_document_type\"),\n                \"initial_classification_reason\": extract_field(record, \"initial_classification_reason\"),\n                \"re_classification_reason\": extract_field(record, \"re_classification_reason\"),\n                \"reclassification_insights\": extract_field(record, \"reclassification_insights\"),\n            })\n\n        elif reclass_type in INDEXING_TYPES:\n            indexing_records.append({\n                \"initial_index\": parse_index(extract_field(record, \"initial_index\")),\n                \"new_index\": parse_index(extract_field(record, \"new_index\")),\n                \"structural_reclassification_insights\": parse_structured_insights(\n                    extract_field(record, \"structural_reclassification_insights\")\n                ),\n            })\n\n        elif reclass_type in DETECTION_TYPES:\n            detection_records.append({\n                \"reclassification_type\": reclass_type,\n                \"initial_document_type\": extract_field(record, \"initial_document_type\"),\n                \"initial_classification_reason\": extract_field(record, \"initial_classification_reason\"),\n                \"initial_index\": parse_index(extract_field(record, \"initial_index\")),\n                \"new_index\": parse_index(extract_field(record, \"new_index\")),\n                \"structural_reclassification_insights\": parse_structured_insights(\n                    extract_field(record, \"structural_reclassification_insights\")\n                ),\n            })\n\n        else:\n            skipped += 1\n            outputs.log(\n                f\"Skipped record {record_id}: re_classified={re_classified!r}, \"\n                f\"reclassification_type='{reclass_type}', \"\n                f\"has_structural_insights={extract_field(record, 'structural_reclassification_insights') is not None}\"\n            )\n\n    return classification_records, indexing_records, detection_records, skipped\n\n\n# ==================== LOOP 1: CLASSIFICATION FEEDBACK ====================\n\ndef build_classification_output(records):\n    \"\"\"\n    Build classification feedback JSON.\n    Groups by (from \u2192 to) pattern, tags with reclassification type.\n    Collects distinct reasons, initial reasons, and reclassification insights.\n    \"\"\"\n    pattern_groups = defaultdict(lambda: {\n        \"re_classification_reasons\": [],\n        \"initial_classification_reasons\": [],\n        \"reclassification_insights\": [],\n        \"reclassification_types\": [],\n        \"count\": 0,\n    })\n\n    for rec in records:\n        key = (\n            rec[\"initial_document_type\"] or \"Unknown\",\n            rec[\"new_document_type\"] or \"Unknown\",\n        )\n        group = pattern_groups[key]\n        group[\"count\"] += 1\n\n        reason = rec[\"re_classification_reason\"]\n        if reason not in group[\"re_classification_reasons\"]:\n            group[\"re_classification_reasons\"].append(reason)\n\n        initial_reason = rec[\"initial_classification_reason\"]\n        if initial_reason not in group[\"initial_classification_reasons\"]:\n            group[\"initial_classification_reasons\"].append(initial_reason)\n\n        insights = rec[\"reclassification_insights\"]\n        if insights not in group[\"reclassification_insights\"]:\n            group[\"reclassification_insights\"].append(insights)\n\n        reclass_type = rec[\"reclassification_type\"]\n        if reclass_type not in group[\"reclassification_types\"]:\n            group[\"reclassification_types\"].append(reclass_type)\n\n    # Build patterns sorted by frequency\n    correction_patterns = []\n    for (from_type, to_type), group in sorted(\n        pattern_groups.items(), key=lambda x: x[1][\"count\"], reverse=True\n    ):\n        correction_patterns.append({\n            \"from\": from_type,\n            \"to\": to_type,\n            \"occurrence_count\": group[\"count\"],\n            \"reclassification_types\": group[\"reclassification_types\"],\n            \"re_classification_reasons\": group[\"re_classification_reasons\"],\n            \"initial_classification_reasons\": group[\"initial_classification_reasons\"],\n            \"reclassification_insights\": group[\"reclassification_insights\"],\n        })\n\n    qualifying = sum(\n        1 for p in correction_patterns\n        if p[\"occurrence_count\"] >= MIN_PATTERN_OCCURRENCES\n    )\n\n    override_count = sum(1 for r in records if r[\"reclassification_type\"] == TYPE_OVERRIDE)\n    manual_count = sum(1 for r in records if r[\"reclassification_type\"] == TYPE_MANUAL)\n\n    return {\n        \"summary\": {\n            \"total\": len(records),\n            \"override_count\": override_count,\n            \"manual_review_count\": manual_count,\n            \"distinct_patterns_total\": len(correction_patterns),\n            \"distinct_patterns_qualifying\": qualifying,\n        },\n        \"correction_patterns\": correction_patterns,\n    }, qualifying\n\n\n# ==================== LOOP 2: INDEXING FEEDBACK ====================\n\ndef build_indexing_output(records):\n    \"\"\"\n    Build indexing feedback JSON.\n    Passes parsed and normalized initial_index and new_index pairs.\n    Collects distinct structural reclassification insights across all re-split records.\n    \"\"\"\n    all_insights = []\n    for rec in records:\n        insight = rec.get(\"structural_reclassification_insights\")\n        if insight and insight not in all_insights:\n            all_insights.append(insight)\n\n    return {\n        \"summary\": {\n            \"total_re_splits\": len(records),\n        },\n        \"structural_reclassification_insights\": all_insights,\n        \"re_splits\": records,\n    }\n\n\n# ==================== LOOP 3: DETECTION FEEDBACK ====================\n\ndef build_detection_output(records):\n    \"\"\"\n    Build detection feedback JSON.\n    Single\u2192Multi: grouped by initial_document_type with structural insights.\n    Multi\u2192Single: grouped by initial_document_type with structural insights.\n    \"\"\"\n    single_to_multi = []\n    multi_to_single = []\n\n    for rec in records:\n        if rec[\"reclassification_type\"] == TYPE_SINGLE_TO_MULTI:\n            single_to_multi.append({\n                \"initial_document_type\": rec[\"initial_document_type\"],\n                \"initial_classification_reason\": rec[\"initial_classification_reason\"],\n                \"new_index\": rec[\"new_index\"],\n                \"structural_reclassification_insights\": rec.get(\"structural_reclassification_insights\"),\n            })\n        elif rec[\"reclassification_type\"] == TYPE_MULTI_TO_SINGLE:\n            multi_to_single.append({\n                \"initial_document_type\": rec[\"initial_document_type\"],\n                \"initial_index\": rec[\"initial_index\"],\n                \"structural_reclassification_insights\": rec.get(\"structural_reclassification_insights\"),\n            })\n\n    # Group single_to_multi by initial_document_type\n    stm_groups = defaultdict(lambda: {\n        \"initial_classification_reasons\": [],\n        \"structural_reclassification_insights\": [],\n        \"new_indexes\": [],\n        \"count\": 0,\n    })\n\n    for rec in single_to_multi:\n        key = rec[\"initial_document_type\"] or \"Unknown\"\n        group = stm_groups[key]\n        group[\"count\"] += 1\n        group[\"new_indexes\"].append(rec[\"new_index\"])\n\n        reason = rec[\"initial_classification_reason\"]\n        if reason not in group[\"initial_classification_reasons\"]:\n            group[\"initial_classification_reasons\"].append(reason)\n\n        insight = rec.get(\"structural_reclassification_insights\")\n        if insight and insight not in group[\"structural_reclassification_insights\"]:\n            group[\"structural_reclassification_insights\"].append(insight)\n\n    stm_patterns = []\n    for doc_type, group in sorted(\n        stm_groups.items(), key=lambda x: x[1][\"count\"], reverse=True\n    ):\n        stm_patterns.append({\n            \"initial_document_type\": doc_type,\n            \"occurrence_count\": group[\"count\"],\n            \"initial_classification_reasons\": group[\"initial_classification_reasons\"],\n            \"structural_reclassification_insights\": group[\"structural_reclassification_insights\"],\n            \"new_indexes\": group[\"new_indexes\"],\n        })\n\n    # Group multi_to_single by initial_document_type\n    mts_groups = defaultdict(lambda: {\n        \"initial_indexes\": [],\n        \"structural_reclassification_insights\": [],\n        \"count\": 0,\n    })\n\n    for rec in multi_to_single:\n        key = rec[\"initial_document_type\"] or \"Unknown\"\n        group = mts_groups[key]\n        group[\"count\"] += 1\n        group[\"initial_indexes\"].append(rec[\"initial_index\"])\n\n        insight = rec.get(\"structural_reclassification_insights\")\n        if insight and insight not in group[\"structural_reclassification_insights\"]:\n            group[\"structural_reclassification_insights\"].append(insight)\n\n    mts_patterns = []\n    for doc_type, group in sorted(\n        mts_groups.items(), key=lambda x: x[1][\"count\"], reverse=True\n    ):\n        mts_patterns.append({\n            \"initial_document_type\": doc_type,\n            \"occurrence_count\": group[\"count\"],\n            \"structural_reclassification_insights\": group[\"structural_reclassification_insights\"],\n            \"initial_indexes\": group[\"initial_indexes\"],\n        })\n\n    return {\n        \"summary\": {\n            \"total\": len(records),\n            \"single_to_multi_count\": len(single_to_multi),\n            \"multi_to_single_count\": len(multi_to_single),\n        },\n        \"single_to_multi_patterns\": stm_patterns,\n        \"multi_to_single_patterns\": mts_patterns,\n    }\n\n\n# ==================== MAIN EXECUTION ====================\n\noutputs.log(\"Starting audit log fetch...\")\nall_records = fetch_all_audit_logs(s)\noutputs.log(f\"Total audit log records fetched: {len(all_records)}\")\n\nif len(all_records) == 0:\n    outputs.log(\"No audit log records found. All outputs will reflect empty state.\")\n\n# --- Route records into three loops ---\nclassification_recs, indexing_recs, detection_recs, skipped = route_records(all_records)\n\noutputs.log(\n    f\"Routed: classification={len(classification_recs)}, \"\n    f\"indexing={len(indexing_recs)}, detection={len(detection_recs)}, \"\n    f\"skipped={skipped}\"\n)\n\n# --- Build outputs for each loop ---\nclassification_result, classification_qualifying = build_classification_output(classification_recs)\nindexing_result = build_indexing_output(indexing_recs)\ndetection_result = build_detection_output(detection_recs)\n\n# --- Serialize ---\nclassification_json = json.dumps(classification_result, indent=2, default=str)\nindexing_json = json.dumps(indexing_result, indent=2, default=str)\ndetection_json = json.dumps(detection_result, indent=2, default=str)\n\n# --- Log previews ---\noutputs.log(f\"Classification JSON preview:\\n{classification_json[:2000]}\")\noutputs.log(f\"Indexing JSON preview:\\n{indexing_json[:2000]}\")\noutputs.log(f\"Detection JSON preview:\\n{detection_json[:2000]}\")\n\n# ==================== SET OUTPUTS ====================\n# JSON outputs (type: text):\n#   classification_json   \u2014 for classification synthesis prompt\n#   indexing_json          \u2014 for indexing synthesis prompt\n#   detection_json         \u2014 for detection synthesis prompt\n#\n# Threshold outputs (type: number):\n#   classification_total       \u2014 condition: >= 20\n#   classification_patterns    \u2014 condition: >= 1 (distinct from\u2192to with 3+ occurrences)\n#   indexing_total              \u2014 condition: >= 20\n#   detection_total             \u2014 condition: >= 20\n#   total_reclassifications    \u2014 grand total across all types\n\noutputs.classification_json = classification_json\noutputs.indexing_json = indexing_json\noutputs.detection_json = detection_json\n\noutputs.classification_total = len(classification_recs)\noutputs.classification_patterns = classification_qualifying\noutputs.indexing_total = len(indexing_recs)\noutputs.detection_total = len(detection_recs)\noutputs.total_reclassifications = len(classification_recs) + len(indexing_recs) + len(detection_recs)"
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d81e1620-8bf0-4742-8508-dcb770581336",
+      "step_type": "change_field_value",
+      "order": 14,
+      "description": "Change Field \u2018Audit Output JSON\u2019 to Variable \u2018classification_json\u2019",
+      "user_description": "Update business logic fields after audit is ran",
+      "stats": {
+        "number_completed": 19,
+        "number_failed": 0,
+        "number_pending": 3
+      },
+      "parent_step_id": "12ae13ba-3f14-4c40-9b04-1b38eb919105",
+      "parent_condition": "",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "9a253138-b25b-42e4-b889-a6617f76d98c",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "7de4ddf1-cc6a-4045-b15e-2b710d36b196",
+              "name": "audit_output_json",
+              "display_name": "Audit Output JSON",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "31ea1b06-0819-4bfa-aa7d-b26aa8a43658",
+              "name": "classification_json",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-03-03T18:48:29.386988Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "7bca2fb6-067c-4375-a6ae-f253fc515eae",
+      "step_type": "condition",
+      "order": 15,
+      "description": "Business Logic Variable Value 'total_reclassifications' More Than Or Equal To Static Value 15",
+      "user_description": "Only trigger LLM prompt improvement if we have critical mass of 20 exceptions",
+      "stats": {
+        "number_completed": 27,
+        "number_failed": 0,
+        "number_pending": 2,
+        "number_yes": 17,
+        "number_no": 10
+      },
+      "parent_step_id": "d81e1620-8bf0-4742-8508-dcb770581336",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": ">=",
+                  "rhs_value": "15",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "4f977da3-7d94-43f7-947e-7ba7ab065c1e"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "total_reclassifications",
+                        "data_type": "number"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "more_than_or_equal_to"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      "15"
+                    ]
+                  ],
+                  "description": "Variable Value 'total_reclassifications' More Than Or Equal To Static Value 15",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "total_reclassifications"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "715ced4d-1381-470b-856b-906c29c3fe14"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "9bb6a3bc-75a5-41ea-82e0-b0340b2fe6a6"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "9bb6a3bc-75a5-41ea-82e0-b0340b2fe6a6",
+      "step_type": "change_field_value",
+      "order": 16,
+      "description": "Change Field \u2018Self-Learning Last Run Date\u2019 to Value of \u2018Business Logic: Self-Learning Next Run Date\u2019",
+      "user_description": "Update last run date to current date",
+      "stats": {
+        "number_completed": 20,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "7bca2fb6-067c-4375-a6ae-f253fc515eae",
+      "parent_condition": "no",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "3d9a6e08-cedd-4795-b580-d3768b89e76c",
+            "change_type": "this_record_field",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "422e2d33-aa42-4a82-bddc-1d267d2375a9",
+              "name": "self_learning_last_run_date",
+              "display_name": "Self-Learning Last Run Date",
+              "deleted": false,
+              "field_type": "date",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": {
+              "id": "4f977da3-7d94-43f7-947e-7ba7ab065c1e",
+              "name": "business_logic",
+              "entity_name": "Business Logic",
+              "object_name": "Business Logic",
+              "object_type": "standard",
+              "deleted": false
+            },
+            "related_object_field": {
+              "id": "865e6bf7-5ecb-491e-91e8-1b27c6b30d4e",
+              "name": "self_learning_next_run_date",
+              "display_name": "Self-Learning Next Run Date",
+              "deleted": false,
+              "field_type": "date",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "9d2ab7d8-99f7-4bb0-8a23-fcc911798bfb",
+      "step_type": "code_step",
+      "order": 17,
+      "description": "Run Python 3.13 Code on (self_learning_run_date) and set (new_run_date)",
+      "user_description": "Update run date +7 days",
+      "stats": {
+        "number_completed": 23,
+        "number_failed": 0,
+        "number_pending": 2
+      },
+      "parent_step_id": "9bb6a3bc-75a5-41ea-82e0-b0340b2fe6a6",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [],
+        "inputs": [
+          {
+            "input_type": "field",
+            "name": "self_learning_run_date",
+            "field": {
+              "id": "865e6bf7-5ecb-491e-91e8-1b27c6b30d4e",
+              "name": "self_learning_next_run_date",
+              "display_name": "Self-Learning Next Run Date",
+              "deleted": false
+            },
+            "data_type": "date",
+            "is_list": false
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "new_run_date",
+            "variable": {
+              "name": "new_run_date",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "date",
+            "is_list": false
+          }
+        ],
+        "script": "from datetime import datetime, timedelta\n\nrun_date = inputs.self_learning_run_date\n\n# If it's a string, parse it; otherwise use directly\n\nif isinstance(run_date, str):\n\n    run_date = datetime.strptime(run_date, \"%m/%d/%Y\")\n\n# Validate it falls on a Saturday (weekday() == 5)\n\nif run_date.weekday() != 5:\n\n    raise ValueError(f\"Expected a Saturday, but got {run_date.strftime('%A')}\")\n\n# Add 7 days\n\nnew_date = run_date + timedelta(days=7)\n\n# Output in ISO format (YYYY-MM-DD) for Kizen's date type\n\noutputs.new_run_date = new_date.strftime(\"%Y-%m-%d\")"
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "1277b049-d399-4c1c-8674-2472b65687c4",
+      "step_type": "condition",
+      "order": 18,
+      "description": "Business Logic Variable Value 'new_run_date' Isn't Blank",
+      "user_description": "check if new date evaluated correctly",
+      "stats": {
+        "number_completed": 22,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 22,
+        "number_no": 0
+      },
+      "parent_step_id": "9d2ab7d8-99f7-4bb0-8a23-fcc911798bfb",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "value": false,
+                  "subtype": "automation_variable",
+                  "condition": "is_blank",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "4f977da3-7d94-43f7-947e-7ba7ab065c1e"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "new_run_date",
+                        "data_type": "date"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_not_blank"
+                    ]
+                  ],
+                  "description": "Variable Value 'new_run_date' Isn't Blank",
+                  "lhs_variable_name": "new_run_date"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "7443f069-f131-4f7c-ba24-feeedcd5e67c"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "040e4f69-f045-4d55-81f3-388500e27b08"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "040e4f69-f045-4d55-81f3-388500e27b08",
+      "step_type": "stop_execution",
+      "order": 19,
+      "description": "Stop and mark as Failed and Notify",
+      "user_description": "Stop as failed",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "1277b049-d399-4c1c-8674-2472b65687c4",
+      "parent_condition": "no",
+      "action_stop_execution": {
+        "action": "stop_and_fail",
+        "notify": true
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "7443f069-f131-4f7c-ba24-feeedcd5e67c",
+      "step_type": "change_field_value",
+      "order": 20,
+      "description": "Change Field \u2018Self-Learning Next Run Date\u2019 to Variable \u2018new_run_date\u2019",
+      "user_description": "Update next run date",
+      "stats": {
+        "number_completed": 22,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "1277b049-d399-4c1c-8674-2472b65687c4",
+      "parent_condition": "yes",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "3d6b8e06-683c-435d-b87e-06084809df37",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "865e6bf7-5ecb-491e-91e8-1b27c6b30d4e",
+              "name": "self_learning_next_run_date",
+              "display_name": "Self-Learning Next Run Date",
+              "deleted": false,
+              "field_type": "date",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "26bb7e38-72ef-4379-a65f-e4aa19bd9a9b",
+              "name": "new_run_date",
+              "data_type": "date",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": "%m/%d/%Y",
+              "created": "2026-02-21T17:08:04.980138Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "ca2c2d3a-2767-4516-847e-75818f0f892e",
+      "step_type": "schedule_activity",
+      "order": 21,
+      "description": "Schedule Activity \u2018Admin - Approve Key Considerations for Prompt\u2019 to Jordan Sample (jordan@example.com)",
+      "user_description": "Book Admin review activity",
+      "stats": {
+        "number_completed": 19,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "7443f069-f131-4f7c-ba24-feeedcd5e67c",
+      "parent_condition": "",
+      "action_schedule_activity": {
+        "activity_type": {
+          "id": "d08453d5-bb98-496b-943e-aff1167cd42e",
+          "name": "Admin - Approve Key Considerations for Prompt",
+          "deleted": false
+        },
+        "schedule": {
+          "type": "immediately",
+          "with_delay": null,
+          "on_or_around_date": null,
+          "skip_non_working_days": null
+        },
+        "assigned_to": {
+          "assignment_type": "team_member",
+          "variable": null,
+          "role": null,
+          "employee": {
+            "id": "6f63b1e1-f3db-47d0-b4ff-ca22339e6dcd",
+            "name": "Jordan Sample",
+            "full_name": "Jordan Sample",
+            "display_name": "Jordan Sample (jordan@example.com)",
+            "email": "jordan@example.com",
+            "deleted": false
+          },
+          "employees": [],
+          "field": null
+        },
+        "note": "<p>Review key considerations generated. Copy and pasted some/all considerations into their corresponding fields.</p><p>Stats:</p><p>Total Re-Classifications: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"classification_total\" data-merge-field-relationship=\"automation_variable.classification_total\">{{ automation_variable.classification_total }}</span>  </p><p>Total Re-Indexed: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"indexing_total\" data-merge-field-relationship=\"automation_variable.indexing_total\">{{ automation_variable.indexing_total }}</span> </p><p>Total Detection Corrections (Single-&gt;Multi, Multi-&gt;Single): <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"detection_total\" data-merge-field-relationship=\"automation_variable.detection_total\">{{ automation_variable.detection_total }}</span> </p><p>Grand Total Re-Classifications: <span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"total_reclassifications\" data-merge-field-relationship=\"automation_variable.total_reclassifications\">{{ automation_variable.total_reclassifications }}</span> </p><p> </p><p></p>",
+        "html_note": null,
+        "notifications": [],
+        "association_configs": [
+          {
+            "custom_object": {
+              "id": "4f977da3-7d94-43f7-947e-7ba7ab065c1e",
+              "object_name": "Business Logic",
+              "entity_name": "Business Logic",
+              "deleted": false
+            },
+            "association_source": "context_record",
+            "relationship_field": null,
+            "automation_variable": null
+          }
+        ]
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "715ced4d-1381-470b-856b-906c29c3fe14",
+      "step_type": "condition",
+      "order": 22,
+      "description": "Business Logic Variable Value 'detection_total' More Than Or Equal To Static Value 10",
+      "user_description": "phase gate for multi-doc detection considerations",
+      "stats": {
+        "number_completed": 17,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 0,
+        "number_no": 17
+      },
+      "parent_step_id": "7bca2fb6-067c-4375-a6ae-f253fc515eae",
+      "parent_condition": "yes",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": ">=",
+                  "rhs_value": "10",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "4f977da3-7d94-43f7-947e-7ba7ab065c1e"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "detection_total",
+                        "data_type": "number"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "more_than_or_equal_to"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      "10"
+                    ]
+                  ],
+                  "description": "Variable Value 'detection_total' More Than Or Equal To Static Value 10",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "detection_total"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "083f724a-81d2-404c-a7b0-7eccdc3d358d"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "5e03a277-04fe-4d06-9c6b-e911f108b6e8"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "5e03a277-04fe-4d06-9c6b-e911f108b6e8",
+      "step_type": "condition",
+      "order": 23,
+      "description": "Business Logic Variable Value 'indexing_total' More Than Or Equal To Static Value 10",
+      "user_description": "phase gate for indexing considerations",
+      "stats": {
+        "number_completed": 17,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 0,
+        "number_no": 17
+      },
+      "parent_step_id": "715ced4d-1381-470b-856b-906c29c3fe14",
+      "parent_condition": "no",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": ">=",
+                  "rhs_value": "10",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "4f977da3-7d94-43f7-947e-7ba7ab065c1e"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "indexing_total",
+                        "data_type": "number"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "more_than_or_equal_to"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      "10"
+                    ]
+                  ],
+                  "description": "Variable Value 'indexing_total' More Than Or Equal To Static Value 10",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "indexing_total"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "2afe71ed-c1cb-4e95-b0dd-86d204de6d68"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "7f8044d0-7c9a-4f1a-84c1-67f6abfd510c"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "7f8044d0-7c9a-4f1a-84c1-67f6abfd510c",
+      "step_type": "condition",
+      "order": 24,
+      "description": "Business Logic Variable Value 'classification_total' More Than Or Equal To Static Value 10 AND Variable Value 'classification_patterns' More Than Or Equal To Static Value 1",
+      "user_description": "phase gate for document classification considerations: Condition: classification_total >= 10 AND classification_patterns >= 1",
+      "stats": {
+        "number_completed": 17,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 17,
+        "number_no": 0
+      },
+      "parent_step_id": "5e03a277-04fe-4d06-9c6b-e911f108b6e8",
+      "parent_condition": "no",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": true,
+          "query": [
+            {
+              "id": "query-0",
+              "and": true,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": ">=",
+                  "rhs_value": "10",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "4f977da3-7d94-43f7-947e-7ba7ab065c1e"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "classification_total",
+                        "data_type": "number"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "more_than_or_equal_to"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      "10"
+                    ]
+                  ],
+                  "description": "Variable Value 'classification_total' More Than Or Equal To Static Value 10 ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "classification_total"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": ">=",
+                  "rhs_value": "1",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "4f977da3-7d94-43f7-947e-7ba7ab065c1e"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "classification_patterns",
+                        "data_type": "number"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "more_than_or_equal_to"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      "1"
+                    ]
+                  ],
+                  "description": "Variable Value 'classification_patterns' More Than Or Equal To Static Value 1",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "classification_patterns"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "a265f7d5-0496-4156-b9e5-cee754f6874e"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "95e28dc6-1494-45f7-a49f-367de621a4ef"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "95e28dc6-1494-45f7-a49f-367de621a4ef",
+      "step_type": "go_to_automation_step",
+      "order": 25,
+      "description": "Go To Step [Action: Change Field \u2018Self-Learning Last Run Date\u2019 to Value of \u2018Business Logic: Self-Learning Next Run Date\u2019]",
+      "user_description": "jump to date update",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "7f8044d0-7c9a-4f1a-84c1-67f6abfd510c",
+      "parent_condition": "no",
+      "action_go_to_automation_step": {
+        "trigger": null,
+        "step": {
+          "id": "9bb6a3bc-75a5-41ea-82e0-b0340b2fe6a6",
+          "step_type": "change_field_value",
+          "order": 16,
+          "parent_step_id": "7bca2fb6-067c-4375-a6ae-f253fc515eae"
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "083f724a-81d2-404c-a7b0-7eccdc3d358d",
+      "step_type": "call_llm",
+      "order": 26,
+      "description": "Call LLM  \u2018You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.You will be given a JSON object containing:-A summary of total classifications and how many were manually corrected by users.-A list of correction patterns, each showing:--\"from\": what the document was initially (incorrectly) classified as--\"to\": what the user corrected it to--\"occurrence_count\": how many times this specific misclassification has occurred--\"re_classification_reasons\": the reasons users provided when correcting (may include null values where no reason was given)--\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification--\"structural_reclassification_insights\": an initial assessment using the original document context to assess where the error came from.Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.RULES:1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.2. Each consideration must follow this exact format: [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues or patterns to look for]. (Corrected [count] times)3. Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.4. Write actionable, generalized rules \u2014 NOT just a restatement of user reasons. Analyze the user reasons and initial classification reasons together to understand WHY the confusion happened and HOW to resolve it. If a user reason is vague (e.g., \"wrong classification\") or null, infer the distinguishing pattern from the document types themselves and whatever context is available.5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"Here is the correction data:{{ automation_variable.detection_json }}\u2019",
+      "user_description": "Synthesize audit summary into key considerations for the \"contains multiple documents\" prompt",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "715ced4d-1381-470b-856b-906c29c3fe14",
+      "parent_condition": "yes",
+      "action_call_llm": {
+        "model_name": "gemini/gemini-2.5-pro",
+        "business_plugin_app": {
+          "id": "1e8cecec-8f9c-4b06-8b6b-019fbc526c42",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.You will be given a JSON object containing:-A summary of total classifications and how many were manually corrected by users.-A list of correction patterns, each showing:--\"from\": what the document was initially (incorrectly) classified as--\"to\": what the user corrected it to--\"occurrence_count\": how many times this specific misclassification has occurred--\"re_classification_reasons\": the reasons users provided when correcting (may include null values where no reason was given)--\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification--\"structural_reclassification_insights\": an initial assessment using the original document context to assess where the error came from.Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.RULES:1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.2. Each consideration must follow this exact format: [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues or patterns to look for]. (Corrected [count] times)3. Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.4. Write actionable, generalized rules \u2014 NOT just a restatement of user reasons. Analyze the user reasons and initial classification reasons together to understand WHY the confusion happened and HOW to resolve it. If a user reason is vague (e.g., \"wrong classification\") or null, infer the distinguishing pattern from the document types themselves and whatever context is available.5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"Here is the correction data:{{ automation_variable.detection_json }}",
+        "html_prompt": "<p>You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.</p><p></p><p>You will be given a JSON object containing:</p><p></p><p>-A summary of total classifications and how many were manually corrected by users.</p><p>-A list of correction patterns, each showing:</p><p>--\"from\": what the document was initially (incorrectly) classified as</p><p>--\"to\": what the user corrected it to</p><p>--\"occurrence_count\": how many times this specific misclassification has occurred</p><p>--\"re_classification_reasons\": the reasons users provided when correcting (may include null values where no reason was given)</p><p>--\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification</p><p>--\"structural_reclassification_insights\": an initial assessment using the original document context to assess where the error came from.</p><p></p><p>Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.</p><p></p><p>RULES:</p><p>1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.</p><p></p><p>2. Each consideration must follow this exact format: [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues or patterns to look for]. (Corrected [count] times)</p><p></p><p>3. Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.</p><p></p><p>4. Write actionable, generalized rules \u2014 NOT just a restatement of user reasons. Analyze the user reasons and initial classification reasons together to understand WHY the confusion happened and HOW to resolve it. If a user reason is vague (e.g., \"wrong classification\") or null, infer the distinguishing pattern from the document types themselves and whatever context is available.</p><p></p><p>5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.</p><p></p><p>6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.</p><p></p><p>7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.</p><p></p><p>8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"</p><p></p><p>Here is the correction data:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"detection_json\" data-merge-field-relationship=\"automation_variable.detection_json\">{{ automation_variable.detection_json }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "cf8242e3-f923-4b70-9dd7-5dc9414dd27e",
+              "name": "detection_considerations",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "e2f3e440-e0d8-484e-ad27-77bf41b018ee",
+      "step_type": "change_field_value",
+      "order": 27,
+      "description": "Change Field \u2018Detection Prompt Considerations - Pre-Approval\u2019 to Variable \u2018detection_considerations\u2019",
+      "user_description": "Update consideration fields for review",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "083f724a-81d2-404c-a7b0-7eccdc3d358d",
+      "parent_condition": "",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "0fdd9f05-cb72-4f17-a189-77e8bf64bb45",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "ac86517b-b875-4c79-98f6-61738d7046c4",
+              "name": "detection_prompt_considerations_pre_approval",
+              "display_name": "Detection Prompt Considerations - Pre-Approval",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "cf8242e3-f923-4b70-9dd7-5dc9414dd27e",
+              "name": "detection_considerations",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-03-03T18:57:37.424071Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "11ac8423-29fe-42c9-b3a2-e41d92bf91e4",
+      "step_type": "go_to_automation_step",
+      "order": 28,
+      "description": "Go To Step [Condition: Business Logic Variable Value 'indexing_total' More Than Or Equal To Static Value 10]",
+      "user_description": "Jump to next condition",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "e2f3e440-e0d8-484e-ad27-77bf41b018ee",
+      "parent_condition": "",
+      "action_go_to_automation_step": {
+        "trigger": null,
+        "step": {
+          "id": "5e03a277-04fe-4d06-9c6b-e911f108b6e8",
+          "step_type": "condition",
+          "order": 23,
+          "parent_step_id": "715ced4d-1381-470b-856b-906c29c3fe14"
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "2afe71ed-c1cb-4e95-b0dd-86d204de6d68",
+      "step_type": "call_llm",
+      "order": 29,
+      "description": "Call LLM  \u2018You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.You will be given a JSON object containing:-A summary of total classifications and how many were manually corrected by users.-A list of correction patterns, each showing:--\"from\": what the document was initially (incorrectly) classified as--\"to\": what the user corrected it to--\"occurrence_count\": how many times this specific misclassification has occurred--\"re_classification_reasons\": the reasons users provided when correcting (may include null values where no reason was given)--\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification--\"structural_reclassification_insights\": an initial assessment using the original document context to assess where the error came from.Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.RULES:1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.2. Each consideration must follow this exact format: [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues or patterns to look for]. (Corrected [count] times)3. Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.4. Write actionable, generalized rules \u2014 NOT just a restatement of user reasons. Analyze the user reasons and initial classification reasons together to understand WHY the confusion happened and HOW to resolve it. If a user reason is vague (e.g., \"wrong classification\") or null, infer the distinguishing pattern from the document types themselves and whatever context is available.5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"Here is the correction data:{{ automation_variable.indexing_json }}\u2019",
+      "user_description": "Synthesize audit summary into key considerations for the indexing prompt",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "5e03a277-04fe-4d06-9c6b-e911f108b6e8",
+      "parent_condition": "yes",
+      "action_call_llm": {
+        "model_name": "gemini/gemini-2.5-pro",
+        "business_plugin_app": {
+          "id": "1e8cecec-8f9c-4b06-8b6b-019fbc526c42",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.You will be given a JSON object containing:-A summary of total classifications and how many were manually corrected by users.-A list of correction patterns, each showing:--\"from\": what the document was initially (incorrectly) classified as--\"to\": what the user corrected it to--\"occurrence_count\": how many times this specific misclassification has occurred--\"re_classification_reasons\": the reasons users provided when correcting (may include null values where no reason was given)--\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification--\"structural_reclassification_insights\": an initial assessment using the original document context to assess where the error came from.Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.RULES:1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.2. Each consideration must follow this exact format: [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues or patterns to look for]. (Corrected [count] times)3. Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.4. Write actionable, generalized rules \u2014 NOT just a restatement of user reasons. Analyze the user reasons and initial classification reasons together to understand WHY the confusion happened and HOW to resolve it. If a user reason is vague (e.g., \"wrong classification\") or null, infer the distinguishing pattern from the document types themselves and whatever context is available.5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"Here is the correction data:{{ automation_variable.indexing_json }}",
+        "html_prompt": "<p>You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.</p><p></p><p>You will be given a JSON object containing:</p><p></p><p>-A summary of total classifications and how many were manually corrected by users.</p><p>-A list of correction patterns, each showing:</p><p>--\"from\": what the document was initially (incorrectly) classified as</p><p>--\"to\": what the user corrected it to</p><p>--\"occurrence_count\": how many times this specific misclassification has occurred</p><p>--\"re_classification_reasons\": the reasons users provided when correcting (may include null values where no reason was given)</p><p>--\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification</p><p>--\"structural_reclassification_insights\": an initial assessment using the original document context to assess where the error came from.</p><p></p><p>Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.</p><p></p><p>RULES:</p><p>1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.</p><p></p><p>2. Each consideration must follow this exact format: [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues or patterns to look for]. (Corrected [count] times)</p><p></p><p>3. Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.</p><p></p><p>4. Write actionable, generalized rules \u2014 NOT just a restatement of user reasons. Analyze the user reasons and initial classification reasons together to understand WHY the confusion happened and HOW to resolve it. If a user reason is vague (e.g., \"wrong classification\") or null, infer the distinguishing pattern from the document types themselves and whatever context is available.</p><p></p><p>5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.</p><p></p><p>6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.</p><p></p><p>7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.</p><p></p><p>8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"</p><p></p><p>Here is the correction data:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"indexing_json\" data-merge-field-relationship=\"automation_variable.indexing_json\">{{ automation_variable.indexing_json }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "ddf0eeb2-ba14-4164-8bf8-31516c485a8a",
+              "name": "indexing_considerations",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "eea3faf9-7b68-4fc8-838a-ae1b16ac67cd",
+      "step_type": "change_field_value",
+      "order": 30,
+      "description": "Change Field \u2018Indexing Prompt Considerations - Pre-Approval\u2019 to Variable \u2018indexing_considerations\u2019",
+      "user_description": "Update consideration fields for review",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "2afe71ed-c1cb-4e95-b0dd-86d204de6d68",
+      "parent_condition": "",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "c0712ca9-8111-4830-a6b5-a35e65783f64",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "911c8e98-b87d-4dac-9a9a-c1f6d4ce1856",
+              "name": "indexing_prompt_considerations_pre_approval",
+              "display_name": "Indexing Prompt Considerations - Pre-Approval",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "ddf0eeb2-ba14-4164-8bf8-31516c485a8a",
+              "name": "indexing_considerations",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-03-03T18:57:37.416085Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "ccaf8f34-dea8-447b-9746-8ba392c220be",
+      "step_type": "go_to_automation_step",
+      "order": 31,
+      "description": "Go To Step [Condition: Business Logic Variable Value 'classification_total' More Than Or Equal To Static Value 10 AND Variable Value 'classification_patterns' More Than Or Equal To Static Value 1]",
+      "user_description": "Jump to next condition",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "eea3faf9-7b68-4fc8-838a-ae1b16ac67cd",
+      "parent_condition": "",
+      "action_go_to_automation_step": {
+        "trigger": null,
+        "step": {
+          "id": "7f8044d0-7c9a-4f1a-84c1-67f6abfd510c",
+          "step_type": "condition",
+          "order": 24,
+          "parent_step_id": "5e03a277-04fe-4d06-9c6b-e911f108b6e8"
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "a265f7d5-0496-4156-b9e5-cee754f6874e",
+      "step_type": "call_llm",
+      "order": 32,
+      "description": "Call LLM  \u2018You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.You will be given a JSON object containing correction patterns from a document classification system used for loan applications. Each pattern shows:-\"from\": what the document was initially classified as (or \"N/A - Needs Manual Review\" if the classifier could not decide)-\"to\": what the user corrected it to-\"occurrence_count\": how many times this specific misclassification has occurred-\"reclassification_types\": which correction types contributed \u2014 either \"Override Classification\" (classifier was confident but wrong) or \"Manually Classified\" (classifier returned N/A and a human had to classify it)-\"re_classification_reasons\": reasons users provided when correcting (may include null values where no reason was given)-\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification-\"reclassification_insights\": an LLM-generated analysis of each correction that has reviewed the original document, the initial classification, and the corrected classification to explain specifically why the initial classification was wrong and what distinguishes the correct type. This is a detailed and always-available signal \u2014 use it as a backfill when user-provided reasons are missing or vague.Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.RULES:1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.2. Use different rule formats based on the reclassification type:For \"Override Classification\" patterns (classifier was confident but wrong): [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues]. (Override \u2014 corrected [count] times)For \"Manually Classified\" patterns (classifier returned N/A): [N]. Identify [TO_TYPE]: [Description of the content cues, patterns, and structural elements that identify this document type, so the classifier can recognize it instead of returning N/A]. (Manual classification \u2014 corrected [count] times)For patterns with BOTH types, write one combined rule that addresses both the confusion and the identification: [N]. [FROM_TYPE] vs [TO_TYPE]: [Rule]. (Override: [count], Manual: [count])3.Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.4. Write actionable, generalized rules \u2014 NOT just a restatement of any single source. Synthesize across all three signal layers in priority order: re_classification_reasons (highest value when present \u2014 direct from the human who made the correction), reclassification_insights (reliable backfill when user reasons are missing or vague \u2014 an LLM re-analysis of the document with both classifications), and initial_classification_reasons (shows what the classifier got wrong). If a user reason is present and specific, weight it most heavily. If it is null or vague (e.g., \"wrong\", \"incorrect\"), lean on the reclassification_insights instead. Identify the common thread across available signals for a given pattern and distill it into one clear rule.5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"Here is the correction data:{{ automation_variable.classification_json }}\u2019",
+      "user_description": "Synthesize audit summary into key considerations for the classification prompt",
+      "stats": {
+        "number_completed": 16,
+        "number_failed": 1,
+        "number_pending": 0
+      },
+      "parent_step_id": "7f8044d0-7c9a-4f1a-84c1-67f6abfd510c",
+      "parent_condition": "yes",
+      "action_call_llm": {
+        "model_name": "gemini/gemini-2.5-pro",
+        "business_plugin_app": {
+          "id": "1e8cecec-8f9c-4b06-8b6b-019fbc526c42",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.You will be given a JSON object containing correction patterns from a document classification system used for loan applications. Each pattern shows:-\"from\": what the document was initially classified as (or \"N/A - Needs Manual Review\" if the classifier could not decide)-\"to\": what the user corrected it to-\"occurrence_count\": how many times this specific misclassification has occurred-\"reclassification_types\": which correction types contributed \u2014 either \"Override Classification\" (classifier was confident but wrong) or \"Manually Classified\" (classifier returned N/A and a human had to classify it)-\"re_classification_reasons\": reasons users provided when correcting (may include null values where no reason was given)-\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification-\"reclassification_insights\": an LLM-generated analysis of each correction that has reviewed the original document, the initial classification, and the corrected classification to explain specifically why the initial classification was wrong and what distinguishes the correct type. This is a detailed and always-available signal \u2014 use it as a backfill when user-provided reasons are missing or vague.Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.RULES:1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.2. Use different rule formats based on the reclassification type:For \"Override Classification\" patterns (classifier was confident but wrong): [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues]. (Override \u2014 corrected [count] times)For \"Manually Classified\" patterns (classifier returned N/A): [N]. Identify [TO_TYPE]: [Description of the content cues, patterns, and structural elements that identify this document type, so the classifier can recognize it instead of returning N/A]. (Manual classification \u2014 corrected [count] times)For patterns with BOTH types, write one combined rule that addresses both the confusion and the identification: [N]. [FROM_TYPE] vs [TO_TYPE]: [Rule]. (Override: [count], Manual: [count])3.Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.4. Write actionable, generalized rules \u2014 NOT just a restatement of any single source. Synthesize across all three signal layers in priority order: re_classification_reasons (highest value when present \u2014 direct from the human who made the correction), reclassification_insights (reliable backfill when user reasons are missing or vague \u2014 an LLM re-analysis of the document with both classifications), and initial_classification_reasons (shows what the classifier got wrong). If a user reason is present and specific, weight it most heavily. If it is null or vague (e.g., \"wrong\", \"incorrect\"), lean on the reclassification_insights instead. Identify the common thread across available signals for a given pattern and distill it into one clear rule.5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"Here is the correction data:{{ automation_variable.classification_json }}",
+        "html_prompt": "<p>You are an expert at analyzing document classification correction data and distilling it into clear, actionable rules that will improve future automated classification accuracy.</p><p></p><p>You will be given a JSON object containing correction patterns from a document classification system used for loan applications. Each pattern shows:</p><p>-\"from\": what the document was initially classified as (or \"N/A - Needs Manual Review\" if the classifier could not decide)</p><p>-\"to\": what the user corrected it to</p><p>-\"occurrence_count\": how many times this specific misclassification has occurred</p><p>-\"reclassification_types\": which correction types contributed \u2014 either \"Override Classification\" (classifier was confident but wrong) or \"Manually Classified\" (classifier returned N/A and a human had to classify it)</p><p>-\"re_classification_reasons\": reasons users provided when correcting (may include null values where no reason was given)</p><p>-\"initial_classification_reasons\": the reasoning the original classifier used that led to the incorrect classification</p><p>-\"reclassification_insights\": an LLM-generated analysis of each correction that has reviewed the original document, the initial classification, and the corrected classification to explain specifically why the initial classification was wrong and what distinguishes the correct type. This is a detailed and always-available signal \u2014 use it as a backfill when user-provided reasons are missing or vague.</p><p></p><p>Your task is to synthesize this data into a numbered list of key considerations that a document classification system can use to avoid repeating these mistakes.</p><p></p><p>RULES:</p><p>1. ONLY create a rule for correction patterns where occurrence_count is 3 or greater. Patterns with fewer than 3 occurrences do not have enough signal \u2014 ignore them entirely.</p><p></p><p>2. Use different rule formats based on the reclassification type:</p><p>For \"Override Classification\" patterns (classifier was confident but wrong): [N]. [FROM_TYPE] vs [TO_TYPE]: [Actionable rule explaining how to distinguish between these two types, including specific content cues]. (Override \u2014 corrected [count] times)</p><p>For \"Manually Classified\" patterns (classifier returned N/A): [N]. Identify [TO_TYPE]: [Description of the content cues, patterns, and structural elements that identify this document type, so the classifier can recognize it instead of returning N/A]. (Manual classification \u2014 corrected [count] times)</p><p>For patterns with BOTH types, write one combined rule that addresses both the confusion and the identification: [N]. [FROM_TYPE] vs [TO_TYPE]: [Rule]. (Override: [count], Manual: [count])</p><p></p><p>3.Order the list by occurrence_count descending \u2014 the most frequent misclassifications come first.</p><p></p><p>4. Write actionable, generalized rules \u2014 NOT just a restatement of any single source. Synthesize across all three signal layers in priority order: re_classification_reasons (highest value when present \u2014 direct from the human who made the correction), reclassification_insights (reliable backfill when user reasons are missing or vague \u2014 an LLM re-analysis of the document with both classifications), and initial_classification_reasons (shows what the classifier got wrong). If a user reason is present and specific, weight it most heavily. If it is null or vague (e.g., \"wrong\", \"incorrect\"), lean on the reclassification_insights instead. Identify the common thread across available signals for a given pattern and distill it into one clear rule.</p><p></p><p>5. Each rule should clearly state what specific content, patterns, keywords, or structural elements distinguish the correct type from the incorrect one. Be concrete \u2014 reference the kinds of fields, headers, sections, or language that should trigger one classification over the other.</p><p></p><p>6. Do NOT include any preamble, explanation, or commentary outside the numbered list. Start directly with \"Key considerations from past classification corrections:\" followed by the list.</p><p></p><p>7. Keep each consideration to 2-3 sentences maximum. Be concise but specific.</p><p></p><p>8. If no correction patterns meet the 3-occurrence threshold, output exactly: \"No classification patterns have enough data to generate rules yet. No additional considerations at this time.\"</p><p></p><p>Here is the correction data:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"classification_json\" data-merge-field-relationship=\"automation_variable.classification_json\">{{ automation_variable.classification_json }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "55228cdc-1f86-4633-9597-f99014305b52",
+              "name": "classification_considerations",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "fd459b76-9a72-49cb-b16b-3c582b5218df",
+      "step_type": "change_field_value",
+      "order": 33,
+      "description": "Change Field \u2018Classification Prompt Considerations - Pre-Approval\u2019 to Variable \u2018classification_considerations\u2019",
+      "user_description": "Update consideration fields for review",
+      "stats": {
+        "number_completed": 16,
+        "number_failed": 0,
+        "number_pending": 1
+      },
+      "parent_step_id": "a265f7d5-0496-4156-b9e5-cee754f6874e",
+      "parent_condition": "",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "558a5d66-93a9-42ea-ad89-a97a55ae1341",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "9e86a517-5610-4101-a843-327e3b7ec20c",
+              "name": "classification_prompt_considerations_pre_approval",
+              "display_name": "Classification Prompt Considerations - Pre-Approval",
+              "deleted": false,
+              "field_type": "longtext",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "55228cdc-1f86-4633-9597-f99014305b52",
+              "name": "classification_considerations",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-03-03T18:57:37.408149Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "3da28ace-863b-4c07-92f2-8befc4f9c0d2",
+      "step_type": "go_to_automation_step",
+      "order": 34,
+      "description": "Go To Step [Action: Change Field \u2018Self-Learning Last Run Date\u2019 to Value of \u2018Business Logic: Self-Learning Next Run Date\u2019]",
+      "user_description": "jump to date update",
+      "stats": {
+        "number_completed": 16,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "fd459b76-9a72-49cb-b16b-3c582b5218df",
+      "parent_condition": "",
+      "action_go_to_automation_step": {
+        "trigger": null,
+        "step": {
+          "id": "9bb6a3bc-75a5-41ea-82e0-b0340b2fe6a6",
+          "step_type": "change_field_value",
+          "order": 16,
+          "parent_step_id": "7bca2fb6-067c-4375-a6ae-f253fc515eae"
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [
+    {
+      "id": "09973616-a98b-412b-8f91-85f213b2ce75",
+      "name": "total_reclassifications",
+      "data_type": "number",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "no_comma",
+      "created": "2026-02-20T22:23:11.025559Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "26bb7e38-72ef-4379-a65f-e4aa19bd9a9b",
+      "name": "new_run_date",
+      "data_type": "date",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "%m/%d/%Y",
+      "created": "2026-02-21T17:08:04.980138Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "31ea1b06-0819-4bfa-aa7d-b26aa8a43658",
+      "name": "classification_json",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-03T18:48:29.386988Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "83bc133f-ac4b-4e83-9cdf-f781265c0b1e",
+      "name": "indexing_json",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-03T18:48:29.394670Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "df5fb643-1f5f-4178-bdb0-7c0c7b4143b2",
+      "name": "detection_json",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-03T18:48:29.402083Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "55228cdc-1f86-4633-9597-f99014305b52",
+      "name": "classification_considerations",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-03T18:57:37.408149Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "ddf0eeb2-ba14-4164-8bf8-31516c485a8a",
+      "name": "indexing_considerations",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-03T18:57:37.416085Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "cf8242e3-f923-4b70-9dd7-5dc9414dd27e",
+      "name": "detection_considerations",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-03T18:57:37.424071Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "48cbbf3c-aebe-445b-9d24-f16a65ac6c4d",
+      "name": "classification_total",
+      "data_type": "number",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "no_comma",
+      "created": "2026-03-03T20:05:09.480223Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "cd6b55bb-ceaa-4ec6-9e98-35c787bfa15b",
+      "name": "classification_patterns",
+      "data_type": "number",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "no_comma",
+      "created": "2026-03-03T20:05:09.488476Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "b3e4afbd-c673-43d4-9530-f1e24f81bca4",
+      "name": "indexing_total",
+      "data_type": "number",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "no_comma",
+      "created": "2026-03-03T20:05:09.496351Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "33a8930c-e33a-4b17-996e-cd19c9e6290f",
+      "name": "detection_total",
+      "data_type": "number",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "no_comma",
+      "created": "2026-03-03T20:05:09.504277Z",
+      "deleted": false,
+      "is_array": false
+    }
+  ],
+  "revision": 60,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 8,
+  "number_paused": 0,
+  "number_completed": 25,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-02-20T13:19:58.241089-06:00",
+  "updated": "2026-03-30T19:29:33.790557-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

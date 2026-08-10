@@ -1,0 +1,1143 @@
+{
+  "env": "testenv",
+  "id": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+  "api_name": "document_sets",
+  "display_name": "Document Sets",
+  "entity_name": "Document",
+  "object_type": "standard",
+  "categories": [
+    {
+      "id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "name": "Document Set Info",
+      "order": 1
+    },
+    {
+      "id": "22842fda-2358-45ae-9cfa-f9163bc572c8",
+      "name": "Document Details - Primary",
+      "order": 2
+    },
+    {
+      "id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "name": "Child and Intermediate Fields",
+      "order": 3
+    },
+    {
+      "id": "058ba12d-63e3-4697-8bb1-72f360c50b7b",
+      "name": "Document Classification",
+      "order": 4
+    },
+    {
+      "id": "6875188c-ecda-475b-a0b2-2172d7d5d482",
+      "name": "Document Classification - New Model Testing",
+      "order": 5
+    },
+    {
+      "id": "721c1d2f-57bd-4a23-bfde-0eb7f7d668e2",
+      "name": "TEMP",
+      "order": 6
+    }
+  ],
+  "fields": [
+    {
+      "id": "51a0523b-1033-4e6f-a803-a26323bac96e",
+      "api_name": "document_classification_status",
+      "display_name": "Document Classification Status",
+      "field_type": "status",
+      "category_id": "058ba12d-63e3-4697-8bb1-72f360c50b7b",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "87dd5e5f-675b-46e0-8a3c-fb9dc5c15264",
+          "name": "Classified",
+          "code": ""
+        },
+        {
+          "id": "3f54ad54-3d0f-4007-a972-7fb32eb43f05",
+          "name": "Needs Classification",
+          "code": ""
+        },
+        {
+          "id": "3d1c6831-c17a-46ca-96d0-897036032472",
+          "name": "Manual Review",
+          "code": ""
+        },
+        {
+          "id": "bce84de2-dbb4-4e34-87fd-d7caad87b5a5",
+          "name": "N/A",
+          "code": ""
+        },
+        {
+          "id": "c9e3cf4c-6405-4eb8-9c25-10500a9dc451",
+          "name": "Failed",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "ed259ff0-8ff8-407f-b7ec-992bd25bc014",
+      "api_name": "contains_multiple_documents",
+      "display_name": "Contains Multiple Documents?",
+      "field_type": "yesnomaybe",
+      "category_id": "22842fda-2358-45ae-9cfa-f9163bc572c8",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "c5b71872-d0ea-4f61-b4cc-e62e276f1cab",
+          "name": "Yes",
+          "code": "yes"
+        },
+        {
+          "id": "84810afe-5fbd-4384-b587-d7154dc03a3c",
+          "name": "No",
+          "code": "no"
+        }
+      ]
+    },
+    {
+      "id": "e78406d8-9bf1-402b-bdc2-205953dd104a",
+      "api_name": "primary_document_start_page",
+      "display_name": "primary document start page",
+      "field_type": "integer",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "d238bd7a-1c38-47a7-97a9-3c9038b0ab95",
+      "api_name": "name",
+      "display_name": "Document Set Name",
+      "field_type": "text",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "5b5cf988-25a1-48c5-830b-2cbcf53a0c3e",
+      "api_name": "document_type_v2",
+      "display_name": "document type v2",
+      "field_type": "text",
+      "category_id": "6875188c-ecda-475b-a0b2-2172d7d5d482",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "ddf1406d-fd0f-4360-baeb-bf97bfda681e",
+      "api_name": "document_category_v2",
+      "display_name": "document category v2",
+      "field_type": "text",
+      "category_id": "6875188c-ecda-475b-a0b2-2172d7d5d482",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "bbdd46aa-13e0-45d3-a979-aace7aaa3b5e",
+      "api_name": "related_document_records",
+      "display_name": "Sub Document Records",
+      "field_type": "relationship",
+      "category_id": "22842fda-2358-45ae-9cfa-f9163bc572c8",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "850c3a0b-6a18-4bfe-b3ee-86b359ac7089",
+        "related_object": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+        "related_category": "14595996-5026-46a9-9c39-208c2f785ef2",
+        "related_name": "Primary Document Record",
+        "related_object_name": "Document Sets",
+        "related_object_object_name": "document_sets",
+        "related_entity_name": "Document",
+        "relation_type": "primary_for",
+        "cardinality": "one_to_many",
+        "fetch_url": "standard",
+        "rollup_timeline": true,
+        "rollup_leadsources": false,
+        "inverse_relation_rollup_timeline": true,
+        "inverse_relation_rollup_leadsources": false,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "f67d44d4-4a98-4e41-9304-0b344937ea2f",
+      "api_name": "created",
+      "display_name": "Date Created",
+      "field_type": "datetime",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "7329dbfc-a4e5-4107-b169-d7b4b0524f92",
+      "api_name": "primary_document_end_page",
+      "display_name": "primary document end page",
+      "field_type": "integer",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "7077bdbc-08ca-402f-8812-4837dda52600",
+      "api_name": "document_category",
+      "display_name": "Document Category",
+      "field_type": "dropdown",
+      "category_id": "058ba12d-63e3-4697-8bb1-72f360c50b7b",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "3b4c15bb-09ff-4c02-aaa9-a855ad49f856",
+          "name": "Notes to Underwriter",
+          "code": ""
+        },
+        {
+          "id": "f3abc5f0-1163-469e-b551-0bba94d8fc23",
+          "name": "2015 Settlement Service Provider List",
+          "code": ""
+        },
+        {
+          "id": "269d3d36-6715-4e60-9e08-f7358e609651",
+          "name": "Acknowledgement of Home Ownership",
+          "code": ""
+        },
+        {
+          "id": "bf409025-90c6-4d6d-a27e-26d1deca8c02",
+          "name": "Address Change Form",
+          "code": ""
+        },
+        {
+          "id": "ef2ec34a-7d23-443c-8c5d-a0e91bc6b8cb",
+          "name": "Appraisal",
+          "code": ""
+        },
+        {
+          "id": "da9f75d4-9534-4a41-8983-3b6c2ffe6042",
+          "name": "Appraisal Waiver",
+          "code": ""
+        },
+        {
+          "id": "45fc1ac0-249f-4f1a-bfa8-4a9dea5750ac",
+          "name": "Assets",
+          "code": ""
+        },
+        {
+          "id": "b54c599e-407a-4371-a3f5-2ed0e9f68a5d",
+          "name": "Bankruptcy Papers",
+          "code": ""
+        },
+        {
+          "id": "827ba089-e0bf-43d4-ac3d-237dd1daf991",
+          "name": "Booking Information",
+          "code": ""
+        },
+        {
+          "id": "e828f7bb-580c-48dc-ad9a-b4a0267f0eec",
+          "name": "Borrower Lock Agreement",
+          "code": ""
+        },
+        {
+          "id": "61138a35-ddc0-44ac-bd5e-8317fad5abeb",
+          "name": "Borrower's Certificate & Authorization",
+          "code": ""
+        },
+        {
+          "id": "d9d743bd-18cf-4c22-8993-fa1285232e7b",
+          "name": "Certificate of Eligibility",
+          "code": ""
+        },
+        {
+          "id": "8bcea122-4c1c-4d16-9617-fc38a9ebf5e4",
+          "name": "Child Support/Divorce Decree",
+          "code": ""
+        },
+        {
+          "id": "94a20806-a634-4efb-be86-188a8241029e",
+          "name": "Closing Disclosure",
+          "code": ""
+        },
+        {
+          "id": "25769a85-2bd2-4e4a-9650-61da1ff289ea",
+          "name": "Closing Disclosure (Seller)",
+          "code": ""
+        },
+        {
+          "id": "a30cfee9-bfa0-49ab-87ad-9d41ea0856a8",
+          "name": "Closing Invoices",
+          "code": ""
+        },
+        {
+          "id": "0f2975bb-4797-427c-a150-6980362691d9",
+          "name": "Compliance Report",
+          "code": ""
+        },
+        {
+          "id": "b14caa7e-a289-45f9-8fc9-6a76a9120af6",
+          "name": "Conditional Approval Letter",
+          "code": ""
+        },
+        {
+          "id": "e4bdcf94-9025-4877-b5b5-00a957db50b1",
+          "name": "Conditional Commitment",
+          "code": ""
+        },
+        {
+          "id": "eab363dd-d821-4fa7-89f1-391718ca9c9a",
+          "name": "Condo",
+          "code": ""
+        },
+        {
+          "id": "23b6efe1-77fd-409c-bb81-a00da1952415",
+          "name": "Construction Loan Agreement",
+          "code": ""
+        },
+        {
+          "id": "1ff70bfe-ef73-4219-9728-b16c79f4adff",
+          "name": "Credit Report",
+          "code": ""
+        },
+        {
+          "id": "ede34b05-608f-40fc-8c64-f11426a25273",
+          "name": "Credit Sup",
+          "code": ""
+        },
+        {
+          "id": "fd8329bb-1049-4223-81cd-bc6fd7e6f287",
+          "name": "Data Proof Sheet - Fees",
+          "code": ""
+        },
+        {
+          "id": "9cc40437-da2d-4198-b70c-f9ee4b90f0d7",
+          "name": "Disclosure Notices",
+          "code": ""
+        },
+        {
+          "id": "dd6f991c-5b59-44a6-b939-015ff2998484",
+          "name": "Disclosures - Purchase Agreement",
+          "code": ""
+        },
+        {
+          "id": "e04bd12d-bdc3-4ddb-9c97-0616ac7fd04b",
+          "name": "DocuSign Certificate of Completion",
+          "code": ""
+        },
+        {
+          "id": "4ebfb816-7f4b-4a27-b03a-b19dd88a9f1f",
+          "name": "E-Consent",
+          "code": ""
+        },
+        {
+          "id": "75d2145e-5416-497f-a3b6-0cb0b2d4fdb3",
+          "name": "Escrow Docs",
+          "code": ""
+        },
+        {
+          "id": "9ad782b2-abb2-4711-86d8-bf3611edcaf6",
+          "name": "FeeWise - LE Summary",
+          "code": ""
+        },
+        {
+          "id": "cfbc44dc-91d6-406e-8c85-549a65e661cc",
+          "name": "FHA #",
+          "code": ""
+        },
+        {
+          "id": "885b3ad6-102e-4952-9d02-5dac27e757f1",
+          "name": "Final UW Docs",
+          "code": ""
+        },
+        {
+          "id": "97238949-6554-41e5-bffa-8d1bdc1f25ae",
+          "name": "First Payment Letter",
+          "code": ""
+        },
+        {
+          "id": "7f97fdc4-bcfa-48ee-b199-03b2e8be92f3",
+          "name": "Flood Certificate",
+          "code": ""
+        },
+        {
+          "id": "76e3677a-815a-4896-8153-e1396d96467e",
+          "name": "Flood Insurance",
+          "code": ""
+        },
+        {
+          "id": "d2134948-e8e4-4533-8c13-34ba05b9f6c7",
+          "name": "Fraud",
+          "code": ""
+        },
+        {
+          "id": "c1110f80-6db3-4afd-83b9-13bf00e10b06",
+          "name": "HOA",
+          "code": ""
+        },
+        {
+          "id": "37985c81-afc3-4970-b547-323b5cfd8a64",
+          "name": "Home Loan Toolkit",
+          "code": ""
+        },
+        {
+          "id": "05ef8c1d-d4c0-4c6e-9789-eea7e7735c73",
+          "name": "Homebuyer Education Cert",
+          "code": ""
+        },
+        {
+          "id": "81ad22fc-5023-4ffc-8b41-ebfb80149512",
+          "name": "Homeowner's Insurance Policy",
+          "code": ""
+        },
+        {
+          "id": "a4c54ff4-0ab7-4b7e-b2f6-a23160d3bd88",
+          "name": "Homeownership Counseling List",
+          "code": ""
+        },
+        {
+          "id": "442ff7c0-c3e9-4558-8dfe-9946f0471623",
+          "name": "Housing Docs",
+          "code": ""
+        },
+        {
+          "id": "98db6f2b-43f0-48bd-9a62-6271ce4ed1be",
+          "name": "ID's",
+          "code": ""
+        },
+        {
+          "id": "ed80fb9a-b254-4903-826c-3d703eeb10a7",
+          "name": "Income Docs",
+          "code": ""
+        },
+        {
+          "id": "7ea6922d-4a68-4cfa-9a35-db5bc94d2372",
+          "name": "Inspections",
+          "code": ""
+        },
+        {
+          "id": "d37249bd-bfc1-4052-8ac8-7fc824743801",
+          "name": "Loan Closing Advisor",
+          "code": ""
+        },
+        {
+          "id": "9ab34246-dfff-4f86-acb3-cf45191b906d",
+          "name": "Loan Estimate",
+          "code": ""
+        },
+        {
+          "id": "e329b3c1-65e2-4208-aae6-5656fec235ac",
+          "name": "Lock Points",
+          "code": ""
+        },
+        {
+          "id": "d18edeb5-89b6-478e-a85d-53f7b246ffbf",
+          "name": "LOX for Inquiries",
+          "code": ""
+        },
+        {
+          "id": "0afb8085-c7ce-4c71-8f29-ad28d7fa8f17",
+          "name": "MERS Registration",
+          "code": ""
+        },
+        {
+          "id": "db71adff-7be0-4b99-ade9-611e41501b72",
+          "name": "Miscellaneous",
+          "code": ""
+        },
+        {
+          "id": "79cceb2f-8ac9-4008-b01f-fcac46ac16f4",
+          "name": "Mortgage",
+          "code": ""
+        },
+        {
+          "id": "d10e812a-6d5a-4ee7-83ee-bee937ffb53f",
+          "name": "Mortgage Fraud is Investigated by the FBI",
+          "code": ""
+        },
+        {
+          "id": "1006eab8-ef92-4dd9-87d9-790e2b3900f2",
+          "name": "Mortgage Insurance",
+          "code": ""
+        },
+        {
+          "id": "867507e3-f934-4d5f-82c8-948da15cfdc2",
+          "name": "N/A - Needs Manual Review",
+          "code": ""
+        },
+        {
+          "id": "b5c8d40a-5804-4af4-8617-023ef45b7a38",
+          "name": "New construction forms",
+          "code": ""
+        },
+        {
+          "id": "c4d7c116-cd8d-4449-83ff-d7275009d0fb",
+          "name": "Note",
+          "code": ""
+        },
+        {
+          "id": "59de54b6-fb87-461c-b98a-1caffc52d33b",
+          "name": "Patriot Act Disclosure",
+          "code": ""
+        },
+        {
+          "id": "2f68b6fb-5813-4db2-b0ea-30ad1a4e150f",
+          "name": "Patriot Act Information",
+          "code": ""
+        },
+        {
+          "id": "a1c1f1fa-c235-438c-8689-0689cccdf779",
+          "name": "Product and Pricing",
+          "code": ""
+        },
+        {
+          "id": "de72d668-bb2c-44fc-9a04-24ed6efd0ca5",
+          "name": "Purchase Agreement",
+          "code": ""
+        },
+        {
+          "id": "b62f5573-dc8e-48cf-b144-743136ab7bf8",
+          "name": "Refinance Docs",
+          "code": ""
+        },
+        {
+          "id": "fc1c2bde-d81e-4cf3-a37a-7500f160b9a5",
+          "name": "Shipping Label",
+          "code": ""
+        },
+        {
+          "id": "05121296-c177-45a6-b5bc-a4b8ab276090",
+          "name": "Signed Closing Docs",
+          "code": ""
+        },
+        {
+          "id": "11fd8e01-1b46-4d6f-85ce-cf60968d1ae2",
+          "name": "Signed Prelim Docs",
+          "code": ""
+        },
+        {
+          "id": "39646f9b-a0e2-4dd1-9e16-1c99f5610324",
+          "name": "SSR",
+          "code": ""
+        },
+        {
+          "id": "e24985cc-4901-4811-9c17-0a867522230e",
+          "name": "Supplemental Consumer Information Form",
+          "code": ""
+        },
+        {
+          "id": "6cc117a3-9848-4e25-851b-62aad299e1da",
+          "name": "Survey",
+          "code": ""
+        },
+        {
+          "id": "5ca4f0ac-8159-49fd-ac78-64bffb8df7c2",
+          "name": "Taxes & Insurance for Investment Properties",
+          "code": ""
+        },
+        {
+          "id": "532fec56-052a-4543-a433-33c80d14c853",
+          "name": "Title",
+          "code": ""
+        },
+        {
+          "id": "6c75c116-24c0-4043-b7f8-d45144e684f7",
+          "name": "Title Report",
+          "code": ""
+        },
+        {
+          "id": "70c0f20b-8800-43e2-919e-f8bb38e323d9",
+          "name": "Trust Docs",
+          "code": ""
+        },
+        {
+          "id": "8d20c038-5aa8-474d-8ece-f54f090e21da",
+          "name": "UCD Collection",
+          "code": ""
+        },
+        {
+          "id": "5812106f-17c6-483d-8e7f-bb2db3909e0b",
+          "name": "Underwriting",
+          "code": ""
+        },
+        {
+          "id": "1a38b7ac-e64d-4c1c-bbf7-fe05f2bca6e7",
+          "name": "USA Patriot Act",
+          "code": ""
+        },
+        {
+          "id": "79eb5213-fb6a-433c-b445-93d0b2a1047f",
+          "name": "USPS Verification",
+          "code": ""
+        },
+        {
+          "id": "e3749b61-4399-4608-bf27-546063cc2ff7",
+          "name": "VA Disclosures",
+          "code": ""
+        },
+        {
+          "id": "b4df0706-0385-42f2-9b0a-f1f156605a06",
+          "name": "VA Federal Collection",
+          "code": ""
+        },
+        {
+          "id": "cf127088-73b4-4956-93c6-4ec470d41f20",
+          "name": "VA IRRRL - LIN Number",
+          "code": ""
+        },
+        {
+          "id": "2a35a54c-493d-4455-aa90-eda92b7d3aca",
+          "name": "Verifications (VOE, VOD, VOM, VOR, VOL)",
+          "code": ""
+        },
+        {
+          "id": "01733de4-41a6-4118-b08e-ace4aa0bac98",
+          "name": "Wire Instructions",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "651a92b7-68f6-436f-b70b-ec9e850851eb",
+      "api_name": "document_type",
+      "display_name": "Document Type",
+      "field_type": "text",
+      "category_id": "058ba12d-63e3-4697-8bb1-72f360c50b7b",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "1b62f3d9-7be0-4da2-98e5-5bb8d1671fa0",
+      "api_name": "skip_validation",
+      "display_name": "Skip Validation?",
+      "field_type": "yesnomaybe",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "8ae35bd4-89b1-4bf8-b90b-e4b97753e06a",
+          "name": "Yes",
+          "code": "yes"
+        },
+        {
+          "id": "92bb08d0-0f72-492b-a4d5-6c66e80c2430",
+          "name": "No",
+          "code": "no"
+        }
+      ]
+    },
+    {
+      "id": "ec3c0500-5aae-4b41-8c51-81e2fd8b0974",
+      "api_name": "finished_validation",
+      "display_name": "Finished Validation",
+      "field_type": "datetime",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "84fcb615-f8b6-44b1-87da-4185eb7b7e24",
+      "api_name": "sub_document_files",
+      "display_name": "Sub Document Files",
+      "field_type": "files",
+      "category_id": "22842fda-2358-45ae-9cfa-f9163bc572c8",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "132297bd-2ae0-441e-afd5-919650c22872",
+      "api_name": "document_classification_reason_v2",
+      "display_name": "document classification reason v2",
+      "field_type": "text",
+      "category_id": "6875188c-ecda-475b-a0b2-2172d7d5d482",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "91830ac2-3100-4605-96ad-c7c661124ef8",
+      "api_name": "owner",
+      "display_name": "Owner",
+      "field_type": "team_selector",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": true,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "aa3344f2-753d-4de3-9ff2-b924c0460b60",
+      "api_name": "classification_reason",
+      "display_name": "Classification Reason",
+      "field_type": "text",
+      "category_id": "058ba12d-63e3-4697-8bb1-72f360c50b7b",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "c7c285b7-f788-4b69-8ad1-6d5611f38994",
+      "api_name": "classification_confidence_v2",
+      "display_name": "classification confidence v2",
+      "field_type": "text",
+      "category_id": "6875188c-ecda-475b-a0b2-2172d7d5d482",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "8ad3ccdc-6fc9-4839-bc0d-dbbd95d0914f",
+      "api_name": "intermediate_document_index",
+      "display_name": "Intermediate Document Index",
+      "field_type": "longtext",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "5c7f4f71-44aa-46a2-bb8a-94bba85141a3",
+      "api_name": "classification_confidence",
+      "display_name": "Classification Confidence",
+      "field_type": "text",
+      "category_id": "058ba12d-63e3-4697-8bb1-72f360c50b7b",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "b7305ddd-f41a-4cc3-8db6-04a58eb561a7",
+      "api_name": "updated",
+      "display_name": "Last Modified",
+      "field_type": "datetime",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "73cc048f-885f-497d-b1fd-674d512bd37a",
+      "api_name": "display_name",
+      "display_name": "Display Name",
+      "field_type": "text",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+      "api_name": "job_id",
+      "display_name": "Job ID",
+      "field_type": "text",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "18bea2f8-d292-4fea-add5-51b25a8d4e53",
+      "api_name": "primary_document",
+      "display_name": "Primary Document",
+      "field_type": "yesnomaybe",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "1ccda7a5-4f60-45e1-99c4-89b107b19c4b",
+          "name": "Yes",
+          "code": "yes"
+        },
+        {
+          "id": "cb8b7bda-68d7-4e89-b829-48427636f440",
+          "name": "No",
+          "code": "no"
+        }
+      ]
+    },
+    {
+      "id": "7e099bb6-da51-4b29-ad2f-53e9c0311911",
+      "api_name": "is_intermediate_document",
+      "display_name": "Is Intermediate Document",
+      "field_type": "yesnomaybe",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "bee4309c-a611-44e8-9ecc-d41f8da44aa9",
+          "name": "Yes",
+          "code": "yes"
+        },
+        {
+          "id": "64d1bbc4-249b-44ab-baf2-16f84fdb227c",
+          "name": "No",
+          "code": "no"
+        }
+      ]
+    },
+    {
+      "id": "ea866c74-4c97-4e75-b352-f9357e8313d8",
+      "api_name": "document_file_field",
+      "display_name": "Document File Field",
+      "field_type": "files",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "850c3a0b-6a18-4bfe-b3ee-86b359ac7089",
+      "api_name": "primary_document_record",
+      "display_name": "Primary Document Record",
+      "field_type": "relationship",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "bbdd46aa-13e0-45d3-a979-aace7aaa3b5e",
+        "related_object": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+        "related_category": "22842fda-2358-45ae-9cfa-f9163bc572c8",
+        "related_name": "Sub Document Records",
+        "related_object_name": "Document Sets",
+        "related_object_object_name": "document_sets",
+        "related_entity_name": "Document",
+        "relation_type": "primary",
+        "cardinality": "many_to_one",
+        "fetch_url": "standard",
+        "rollup_timeline": true,
+        "rollup_leadsources": false,
+        "inverse_relation_rollup_timeline": true,
+        "inverse_relation_rollup_leadsources": false,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "13392cb9-25f5-4d7c-beb3-0ee01fe4b9b6",
+      "api_name": "primary_audit_log_record",
+      "display_name": "Primary Audit Log Record",
+      "field_type": "relationship",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "62ee0383-5b03-4ff2-b5b5-2c36b8d17d03",
+        "related_object": "c9870848-7d42-4fbb-b324-3853f8114e08",
+        "related_category": "1e3d9537-cda8-437f-a585-e02d95b1ba7f",
+        "related_name": "Primary Document Record",
+        "related_object_name": "Audit Logs",
+        "related_object_object_name": "audit_logs",
+        "related_entity_name": "Audit Log",
+        "relation_type": "one_to_one",
+        "cardinality": "one_to_one",
+        "fetch_url": "standard",
+        "rollup_timeline": false,
+        "rollup_leadsources": false,
+        "inverse_relation_rollup_timeline": false,
+        "inverse_relation_rollup_leadsources": false,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "0f3395ca-79c4-4b54-b2f0-3aa5c6ef5d58",
+      "api_name": "total_page_count",
+      "display_name": "Total Page Count",
+      "field_type": "integer",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "1602aaf8-cf1e-40e5-bd21-6a1d24fd127e",
+      "api_name": "classification_schema_flag",
+      "display_name": "Classification Schema Flag",
+      "field_type": "dropdown",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "d632c602-f223-4506-802b-5b366fbcba26",
+          "name": "Schema 1",
+          "code": ""
+        },
+        {
+          "id": "db5438ae-aa8e-4cd1-aeda-93ce3bdcec8f",
+          "name": "Schema 2",
+          "code": ""
+        }
+      ]
+    },
+    {
+      "id": "ce1acddb-2b00-4fa4-8d98-4a51c23f738b",
+      "api_name": "indexing_complete",
+      "display_name": "Indexing Complete",
+      "field_type": "yesnomaybe",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "f05b2aac-31c5-49d3-8e95-1e3823263549",
+          "name": "Yes",
+          "code": "yes"
+        },
+        {
+          "id": "a9b9dab0-d6e9-4844-9c75-98a9d7d60cc4",
+          "name": "No",
+          "code": "no"
+        }
+      ]
+    },
+    {
+      "id": "281726b7-04d6-43e1-af75-f433c8f6b7f4",
+      "api_name": "primary_business_logic_record",
+      "display_name": "Primary Business Logic Record",
+      "field_type": "relationship",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "7727d7a1-611e-47b0-ac76-a1b0ace24fcd",
+        "related_object": "4f977da3-7d94-43f7-947e-7ba7ab065c1e",
+        "related_category": "15aad56c-9715-49ed-a9cd-4799930f041b",
+        "related_name": "Related Document Records",
+        "related_object_name": "Business Logic",
+        "related_object_object_name": "business_logic",
+        "related_entity_name": "Business Logic",
+        "relation_type": "primary",
+        "cardinality": "many_to_one",
+        "fetch_url": "standard",
+        "rollup_timeline": false,
+        "rollup_leadsources": false,
+        "inverse_relation_rollup_timeline": false,
+        "inverse_relation_rollup_leadsources": false,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "9e3788f0-1889-4ab5-bf86-4a01e07ee7c4",
+      "api_name": "primary_deal_record",
+      "display_name": "Primary Deal Record",
+      "field_type": "relationship",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "69c9056a-d752-42d9-8e3c-6c6ac11b3dbf",
+        "related_object": "c118cce1-c51d-4ab8-8b2a-6cdfa8b3cfd0",
+        "related_category": "44ddb403-7d80-4c3e-aaa6-91244ca67c0c",
+        "related_name": "Related Document Records",
+        "related_object_name": "Deals",
+        "related_object_object_name": "deals",
+        "related_entity_name": "Deal",
+        "relation_type": "primary",
+        "cardinality": "many_to_one",
+        "fetch_url": "standard",
+        "rollup_timeline": false,
+        "rollup_leadsources": false,
+        "inverse_relation_rollup_timeline": false,
+        "inverse_relation_rollup_leadsources": false,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "0100cab4-b544-4047-9881-9f0616246d57",
+      "api_name": "primary_party_record",
+      "display_name": "Primary Party Record",
+      "field_type": "relationship",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "9ce49d34-1d89-445e-8099-42d03791c83d",
+        "related_object": "e083664e-9e12-4ef6-bb5c-332c9537df5e",
+        "related_category": "2fbb4d03-a944-48c6-a9a9-f64c619d56f9",
+        "related_name": "Related Document Records",
+        "related_object_name": "Parties",
+        "related_object_object_name": "parties",
+        "related_entity_name": "Party",
+        "relation_type": "primary",
+        "cardinality": "many_to_one",
+        "fetch_url": "standard",
+        "rollup_timeline": false,
+        "rollup_leadsources": false,
+        "inverse_relation_rollup_timeline": false,
+        "inverse_relation_rollup_leadsources": false,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "54d66959-d4c1-4a45-a64d-2296b873ed98",
+      "api_name": "execution_date",
+      "display_name": "Execution Date",
+      "field_type": "date",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "d93b2ec4-42a6-4772-af2f-f922b10cc12d",
+      "api_name": "primary_contact_record",
+      "display_name": "Primary Contact Record",
+      "field_type": "relationship",
+      "category_id": "14595996-5026-46a9-9c39-208c2f785ef2",
+      "is_required": false,
+      "deleted": false,
+      "relation": {
+        "related_field": "6719f7cb-c168-423a-a3b7-4183ba18f405",
+        "related_object": "eb6c5c6d-495f-4035-8db7-e6a636fc86b2",
+        "related_category": "387e137a-0071-42df-b7e9-c5381fabb04b",
+        "related_name": "Related Document Set Records",
+        "related_object_name": "Contacts",
+        "related_object_object_name": "client_client",
+        "related_entity_name": "Contact",
+        "relation_type": "primary",
+        "cardinality": "many_to_one",
+        "fetch_url": "client",
+        "rollup_timeline": false,
+        "rollup_leadsources": false,
+        "inverse_relation_rollup_timeline": false,
+        "inverse_relation_rollup_leadsources": false,
+        "inverse_relation_suppressed": false,
+        "related_object_default_on_activities": true
+      },
+      "options": null
+    },
+    {
+      "id": "469bf3a5-8599-4552-a470-4ba95ed486eb",
+      "api_name": "is_test_document",
+      "display_name": "Is Test Document",
+      "field_type": "yesnomaybe",
+      "category_id": "721c1d2f-57bd-4a23-bfde-0eb7f7d668e2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": [
+        {
+          "id": "ea0b388a-10bb-43e9-838e-05a45f07f893",
+          "name": "Yes",
+          "code": "yes"
+        },
+        {
+          "id": "41b32b35-8c23-432e-bc12-df4f7263c9e5",
+          "name": "No",
+          "code": "no"
+        }
+      ]
+    },
+    {
+      "id": "7210f121-e2a2-4c89-a7f6-3e2a4c49610d",
+      "api_name": "expected_index",
+      "display_name": "Expected_Index",
+      "field_type": "longtext",
+      "category_id": "721c1d2f-57bd-4a23-bfde-0eb7f7d668e2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "add7987f-0af5-4ad3-9ff9-a66566420bf7",
+      "api_name": "test_123",
+      "display_name": "TEST 123",
+      "field_type": "text",
+      "category_id": "721c1d2f-57bd-4a23-bfde-0eb7f7d668e2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "b76dab1c-aab9-4a80-ad60-66e2e6d361ee",
+      "api_name": "indexing_type",
+      "display_name": "Indexing Type",
+      "field_type": "text",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "03cb833a-129e-4074-891d-57164cd63300",
+      "api_name": "indexing_category",
+      "display_name": "Indexing Category",
+      "field_type": "text",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "e026ead2-1b14-4aca-b89d-29eee2d25ce3",
+      "api_name": "indexing_confidence",
+      "display_name": "Indexing Confidence",
+      "field_type": "text",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    },
+    {
+      "id": "6c7cc341-8e82-48a6-bcd5-480508d1c168",
+      "api_name": "indexing_reason",
+      "display_name": "Indexing Reason",
+      "field_type": "text",
+      "category_id": "504cd19b-e6d3-4acf-aad2-2a03f5c054b2",
+      "is_required": false,
+      "deleted": false,
+      "relation": null,
+      "options": null
+    }
+  ]
+}

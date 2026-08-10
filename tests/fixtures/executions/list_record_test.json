@@ -1,0 +1,26 @@
+[
+  {
+    "execution_id": "571684fd-e144-4692-a0ff-25885ce5d4fd",
+    "status": "completed",
+    "automation_api_name": "record_test",
+    "record_id": "91fcf3cd-a230-41f5-a41a-375930bd36d4",
+    "started_at": null,
+    "debug_mode": "active"
+  },
+  {
+    "execution_id": "0a825684-572c-4f78-9d52-8e5f476dd06b",
+    "status": "active",
+    "automation_api_name": "record_test",
+    "record_id": "91fcf3cd-a230-41f5-a41a-375930bd36d4",
+    "started_at": null,
+    "debug_mode": "cancelled"
+  },
+  {
+    "execution_id": "147b76ca-4f98-4a29-ab16-ad8cc59b48fe",
+    "status": "cancelled",
+    "automation_api_name": "record_test",
+    "record_id": "91fcf3cd-a230-41f5-a41a-375930bd36d4",
+    "started_at": null,
+    "debug_mode": "active"
+  }
+]

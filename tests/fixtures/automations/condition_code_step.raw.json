@@ -1,0 +1,214 @@
+{
+  "id": "cce0b70d-9634-4104-ba47-813a230396e7",
+  "name": "Condition Severity Alert",
+  "api_name": "condition_severity_alert",
+  "ai_description": null,
+  "active": false,
+  "type": "record_based",
+  "custom_object": {
+    "id": "76572554-4933-4b8b-b66a-f38fdc986953",
+    "name": "conditions",
+    "description": "Represents a clinical condition, problem, or diagnosis associated with a patient. Maps to FHIR R4 Condition resource.",
+    "entity_name": "Condition",
+    "object_name": "Conditions",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "When a new Condition record is created, branches on severity_score >= 4. YES \u2192 generates a clinical alert note in condition_notes. NO \u2192 stops with no action. (updated via plan_update_automation)",
+  "folder": {
+    "id": "44b300c0-ce2c-4c49-a427-44a25f85bfad",
+    "name": "<business_root>"
+  },
+  "triggers": [
+    {
+      "id": "532e190a-8fb5-4aa1-ae03-367fc71c6527",
+      "description": "Fires when any new Condition record is created",
+      "user_description": "",
+      "trigger_type": "new_entity_created",
+      "trigger_new_entity_created": {
+        "action": "create_only"
+      },
+      "stats": {
+        "number_completed": 0
+      }
+    },
+    {
+      "id": "a9f03dc2-bf19-47ff-a28f-620b7b3dfb7b",
+      "order": 1,
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 0
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "bc7bc5e4-da52-449f-a297-0598b69ac105",
+      "step_type": "condition",
+      "order": 0,
+      "description": "Branch: severity_score >= 4?",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 0,
+        "number_no": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "fields_v2",
+                  "field": "\"custom\"::af61135c-b89f-4feb-9c21-e87d9322379d",
+                  "value": "4",
+                  "subtype": "custom",
+                  "condition": ">=",
+                  "view_model": []
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "a842819b-c130-4b97-bfbd-1e892dbeac13"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "1041772f-25e5-4149-a75d-f9cebd7be3d8"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "a842819b-c130-4b97-bfbd-1e892dbeac13",
+      "step_type": "code_step",
+      "order": 1,
+      "description": "Format the high-severity alert note and write it back",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "bc7bc5e4-da52-449f-a297-0598b69ac105",
+      "parent_condition": "yes",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [],
+        "inputs": [
+          {
+            "input_type": "field",
+            "name": "condition_name",
+            "field": {
+              "id": "fcf00bf7-f1e5-4b3d-81d7-c22c0a010fd3",
+              "name": "condition_name",
+              "display_name": "Condition Name",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "icd_code",
+            "field": {
+              "id": "85a1b826-cc4e-492d-b907-fd5cab33c50f",
+              "name": "condition_code_icd10",
+              "display_name": "Condition Code (ICD-10)",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "severity",
+            "field": {
+              "id": "af61135c-b89f-4feb-9c21-e87d9322379d",
+              "name": "severity_score",
+              "display_name": "Severity Score",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "field",
+            "name": "alert_note",
+            "field": {
+              "id": "651ec3c4-5957-4a20-b237-73b89c09b3c2",
+              "name": "condition_notes",
+              "display_name": "Condition Notes",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "script": "condition_name = inputs.get(\"condition_name\") or \"Unknown Condition\"\nicd_code = inputs.get(\"icd_code\") or \"\"\nseverity = inputs.get(\"severity\") or \"\"\n\nnote = f\"[HIGH SEVERITY ALERT] {condition_name}\"\nif icd_code:\n    note += f\" (ICD-10: {icd_code})\"\nif severity:\n    note += f\" | Severity score: {severity}/5\"\nnote += \" | Flagged for immediate clinical review.\"\n\noutputs[\"alert_note\"] = note"
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "1041772f-25e5-4149-a75d-f9cebd7be3d8",
+      "step_type": "stop_execution",
+      "order": 2,
+      "description": "Low severity \u2014 no action needed",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "bc7bc5e4-da52-449f-a297-0598b69ac105",
+      "parent_condition": "no",
+      "action_stop_execution": {
+        "action": null,
+        "notify": false
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [],
+  "revision": 4,
+  "error_notification_email": "",
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 0,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-05-05T14:56:01.309122-05:00",
+  "updated": "2026-05-05T15:40:39.621120-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

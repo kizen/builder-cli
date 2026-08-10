@@ -1,0 +1,68 @@
+{
+  "order": [
+    "dashboards_section",
+    "automations_section",
+    "custom_object_entities",
+    "contacts_section"
+  ],
+  "sections": [
+    {
+      "key": "dashboards_section",
+      "label": "Dashboards",
+      "default": true,
+      "permissions": [
+        {
+          "key": "view_all_dashboards",
+          "label": "View All Dashboards",
+          "affordance": "switch",
+          "allowed_access": ["none", "view"],
+          "default": true
+        }
+      ]
+    },
+    {
+      "key": "automations_section",
+      "label": "Automations",
+      "default": true,
+      "permissions": [
+        {
+          "key": "manage_automations",
+          "label": "Manage Automations",
+          "affordance": "range",
+          "allowed_access": ["none", "view", "edit", "remove"],
+          "default": "view"
+        }
+      ]
+    }
+  ],
+  "custom_objects": [
+    {
+      "key": "records",
+      "label": "Records",
+      "affordance": "range",
+      "allowed_access": ["none", "view", "edit", "remove"],
+      "default": "view"
+    }
+  ],
+  "contacts": [
+    {
+      "key": "records",
+      "label": "Records",
+      "affordance": "range",
+      "allowed_access": ["none", "view", "edit", "remove"],
+      "default": "view"
+    }
+  ],
+  "default_contact_fields": {
+    "email": {
+      "allowed_access": ["none", "view", "edit"],
+      "default": "edit"
+    }
+  },
+  "default_custom_object_fields": {
+    "notes": {
+      "allowed_access": ["none", "view", "edit"],
+      "default": "view"
+    }
+  }
+}

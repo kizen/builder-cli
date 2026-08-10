@@ -1,0 +1,91 @@
+{
+  "env": "testenv",
+  "object_api_name": "tax_lot",
+  "id": "2d1d0799-d975-41d7-afa4-176d19e5159c",
+  "object_type": "standard",
+  "client_info": null,
+  "access": {
+    "view": true,
+    "edit": true,
+    "remove": true
+  },
+  "fields": {
+    "f698b684-59ce-4b1e-ba33-f4c982fe52dc": {
+      "id": "f698b684-59ce-4b1e-ba33-f4c982fe52dc",
+      "name": "current_value",
+      "field_type": "money",
+      "display_name": "Current Value",
+      "value": {
+        "currency": "USD",
+        "symbol": "$",
+        "amount": 320.81
+      }
+    },
+    "7a77bf92-67fd-415b-b247-98d48d9c8c63": {
+      "id": "7a77bf92-67fd-415b-b247-98d48d9c8c63",
+      "name": "purchase_price",
+      "field_type": "money",
+      "display_name": "Purchase Price",
+      "value": {
+        "currency": "USD",
+        "symbol": "$",
+        "amount": 274.84
+      }
+    },
+    "d52c6233-5ea3-4dd0-9902-68a8789afc03": {
+      "id": "d52c6233-5ea3-4dd0-9902-68a8789afc03",
+      "name": "number_of_shares",
+      "field_type": "decimal",
+      "display_name": "Number of Shares",
+      "value": 5.0
+    },
+    "104e186e-7bab-4149-b2bc-b9c912518d5e": {
+      "id": "104e186e-7bab-4149-b2bc-b9c912518d5e",
+      "name": "ticker_symbol",
+      "field_type": "text",
+      "display_name": "Ticker Symbol",
+      "value": "VTI"
+    },
+    "fa580ba8-ca62-42f5-877a-a2448a6f9da7": {
+      "id": "fa580ba8-ca62-42f5-877a-a2448a6f9da7",
+      "field_type": "text",
+      "name": "name",
+      "display_name": "Tax Lot Name",
+      "value": "VTI - 20250331"
+    },
+    "fad9bca0-97d9-4f1b-a4a3-c46fd84053ef": {
+      "id": "fad9bca0-97d9-4f1b-a4a3-c46fd84053ef",
+      "field_type": "datetime",
+      "name": "created",
+      "display_name": "Date Created",
+      "value": "2026-03-31T12:27:20.152070-05:00"
+    },
+    "ee3851ca-d88b-499b-81cd-425d5b14665a": {
+      "id": "ee3851ca-d88b-499b-81cd-425d5b14665a",
+      "field_type": "team_selector",
+      "name": "owner",
+      "display_name": "Owner",
+      "value": {
+        "id": "916dac1b-5640-4268-9324-06132f342488",
+        "deleted": false,
+        "first_name": "Alex",
+        "last_name": "Example",
+        "email": "alex@example.com"
+      }
+    },
+    "1e044280-990d-4b57-bee4-e734827a3db7": {
+      "id": "1e044280-990d-4b57-bee4-e734827a3db7",
+      "field_type": "datetime",
+      "name": "updated",
+      "display_name": "Last Modified",
+      "value": "2026-03-31T16:23:53.231165-05:00"
+    },
+    "958bbd40-b89c-4d2d-abc2-4cb381f48557": {
+      "id": "958bbd40-b89c-4d2d-abc2-4cb381f48557",
+      "field_type": "text",
+      "name": "display_name",
+      "display_name": "Display Name",
+      "value": "VTI - 20250331"
+    }
+  }
+}

@@ -1,0 +1,370 @@
+{
+  "id": "1ba68e06-5871-48e3-963e-8422bb34cde9",
+  "name": "LLM Comparison",
+  "api_name": "llm_comparison",
+  "ai_description": "\nTriggered manually on a CD Activity record, this 6-step automation analyzes a tax document to extract key underwriting data. The process begins by initializing three text variables to store outputs. It then performs two parallel actions to extract the content from the record's 'File' field. The text from one extraction is passed to a Large Language Model instructed to act as a mortgage underwriting assistant analyzing an IRS Form 1040. Based on a detailed set of rules, the model extracts financial data like income, deductions, and taxes, and identifies potential underwriting flags such as self-employment or significant capital gains. The final output is a structured JSON object containing the extracted tax information.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "e8093798-e46c-4306-852f-d3be48c1dc3f",
+    "name": "cd_activity",
+    "description": null,
+    "entity_name": "CD Activity",
+    "object_name": "CD Activity",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "44b300c0-ce2c-4c49-a427-44a25f85bfad",
+    "name": "<business_root>"
+  },
+  "triggers": [
+    {
+      "id": "da007494-ab99-488d-b288-d609137ed195",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 2
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "6f93d023-ff4f-48b1-a4b5-b948f4fafee2",
+      "step_type": "initialize_variable",
+      "order": 0,
+      "description": "llm_extract_and_analyze_output = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "9437d155-4e9e-4a7a-b368-4d4d492f8c4f",
+          "name": "llm_extract_and_analyze_output",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-04-02T17:57:10.603815Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "52ba333b-7134-4b4b-935a-736957eaaa15",
+      "step_type": "initialize_variable",
+      "order": 1,
+      "description": "llm_extract_output = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "6f93d023-ff4f-48b1-a4b5-b948f4fafee2",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "fb9c0b21-c7a2-4742-a09d-80a09b3b8a23",
+          "name": "llm_extract_output",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-04-02T17:57:10.612340Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "25f242bf-ed07-4bf1-8c99-e44ef7f1266f",
+      "step_type": "initialize_variable",
+      "order": 2,
+      "description": "llm_analyze_output = <i>empty</i>",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "52ba333b-7134-4b4b-935a-736957eaaa15",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "19483879-8367-4ff3-a675-d4121dbfc280",
+          "name": "llm_analyze_output",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-04-02T17:57:10.621189Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "c4635f83-89ae-45af-92ae-ebbcdacb7180",
+      "step_type": "file_content_extraction",
+      "order": 3,
+      "description": "Extract Content from  \u2018File\u2019 field",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "25f242bf-ed07-4bf1-8c99-e44ef7f1266f",
+      "parent_condition": "",
+      "action_file_content_extraction": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "business_plugin_app": {
+          "id": "92dfef31-8b9b-49dc-b54b-3e47cd6b4523",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are a mortgage underwriting assistant specializing in IRS tax document analysis. You are looking at a raw IRS tax document (Form 1040 transcript, return, or related schedules). Your job is to read the document directly, extract the relevant data, and return a structured JSON object for mortgage underwriting.Understanding IRS transcript layout:IRS tax return transcripts have a specific layout you must understand to extract correctly:The taxpayer name appears as unlabeled plain text between the \"Spouse SSN:\" field and the \"Filing status:\" field. It is NOT a value of the Spouse SSN field. There may also be an address or number on the line below the name.Most fields appear twice \u2014 once as the taxpayer-reported figure and once with \"per computer\" (IRS-verified). Always prefer the \"per computer\" value when both exist. These are the IRS's validated numbers.Field labels sometimes wrap across multiple lines (e.g., \"Rent/royalty/partnership/estate (Schedule E) per\\ncomputer:\"). Read these as a single field.Blank fields (label present but no value) should be treated as 0 for dollar amounts or null for text fields.Refund / amount owed sign convention:On IRS transcripts, a negative \"Refund amount\" or \"Balance due/overpayment\" means the taxpayer overpaid and is owed a refund. A positive value means the taxpayer owes. Apply this logic:Negative value \u2192 refund_amount = absolute value, amount_owed = 0Positive value \u2192 amount_owed = value, refund_amount = 0Zero \u2192 both = 0Field mapping rules:Extract values exactly as shown on the document. Do not calculate or infer.All dollar amounts should be integers (no commas, no $ sign, no decimals). Round to nearest dollar if needed.If a field is present but blank or $0, use 0.If a field does not exist anywhere in the document, use null.If filing status is \"single\" or there is no spouse name/SSN present, set all co_borrower fields to null. Do not reuse the borrower's SSN for the co-borrower.self_employment.present = true only if Schedule C, Schedule E (partnership/S-corp), or Schedule F shows a non-zero value.deductions.standard_or_itemized: \"standard\" if \"Standard deduction per computer\" is non-zero; \"itemized\" if Schedule A is present or an itemized deduction is referenced.Underwriting flags:Add a short string to underwriting_flags for any of the following conditions \u2014 and ONLY these conditions:Self-employment income present (any non-zero Schedule C/E/F)Capital gains or losses exceeding $10,000Significant other income or unusual income sourcesStudent loan interest deduction present (indicates outstanding student debt)Education credits claimed (may indicate part-time student status)Discrepancies between taxpayer-reported and \"per computer\" figures where they differ by more than $1Any data that is inconsistent with the stated filing statusDo NOT flag normal zero-value fields. Do NOT flag the absence of a spouse on a single return.Return ONLY a valid JSON object \u2014 no preamble, no explanation, no markdown fences.{   \"tax_year\": integer,   \"filing_status\": \"single\" | \"married_filing_jointly\" | \"married_filing_separately\" | \"head_of_household\" | \"qualifying_surviving_spouse\",   \"borrower\": {     \"name\": string,     \"ssn_last4\": string   },   \"co_borrower\": {     \"name\": string | null,     \"ssn_last4\": string | null   },   \"income\": {     \"wages_salaries_tips\": integer,     \"tax_exempt_interest\": integer,     \"taxable_interest\": integer,     \"qualified_dividends\": integer,     \"ordinary_dividends\": integer,     \"ira_distributions_total\": integer,     \"ira_distributions_taxable\": integer,     \"pensions_annuities_total\": integer,     \"pensions_annuities_taxable\": integer,     \"social_security_total\": integer,     \"social_security_taxable\": integer,     \"capital_gain_or_loss\": integer,     \"other_income\": integer,     \"total_income\": integer,     \"adjustments_to_income\": integer,     \"adjusted_gross_income\": integer   },   \"self_employment\": {     \"present\": boolean,     \"schedule_c_net_profit_loss\": integer | null,     \"schedule_e_net_income_loss\": integer | null,     \"schedule_f_net_profit_loss\": integer | null,     \"self_employment_tax_deduction\": integer | null   },   \"deductions\": {     \"standard_or_itemized\": \"standard\" | \"itemized\",     \"deduction_amount\": integer,     \"qbi_deduction\": integer   },   \"taxes_and_credits\": {     \"total_tax\": integer,     \"federal_income_tax_withheld\": integer,     \"estimated_tax_payments\": integer   },   \"refund_or_owed\": {     \"refund_amount\": integer,     \"amount_owed\": integer   },   \"underwriting_flags\": [string] }",
+        "html_prompt": "<p>You are a mortgage underwriting assistant specializing in IRS tax document analysis. You are looking at a raw IRS tax document (Form 1040 transcript, return, or related schedules). Your job is to read the document directly, extract the relevant data, and return a structured JSON object for mortgage underwriting.</p><p>Understanding IRS transcript layout:</p><p>IRS tax return transcripts have a specific layout you must understand to extract correctly:</p><p>The taxpayer name appears as unlabeled plain text between the \"Spouse SSN:\" field and the \"Filing status:\" field. It is NOT a value of the Spouse SSN field. There may also be an address or number on the line below the name.</p><p>Most fields appear twice \u2014 once as the taxpayer-reported figure and once with \"per computer\" (IRS-verified). Always prefer the \"per computer\" value when both exist. These are the IRS's validated numbers.</p><p>Field labels sometimes wrap across multiple lines (e.g., \"Rent/royalty/partnership/estate (Schedule E) per\\ncomputer:\"). Read these as a single field.</p><p>Blank fields (label present but no value) should be treated as 0 for dollar amounts or null for text fields.</p><p>Refund / amount owed sign convention:</p><p>On IRS transcripts, a negative \"Refund amount\" or \"Balance due/overpayment\" means the taxpayer overpaid and is owed a refund. A positive value means the taxpayer owes. Apply this logic:</p><p>Negative value \u2192 refund_amount = absolute value, amount_owed = 0</p><p>Positive value \u2192 amount_owed = value, refund_amount = 0</p><p>Zero \u2192 both = 0</p><p>Field mapping rules:</p><p>Extract values exactly as shown on the document. Do not calculate or infer.</p><p>All dollar amounts should be integers (no commas, no $ sign, no decimals). Round to nearest dollar if needed.</p><p>If a field is present but blank or $0, use 0.</p><p>If a field does not exist anywhere in the document, use null.</p><p>If filing status is \"single\" or there is no spouse name/SSN present, set all co_borrower fields to null. Do not reuse the borrower's SSN for the co-borrower.</p><p>self_employment.present = true only if Schedule C, Schedule E (partnership/S-corp), or Schedule F shows a non-zero value.</p><p>deductions.standard_or_itemized: \"standard\" if \"Standard deduction per computer\" is non-zero; \"itemized\" if Schedule A is present or an itemized deduction is referenced.</p><p>Underwriting flags:</p><p>Add a short string to underwriting_flags for any of the following conditions \u2014 and ONLY these conditions:</p><p>Self-employment income present (any non-zero Schedule C/E/F)</p><p>Capital gains or losses exceeding $10,000</p><p>Significant other income or unusual income sources</p><p>Student loan interest deduction present (indicates outstanding student debt)</p><p>Education credits claimed (may indicate part-time student status)</p><p>Discrepancies between taxpayer-reported and \"per computer\" figures where they differ by more than $1</p><p>Any data that is inconsistent with the stated filing status</p><p>Do NOT flag normal zero-value fields. Do NOT flag the absence of a spouse on a single return.</p><p>Return ONLY a valid JSON object \u2014 no preamble, no explanation, no markdown fences.</p><p>{   \"tax_year\": integer,   \"filing_status\": \"single\" | \"married_filing_jointly\" | \"married_filing_separately\" | \"head_of_household\" | \"qualifying_surviving_spouse\",   \"borrower\": {     \"name\": string,     \"ssn_last4\": string   },   \"co_borrower\": {     \"name\": string | null,     \"ssn_last4\": string | null   },   \"income\": {     \"wages_salaries_tips\": integer,     \"tax_exempt_interest\": integer,     \"taxable_interest\": integer,     \"qualified_dividends\": integer,     \"ordinary_dividends\": integer,     \"ira_distributions_total\": integer,     \"ira_distributions_taxable\": integer,     \"pensions_annuities_total\": integer,     \"pensions_annuities_taxable\": integer,     \"social_security_total\": integer,     \"social_security_taxable\": integer,     \"capital_gain_or_loss\": integer,     \"other_income\": integer,     \"total_income\": integer,     \"adjustments_to_income\": integer,     \"adjusted_gross_income\": integer   },   \"self_employment\": {     \"present\": boolean,     \"schedule_c_net_profit_loss\": integer | null,     \"schedule_e_net_income_loss\": integer | null,     \"schedule_f_net_profit_loss\": integer | null,     \"self_employment_tax_deduction\": integer | null   },   \"deductions\": {     \"standard_or_itemized\": \"standard\" | \"itemized\",     \"deduction_amount\": integer,     \"qbi_deduction\": integer   },   \"taxes_and_credits\": {     \"total_tax\": integer,     \"federal_income_tax_withheld\": integer,     \"estimated_tax_payments\": integer   },   \"refund_or_owed\": {     \"refund_amount\": integer,     \"amount_owed\": integer   },   \"underwriting_flags\": [string] }</p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "9437d155-4e9e-4a7a-b368-4d4d492f8c4f",
+              "name": "llm_extract_and_analyze_output",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false,
+        "data_type": "image",
+        "input_field": {
+          "id": "0943c4e2-c15a-4827-9e93-5a63928d5a3a",
+          "name": "supporting_documents",
+          "display_name": "Supporting Documents",
+          "deleted": false,
+          "field_type": "files",
+          "options": [],
+          "relation": null,
+          "rating": null
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d98788a0-1ad6-43e3-8fb2-6c84b777d871",
+      "step_type": "file_content_extraction",
+      "order": 4,
+      "description": "Extract Content from  \u2018File\u2019 field",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "25f242bf-ed07-4bf1-8c99-e44ef7f1266f",
+      "parent_condition": "",
+      "action_file_content_extraction": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "business_plugin_app": {
+          "id": "92dfef31-8b9b-49dc-b54b-3e47cd6b4523",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "Extract all data from this IRS tax document as structured key-value pairs.Formatting rules:Each field should appear on its own line as Label: Value. Group fields under their section headers exactly as they appear on the document (e.g., \"Income\", \"Adjustments to Income\", \"Tax and Credits\", \"Payments\", \"Refund or Amount Owed\").Header / taxpayer identification section:IRS transcripts place the taxpayer name and address on separate lines between \"Spouse SSN:\" and \"Filing status:\". Extract these explicitly as:Taxpayer Name: [name]Taxpayer Address: [address or number below name, if present]Do NOT confuse the taxpayer name with the Spouse SSN field. The name appears as plain text between labeled fields, not as a value of \"Spouse SSN\".Handling specific IRS transcript conventions:Many fields appear twice \u2014 once as the taxpayer-reported figure and once \"per computer\" (IRS-verified). Extract both and preserve the distinction.A negative value in \"Refund amount\" or \"Balance due/overpayment\" means the taxpayer overpaid and is owed a refund. Preserve the original signed value.If a field label spans multiple lines (e.g., \"Rent/royalty/partnership/estate (Schedule E) per\\ncomputer:\"), rejoin it into a single label.Preserve all dollar amounts exactly as shown, including $0.00 entries.If a field's value is blank (no text after the colon), output it as Label: [blank]If additional schedules or forms are present (Schedule C, Schedule E, Form 8863, etc.), extract each under its own section header with the same key-value format.Return only the extracted key-value content grouped by section. No commentary, no summaries, no markdown fences.",
+        "html_prompt": "<p>Extract all data from this IRS tax document as structured key-value pairs.</p><p>Formatting rules:</p><p>Each field should appear on its own line as Label: Value. Group fields under their section headers exactly as they appear on the document (e.g., \"Income\", \"Adjustments to Income\", \"Tax and Credits\", \"Payments\", \"Refund or Amount Owed\").</p><p>Header / taxpayer identification section:</p><p>IRS transcripts place the taxpayer name and address on separate lines between \"Spouse SSN:\" and \"Filing status:\". Extract these explicitly as:</p><p>Taxpayer Name: [name]</p><p>Taxpayer Address: [address or number below name, if present]</p><p>Do NOT confuse the taxpayer name with the Spouse SSN field. The name appears as plain text between labeled fields, not as a value of \"Spouse SSN\".</p><p>Handling specific IRS transcript conventions:</p><p>Many fields appear twice \u2014 once as the taxpayer-reported figure and once \"per computer\" (IRS-verified). Extract both and preserve the distinction.</p><p>A negative value in \"Refund amount\" or \"Balance due/overpayment\" means the taxpayer overpaid and is owed a refund. Preserve the original signed value.</p><p>If a field label spans multiple lines (e.g., \"Rent/royalty/partnership/estate (Schedule E) per\\ncomputer:\"), rejoin it into a single label.</p><p>Preserve all dollar amounts exactly as shown, including $0.00 entries.</p><p>If a field's value is blank (no text after the colon), output it as Label: [blank]</p><p>If additional schedules or forms are present (Schedule C, Schedule E, Form 8863, etc.), extract each under its own section header with the same key-value format.</p><p>Return only the extracted key-value content grouped by section. No commentary, no summaries, no markdown fences.</p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "fb9c0b21-c7a2-4742-a09d-80a09b3b8a23",
+              "name": "llm_extract_output",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false,
+        "data_type": "image",
+        "input_field": {
+          "id": "0943c4e2-c15a-4827-9e93-5a63928d5a3a",
+          "name": "supporting_documents",
+          "display_name": "Supporting Documents",
+          "deleted": false,
+          "field_type": "files",
+          "options": [],
+          "relation": null,
+          "rating": null
+        }
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "b7adf5ce-d6b3-4eef-9c26-f5bacea7dcc7",
+      "step_type": "call_llm",
+      "order": 5,
+      "description": "Call LLM  \u2018You are a mortgage underwriting assistant specializing in IRS tax document analysis. Review the extracted IRS Form 1040 data (and any accompanying schedules) and map all fields relevant to mortgage underwriting into the JSON schema below.Interpretation rules:Use the \"per computer\" (IRS-verified) value when both a taxpayer-reported figure and a \"per computer\" figure exist for the same field. These are the IRS's validated numbers.On IRS transcripts, a negative \"Refund amount\" or \"Balance due/overpayment\" indicates the taxpayer overpaid \u2014 this is a refund. Report the absolute value in refund_amount and set amount_owed to 0. A positive value means the taxpayer owes \u2014 report it in amount_owed and set refund_amount to 0.The taxpayer name on a transcript appears as unlabeled text between the \"Spouse SSN:\" and \"Filing status:\" fields. This is the primary borrower name. Do not pull the name from Form 8863 or other supplementary forms unless no name is found in the header.If filing status is \"single\" or there is no spouse name/SSN present, set all co_borrower fields to null. Do not reuse the borrower's SSN for the co-borrower.self_employment.present should be true only if Schedule C, Schedule E (partnership/S-corp), or Schedule F shows a non-zero value.deductions.standard_or_itemized: if \"Standard deduction per computer\" is non-zero, use \"standard\". If Schedule A is present or itemized deduction is referenced, use \"itemized\".All dollar amounts should be integers (no commas, no $ sign, no decimals). Round to the nearest dollar if needed.If a field is present but blank or $0, use 0.If a field does not exist anywhere in the document, use null.Do not calculate or infer values. Extract only what is stated.Underwriting flags:Add a short string to the underwriting_flags array for any of the following:Self-employment income present (any non-zero Schedule C/E/F)Capital gains or losses exceeding $10,000Significant other income or unusual income sourcesStudent loan interest deduction present (indicates outstanding student debt)Education credits claimed (may indicate part-time student status)Discrepancies between taxpayer-reported and IRS \"per computer\" figuresAny field where the data seems anomalous or inconsistent with the filing statusDo NOT flag normal zero-value fields or the absence of a spouse on a single return.Return ONLY a valid JSON object \u2014 no preamble, no explanation, no markdown fences.{   \"tax_year\": integer,   \"filing_status\": \"single\" | \"married_filing_jointly\" | \"married_filing_separately\" | \"head_of_household\" | \"qualifying_surviving_spouse\",   \"borrower\": {     \"name\": string,     \"ssn_last4\": string   },   \"co_borrower\": {     \"name\": string | null,     \"ssn_last4\": string | null   },   \"income\": {     \"wages_salaries_tips\": integer,     \"tax_exempt_interest\": integer,     \"taxable_interest\": integer,     \"qualified_dividends\": integer,     \"ordinary_dividends\": integer,     \"ira_distributions_total\": integer,     \"ira_distributions_taxable\": integer,     \"pensions_annuities_total\": integer,     \"pensions_annuities_taxable\": integer,     \"social_security_total\": integer,     \"social_security_taxable\": integer,     \"capital_gain_or_loss\": integer,     \"other_income\": integer,     \"total_income\": integer,     \"adjustments_to_income\": integer,     \"adjusted_gross_income\": integer   },   \"self_employment\": {     \"present\": boolean,     \"schedule_c_net_profit_loss\": integer | null,     \"schedule_e_net_income_loss\": integer | null,     \"schedule_f_net_profit_loss\": integer | null,     \"self_employment_tax_deduction\": integer | null   },   \"deductions\": {     \"standard_or_itemized\": \"standard\" | \"itemized\",     \"deduction_amount\": integer,     \"qbi_deduction\": integer   },   \"taxes_and_credits\": {     \"total_tax\": integer,     \"federal_income_tax_withheld\": integer,     \"estimated_tax_payments\": integer   },   \"refund_or_owed\": {     \"refund_amount\": integer,     \"amount_owed\": integer   },   \"underwriting_flags\": [string] }This is the extracted file contents:{{ automation_variable.llm_extract_output }}\u2019",
+      "user_description": "",
+      "stats": {
+        "number_completed": 2,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "d98788a0-1ad6-43e3-8fb2-6c84b777d871",
+      "parent_condition": "",
+      "action_call_llm": {
+        "model_name": "gemini/gemini-2.5-flash",
+        "business_plugin_app": {
+          "id": "92dfef31-8b9b-49dc-b54b-3e47cd6b4523",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are a mortgage underwriting assistant specializing in IRS tax document analysis. Review the extracted IRS Form 1040 data (and any accompanying schedules) and map all fields relevant to mortgage underwriting into the JSON schema below.Interpretation rules:Use the \"per computer\" (IRS-verified) value when both a taxpayer-reported figure and a \"per computer\" figure exist for the same field. These are the IRS's validated numbers.On IRS transcripts, a negative \"Refund amount\" or \"Balance due/overpayment\" indicates the taxpayer overpaid \u2014 this is a refund. Report the absolute value in refund_amount and set amount_owed to 0. A positive value means the taxpayer owes \u2014 report it in amount_owed and set refund_amount to 0.The taxpayer name on a transcript appears as unlabeled text between the \"Spouse SSN:\" and \"Filing status:\" fields. This is the primary borrower name. Do not pull the name from Form 8863 or other supplementary forms unless no name is found in the header.If filing status is \"single\" or there is no spouse name/SSN present, set all co_borrower fields to null. Do not reuse the borrower's SSN for the co-borrower.self_employment.present should be true only if Schedule C, Schedule E (partnership/S-corp), or Schedule F shows a non-zero value.deductions.standard_or_itemized: if \"Standard deduction per computer\" is non-zero, use \"standard\". If Schedule A is present or itemized deduction is referenced, use \"itemized\".All dollar amounts should be integers (no commas, no $ sign, no decimals). Round to the nearest dollar if needed.If a field is present but blank or $0, use 0.If a field does not exist anywhere in the document, use null.Do not calculate or infer values. Extract only what is stated.Underwriting flags:Add a short string to the underwriting_flags array for any of the following:Self-employment income present (any non-zero Schedule C/E/F)Capital gains or losses exceeding $10,000Significant other income or unusual income sourcesStudent loan interest deduction present (indicates outstanding student debt)Education credits claimed (may indicate part-time student status)Discrepancies between taxpayer-reported and IRS \"per computer\" figuresAny field where the data seems anomalous or inconsistent with the filing statusDo NOT flag normal zero-value fields or the absence of a spouse on a single return.Return ONLY a valid JSON object \u2014 no preamble, no explanation, no markdown fences.{   \"tax_year\": integer,   \"filing_status\": \"single\" | \"married_filing_jointly\" | \"married_filing_separately\" | \"head_of_household\" | \"qualifying_surviving_spouse\",   \"borrower\": {     \"name\": string,     \"ssn_last4\": string   },   \"co_borrower\": {     \"name\": string | null,     \"ssn_last4\": string | null   },   \"income\": {     \"wages_salaries_tips\": integer,     \"tax_exempt_interest\": integer,     \"taxable_interest\": integer,     \"qualified_dividends\": integer,     \"ordinary_dividends\": integer,     \"ira_distributions_total\": integer,     \"ira_distributions_taxable\": integer,     \"pensions_annuities_total\": integer,     \"pensions_annuities_taxable\": integer,     \"social_security_total\": integer,     \"social_security_taxable\": integer,     \"capital_gain_or_loss\": integer,     \"other_income\": integer,     \"total_income\": integer,     \"adjustments_to_income\": integer,     \"adjusted_gross_income\": integer   },   \"self_employment\": {     \"present\": boolean,     \"schedule_c_net_profit_loss\": integer | null,     \"schedule_e_net_income_loss\": integer | null,     \"schedule_f_net_profit_loss\": integer | null,     \"self_employment_tax_deduction\": integer | null   },   \"deductions\": {     \"standard_or_itemized\": \"standard\" | \"itemized\",     \"deduction_amount\": integer,     \"qbi_deduction\": integer   },   \"taxes_and_credits\": {     \"total_tax\": integer,     \"federal_income_tax_withheld\": integer,     \"estimated_tax_payments\": integer   },   \"refund_or_owed\": {     \"refund_amount\": integer,     \"amount_owed\": integer   },   \"underwriting_flags\": [string] }This is the extracted file contents:{{ automation_variable.llm_extract_output }}",
+        "html_prompt": "<p>You are a mortgage underwriting assistant specializing in IRS tax document analysis. Review the extracted IRS Form 1040 data (and any accompanying schedules) and map all fields relevant to mortgage underwriting into the JSON schema below.</p><p>Interpretation rules:</p><p>Use the \"per computer\" (IRS-verified) value when both a taxpayer-reported figure and a \"per computer\" figure exist for the same field. These are the IRS's validated numbers.</p><p>On IRS transcripts, a negative \"Refund amount\" or \"Balance due/overpayment\" indicates the taxpayer overpaid \u2014 this is a refund. Report the absolute value in refund_amount and set amount_owed to 0. A positive value means the taxpayer owes \u2014 report it in amount_owed and set refund_amount to 0.</p><p>The taxpayer name on a transcript appears as unlabeled text between the \"Spouse SSN:\" and \"Filing status:\" fields. This is the primary borrower name. Do not pull the name from Form 8863 or other supplementary forms unless no name is found in the header.</p><p>If filing status is \"single\" or there is no spouse name/SSN present, set all co_borrower fields to null. Do not reuse the borrower's SSN for the co-borrower.</p><p>self_employment.present should be true only if Schedule C, Schedule E (partnership/S-corp), or Schedule F shows a non-zero value.</p><p>deductions.standard_or_itemized: if \"Standard deduction per computer\" is non-zero, use \"standard\". If Schedule A is present or itemized deduction is referenced, use \"itemized\".</p><p>All dollar amounts should be integers (no commas, no $ sign, no decimals). Round to the nearest dollar if needed.</p><p>If a field is present but blank or $0, use 0.</p><p>If a field does not exist anywhere in the document, use null.</p><p>Do not calculate or infer values. Extract only what is stated.</p><p>Underwriting flags:</p><p>Add a short string to the underwriting_flags array for any of the following:</p><p>Self-employment income present (any non-zero Schedule C/E/F)</p><p>Capital gains or losses exceeding $10,000</p><p>Significant other income or unusual income sources</p><p>Student loan interest deduction present (indicates outstanding student debt)</p><p>Education credits claimed (may indicate part-time student status)</p><p>Discrepancies between taxpayer-reported and IRS \"per computer\" figures</p><p>Any field where the data seems anomalous or inconsistent with the filing status</p><p>Do NOT flag normal zero-value fields or the absence of a spouse on a single return.</p><p>Return ONLY a valid JSON object \u2014 no preamble, no explanation, no markdown fences.</p><p>{   \"tax_year\": integer,   \"filing_status\": \"single\" | \"married_filing_jointly\" | \"married_filing_separately\" | \"head_of_household\" | \"qualifying_surviving_spouse\",   \"borrower\": {     \"name\": string,     \"ssn_last4\": string   },   \"co_borrower\": {     \"name\": string | null,     \"ssn_last4\": string | null   },   \"income\": {     \"wages_salaries_tips\": integer,     \"tax_exempt_interest\": integer,     \"taxable_interest\": integer,     \"qualified_dividends\": integer,     \"ordinary_dividends\": integer,     \"ira_distributions_total\": integer,     \"ira_distributions_taxable\": integer,     \"pensions_annuities_total\": integer,     \"pensions_annuities_taxable\": integer,     \"social_security_total\": integer,     \"social_security_taxable\": integer,     \"capital_gain_or_loss\": integer,     \"other_income\": integer,     \"total_income\": integer,     \"adjustments_to_income\": integer,     \"adjusted_gross_income\": integer   },   \"self_employment\": {     \"present\": boolean,     \"schedule_c_net_profit_loss\": integer | null,     \"schedule_e_net_income_loss\": integer | null,     \"schedule_f_net_profit_loss\": integer | null,     \"self_employment_tax_deduction\": integer | null   },   \"deductions\": {     \"standard_or_itemized\": \"standard\" | \"itemized\",     \"deduction_amount\": integer,     \"qbi_deduction\": integer   },   \"taxes_and_credits\": {     \"total_tax\": integer,     \"federal_income_tax_withheld\": integer,     \"estimated_tax_payments\": integer   },   \"refund_or_owed\": {     \"refund_amount\": integer,     \"amount_owed\": integer   },   \"underwriting_flags\": [string] }</p><p></p><p>This is the extracted file contents:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"llm_extract_output\" data-merge-field-relationship=\"automation_variable.llm_extract_output\">{{ automation_variable.llm_extract_output }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "19483879-8367-4ff3-a675-d4121dbfc280",
+              "name": "llm_analyze_output",
+              "data_type": "string",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [
+    {
+      "id": "9437d155-4e9e-4a7a-b368-4d4d492f8c4f",
+      "name": "llm_extract_and_analyze_output",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-04-02T17:57:10.603815Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "fb9c0b21-c7a2-4742-a09d-80a09b3b8a23",
+      "name": "llm_extract_output",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-04-02T17:57:10.612340Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "19483879-8367-4ff3-a675-d4121dbfc280",
+      "name": "llm_analyze_output",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-04-02T17:57:10.621189Z",
+      "deleted": false,
+      "is_array": false
+    }
+  ],
+  "revision": 3,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 2,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-04-02T12:49:15.079599-05:00",
+  "updated": "2026-04-02T19:17:15.185231-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

@@ -1,0 +1,2956 @@
+{
+  "id": "514521af-a304-4a28-8ed7-f18ebb634c9f",
+  "name": "Contains Multiple Documents?",
+  "api_name": "contains_multiple_documents",
+  "ai_description": "\nManually triggered on a 'Document Sets' record, this 29-step automation uses a multi-part AI analysis to determine if a file contains single or multiple documents. The workflow first calculates the file's total page count. A condition then checks if the file has one page or fewer; if so, it bypasses the main logic and proceeds directly to the single-document path. For multi-page files, it runs up to three separate AI file content extractions, storing each 'Yes' or 'No' decision in a variable. An early exit condition checks if the first two AI runs both return 'Yes', and if so, immediately jumps to the multi-document outcome. Otherwise, a final condition checks for a majority vote: if at least two of the three AI decisions are 'Yes', it updates the 'Contains Multiple Documents?' field to 'Yes', sets 'Document Classification Status' to 'N/A', sends a webhook notification, and starts the 'Multiple Document - Index & Create Child Entity' and 'Create Audit Log' automations. If the majority vote is 'No', or if the file was single-paged, it sets 'Contains Multiple Documents?' to 'No', updates the status to 'Needs Classification', sends a webhook, and starts the 'Single Document Classification' automation.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+    "name": "document_sets",
+    "description": "The Document Sets object stores and categorizes financial documents for mortgage transactions, classifying them by type like 'Appraisal' or 'W2'. It tracks classification status, records an execution date, and identifies multi-document files. Each set is linked to a primary Deal, Party, and Contact, and supports parent-child hierarchies for grouping related documents.",
+    "entity_name": "Document",
+    "object_name": "Document Sets",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "9dbff2c0-30b8-4bc7-a146-2779b8fbdde4",
+    "name": "Document Classification"
+  },
+  "triggers": [
+    {
+      "id": "6042855f-3639-4761-856e-fcf1a34527b7",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 815
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "ca54b596-4c12-462d-9a61-6e9329e17da6",
+      "step_type": "initialize_variable",
+      "order": 0,
+      "description": "entity_record_id = \u2018{{ custom_objects.id }}\u2019",
+      "user_description": "entity record id",
+      "stats": {
+        "number_completed": 661,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ custom_objects.id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Document ID\" data-merge-field-relationship=\"custom_objects.id\">{{ custom_objects.id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "4416e1cd-5c04-47c1-bf44-13224cf0a10d",
+          "name": "entity_record_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-08T22:09:34.487669Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "0814f1d7-a7b2-451a-8b4b-9d6c9ff9a18f",
+      "step_type": "initialize_variable",
+      "order": 1,
+      "description": "automation_id = \u2018{{ automation_history.automation_id }}\u2019",
+      "user_description": "ID for this automation. Used for the webhook.",
+      "stats": {
+        "number_completed": 543,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "ca54b596-4c12-462d-9a61-6e9329e17da6",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ automation_history.automation_id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Automation ID\" data-merge-field-relationship=\"automation_history.automation_id\">{{ automation_history.automation_id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "873d6a3f-54b2-485b-b3c1-30121b61bc7d",
+          "name": "automation_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-28T19:38:42.267869Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "9214434a-2dcd-46e8-b238-e7230c3ce9b9",
+      "step_type": "initialize_variable",
+      "order": 2,
+      "description": "automation_execution_id = \u2018{{ automation_history.execution_id }}\u2019",
+      "user_description": "ID for the specific run of this automation. Used for the webhook.",
+      "stats": {
+        "number_completed": 543,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "0814f1d7-a7b2-451a-8b4b-9d6c9ff9a18f",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "string",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "{{ automation_history.execution_id }}",
+            "value_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Automation Execution ID\" data-merge-field-relationship=\"automation_history.execution_id\">{{ automation_history.execution_id }}</span></p>"
+          }
+        ],
+        "variable": {
+          "id": "693a25ea-5f2b-4662-a5b7-a93fa5ceb69f",
+          "name": "automation_execution_id",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-28T20:21:37.829761Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "0ec73f9d-b0a8-4278-944a-e3fca256a880",
+      "step_type": "initialize_variable",
+      "order": 3,
+      "description": "llm_decision_1 = \u2018No\u2019",
+      "user_description": "Yes/No decision from the first LLM call (if the document contains multiple sub-documents)",
+      "stats": {
+        "number_completed": 537,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "9214434a-2dcd-46e8-b238-e7230c3ce9b9",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "boolean",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "False",
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "59ebb4a9-7347-43ec-98d1-0c0ed4ff6500",
+          "name": "llm_decision_1",
+          "data_type": "boolean",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "yes_no",
+          "created": "2026-01-30T02:54:08.413054Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "20703d3c-3382-433a-af15-a62ed07bdcb7",
+      "step_type": "initialize_variable",
+      "order": 4,
+      "description": "llm_decision_3 = \u2018No\u2019",
+      "user_description": "Yes/No decision from the third LLM call (if the document contains multiple sub-documents)",
+      "stats": {
+        "number_completed": 537,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "0ec73f9d-b0a8-4278-944a-e3fca256a880",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "boolean",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "False",
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "db0b2e92-c6f3-41a0-9d98-e46722c5cfd4",
+          "name": "llm_decision_3",
+          "data_type": "boolean",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "yes_no",
+          "created": "2026-01-30T02:54:08.419899Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "abd5b0b0-5cb2-4e62-91da-04eaf02b8fb1",
+      "step_type": "initialize_variable",
+      "order": 5,
+      "description": "llm_decision_2 = \u2018No\u2019",
+      "user_description": "Yes/No decision from the second LLM call (if the document contains multiple sub-documents)",
+      "stats": {
+        "number_completed": 537,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "20703d3c-3382-433a-af15-a62ed07bdcb7",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "static",
+            "source_subtype": "boolean",
+            "value_category": null,
+            "field": null,
+            "relationship_field": null,
+            "variable": null,
+            "value": "False",
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "a4f60b68-393c-4dc5-b075-2504ea407f45",
+          "name": "llm_decision_2",
+          "data_type": "boolean",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": "yes_no",
+          "created": "2026-01-30T02:54:08.427176Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "43ff362f-3724-4cb1-899a-061ec3ffae9e",
+      "step_type": "initialize_variable",
+      "order": 6,
+      "description": "classification_array = <i>empty</i>",
+      "user_description": "array of client-specific document types",
+      "stats": {
+        "number_completed": 536,
+        "number_failed": 0,
+        "number_pending": 1
+      },
+      "parent_step_id": "abd5b0b0-5cb2-4e62-91da-04eaf02b8fb1",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "262e305c-da52-47e1-99ad-4eb80d7682bf",
+          "name": "classification_array",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-30T03:06:47.790974Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "e3b8e468-b1af-4db4-a282-320742602794",
+      "step_type": "initialize_variable",
+      "order": 7,
+      "description": "total_page_count = <i>empty</i>",
+      "user_description": "total page count of the PDF",
+      "stats": {
+        "number_completed": 530,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "43ff362f-3724-4cb1-899a-061ec3ffae9e",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [],
+        "variable": {
+          "id": "a8391500-fed5-495a-a43a-ad7b5b0c102c",
+          "name": "total_page_count",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-02-02T17:19:15.652445Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "0d7996b0-1f5b-4a4b-85a1-4072667b654a",
+      "step_type": "initialize_variable",
+      "order": 8,
+      "description": "key_considerations = \u2018Detection Prompt Considerations - Self Learning\u2019",
+      "user_description": "key considerations from self-learning for detection",
+      "stats": {
+        "number_completed": 250,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "e3b8e468-b1af-4db4-a282-320742602794",
+      "parent_condition": "",
+      "action_initialize_variable": {
+        "sources": [
+          {
+            "source_type": "field_value",
+            "source_subtype": "primary_related_object_field",
+            "value_category": null,
+            "field": {
+              "id": "7b4dca76-7f3f-4bae-9a9f-4d5a03aeca71",
+              "name": "detection_prompt_considerations_self_learning",
+              "display_name": "Detection Prompt Considerations - Self Learning",
+              "field_type": "longtext",
+              "deleted": false,
+              "relation": null
+            },
+            "relationship_field": {
+              "id": "281726b7-04d6-43e1-af75-f433c8f6b7f4",
+              "name": "primary_business_logic_record",
+              "display_name": "Primary Business Logic Record",
+              "field_type": "relationship",
+              "deleted": false,
+              "relation": {
+                "related_object_name": "Business Logic",
+                "related_object_object_name": "business_logic",
+                "related_entity_name": "Business Logic",
+                "cardinality": "many_to_one",
+                "relation_type": "primary"
+              }
+            },
+            "variable": null,
+            "value": null,
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "5ec35643-a0d1-499d-8b42-5b76ac6b3d00",
+          "name": "key_considerations",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-05T18:38:00.386221Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "f45d4296-e9e7-42c3-b36a-62497afb437d",
+      "step_type": "condition",
+      "order": 9,
+      "description": "Document Fields 'Classification Schema Flag' Equals Static Value Schema 1",
+      "user_description": "Checks if Schema Flag = 'Schema 1'",
+      "stats": {
+        "number_completed": 84,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 76,
+        "number_no": 8
+      },
+      "parent_step_id": "0d7996b0-1f5b-4a4b-85a1-4072667b654a",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "fields_v2",
+                  "field": "\"custom\"::1602aaf8-cf1e-40e5-bd21-6a1d24fd127e",
+                  "value": "d632c602-f223-4506-802b-5b366fbcba26",
+                  "subtype": "custom",
+                  "condition": "=",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "fields"
+                      }
+                    ],
+                    [
+                      "field_id",
+                      {
+                        "url": "/custom-objects/8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574/fields/1602aaf8-cf1e-40e5-bd21-6a1d24fd127e",
+                        "method": "GET",
+                        "error_message": {
+                          "404": "The field has been deleted"
+                        },
+                        "error_response": {
+                          "name": "classification_schema_flag",
+                          "relation": {},
+                          "field_type": "dropdown"
+                        }
+                      }
+                    ],
+                    [
+                      "condition",
+                      "equals"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      {
+                        "url": "/records/display-names",
+                        "body": {
+                          "option_ids": [
+                            "d632c602-f223-4506-802b-5b366fbcba26"
+                          ]
+                        },
+                        "method": "POST",
+                        "result_path": [],
+                        "result_transform": [
+                          "xf_hoist",
+                          [
+                            "xf_concat",
+                            [
+                              "xf_map",
+                              "@result_path/results/options",
+                              {
+                                "id": [
+                                  "xf_pick",
+                                  "$",
+                                  [
+                                    "id"
+                                  ]
+                                ],
+                                "code": [
+                                  "xf_pick",
+                                  "$",
+                                  [
+                                    "code"
+                                  ]
+                                ],
+                                "name": [
+                                  "xf_pick",
+                                  "$",
+                                  [
+                                    "display_name"
+                                  ]
+                                ]
+                              }
+                            ],
+                            [
+                              "xf_map",
+                              "@result_path/not_found/options",
+                              {
+                                "id": [
+                                  "xf_pick",
+                                  "$",
+                                  [
+                                    "id"
+                                  ]
+                                ],
+                                "name": [
+                                  "xf_join",
+                                  "[",
+                                  "Deleted",
+                                  "] ",
+                                  [
+                                    "xf_pick",
+                                    "$",
+                                    [
+                                      "display_name"
+                                    ]
+                                  ]
+                                ],
+                                "not_found": true,
+                                "error_message": "The option has been deleted"
+                              }
+                            ],
+                            [
+                              "xf_map",
+                              "@result_path/not_allowed/options",
+                              {
+                                "id": [
+                                  "xf_pick",
+                                  "$",
+                                  [
+                                    "id"
+                                  ]
+                                ],
+                                "name": [
+                                  "xf_join",
+                                  "[",
+                                  "No Access",
+                                  "] ",
+                                  [
+                                    "xf_pick",
+                                    "$",
+                                    [
+                                      "display_name"
+                                    ]
+                                  ]
+                                ],
+                                "not_allowed": true,
+                                "error_message": "Required field"
+                              }
+                            ]
+                          ]
+                        ]
+                      }
+                    ]
+                  ],
+                  "description": "Fields 'Classification Schema Flag' Equals Static Value Schema 1"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "b943b1bf-85e6-4648-97f1-52b9a915b09f"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "9a27c28b-c32a-43f6-ad80-56def1ded114"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "9a27c28b-c32a-43f6-ad80-56def1ded114",
+      "step_type": "update_variable",
+      "order": 10,
+      "description": "classification_array = \u2018Categorization Array 2\u2019",
+      "user_description": "set client-specific classification array in record to variable",
+      "stats": {
+        "number_completed": 8,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "f45d4296-e9e7-42c3-b36a-62497afb437d",
+      "parent_condition": "no",
+      "action_update_variable": {
+        "sources": [
+          {
+            "source_type": "field_value",
+            "source_subtype": "primary_related_object_field",
+            "value_category": null,
+            "field": {
+              "id": "0c48f53b-d06e-4f0e-bcb4-d1d906236198",
+              "name": "categorization_array_2",
+              "display_name": "Categorization Array 2",
+              "field_type": "longtext",
+              "deleted": false,
+              "relation": null
+            },
+            "relationship_field": {
+              "id": "281726b7-04d6-43e1-af75-f433c8f6b7f4",
+              "name": "primary_business_logic_record",
+              "display_name": "Primary Business Logic Record",
+              "field_type": "relationship",
+              "deleted": false,
+              "relation": {
+                "related_object_name": "Business Logic",
+                "related_object_object_name": "business_logic",
+                "related_entity_name": "Business Logic",
+                "cardinality": "many_to_one",
+                "relation_type": "primary"
+              }
+            },
+            "variable": null,
+            "value": null,
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "262e305c-da52-47e1-99ad-4eb80d7682bf",
+          "name": "classification_array",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-30T03:06:47.790974Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "8abc0263-0cdb-4ee7-8e76-310957fa0903",
+      "step_type": "go_to_automation_step",
+      "order": 11,
+      "description": "Go To Step [Action: key_considerations = \u2018Detection Prompt Considerations - Self Learning\u2019]",
+      "user_description": "",
+      "stats": {
+        "number_completed": 8,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "9a27c28b-c32a-43f6-ad80-56def1ded114",
+      "parent_condition": "",
+      "action_go_to_automation_step": {
+        "trigger": null,
+        "step": {
+          "id": "d752fbcf-4615-493a-b66a-4f6eadf4ff73",
+          "step_type": "update_variable",
+          "order": 13,
+          "parent_step_id": "b943b1bf-85e6-4648-97f1-52b9a915b09f"
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "b943b1bf-85e6-4648-97f1-52b9a915b09f",
+      "step_type": "update_variable",
+      "order": 12,
+      "description": "classification_array = \u2018Categorization Array\u2019",
+      "user_description": "set client-specific classification array in record to variable",
+      "stats": {
+        "number_completed": 527,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "f45d4296-e9e7-42c3-b36a-62497afb437d",
+      "parent_condition": "yes",
+      "action_update_variable": {
+        "sources": [
+          {
+            "source_type": "field_value",
+            "source_subtype": "primary_related_object_field",
+            "value_category": null,
+            "field": {
+              "id": "6963f22a-47d3-44fb-bfec-1b1fc8de5118",
+              "name": "categorization_array",
+              "display_name": "Categorization Array",
+              "field_type": "longtext",
+              "deleted": false,
+              "relation": null
+            },
+            "relationship_field": {
+              "id": "281726b7-04d6-43e1-af75-f433c8f6b7f4",
+              "name": "primary_business_logic_record",
+              "display_name": "Primary Business Logic Record",
+              "field_type": "relationship",
+              "deleted": false,
+              "relation": {
+                "related_object_name": "Business Logic",
+                "related_object_object_name": "business_logic",
+                "related_entity_name": "Business Logic",
+                "cardinality": "many_to_one",
+                "relation_type": "primary"
+              }
+            },
+            "variable": null,
+            "value": null,
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "262e305c-da52-47e1-99ad-4eb80d7682bf",
+          "name": "classification_array",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-01-30T03:06:47.790974Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": true,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d752fbcf-4615-493a-b66a-4f6eadf4ff73",
+      "step_type": "update_variable",
+      "order": 13,
+      "description": "key_considerations = \u2018Detection Prompt Considerations - Self Learning\u2019",
+      "user_description": "Update key considerations",
+      "stats": {
+        "number_completed": 245,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "b943b1bf-85e6-4648-97f1-52b9a915b09f",
+      "parent_condition": "",
+      "action_update_variable": {
+        "sources": [
+          {
+            "source_type": "field_value",
+            "source_subtype": "primary_related_object_field",
+            "value_category": null,
+            "field": {
+              "id": "7b4dca76-7f3f-4bae-9a9f-4d5a03aeca71",
+              "name": "detection_prompt_considerations_self_learning",
+              "display_name": "Detection Prompt Considerations - Self Learning",
+              "field_type": "longtext",
+              "deleted": false,
+              "relation": null
+            },
+            "relationship_field": {
+              "id": "281726b7-04d6-43e1-af75-f433c8f6b7f4",
+              "name": "primary_business_logic_record",
+              "display_name": "Primary Business Logic Record",
+              "field_type": "relationship",
+              "deleted": false,
+              "relation": {
+                "related_object_name": "Business Logic",
+                "related_object_object_name": "business_logic",
+                "related_entity_name": "Business Logic",
+                "cardinality": "many_to_one",
+                "relation_type": "primary"
+              }
+            },
+            "variable": null,
+            "value": null,
+            "value_html": ""
+          }
+        ],
+        "variable": {
+          "id": "5ec35643-a0d1-499d-8b42-5b76ac6b3d00",
+          "name": "key_considerations",
+          "data_type": "string",
+          "data_subtype": null,
+          "input_format": null,
+          "output_format": null,
+          "created": "2026-03-05T18:38:00.386221Z",
+          "deleted": false,
+          "is_array": false
+        },
+        "is_required": false,
+        "array_aggregation_mode": null,
+        "deduplicate_array": false
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "9d187c03-e566-4518-8920-e98b7852284a",
+      "step_type": "code_step",
+      "order": 14,
+      "description": "Run Python 3.13 Code on (document_file_field) and set (total_page_count)",
+      "user_description": "determine the total page count for model precision",
+      "stats": {
+        "number_completed": 529,
+        "number_failed": 0,
+        "number_pending": 1
+      },
+      "parent_step_id": "d752fbcf-4615-493a-b66a-4f6eadf4ff73",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "180526bb-6b27-4787-aeec-e377c05ddcfb",
+            "name": "kizen_api",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "field",
+            "name": "document_file_field",
+            "field": {
+              "id": "ea866c74-4c97-4e75-b352-f9357e8313d8",
+              "name": "document_file_field",
+              "display_name": "Document File Field",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": true
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "total_page_count",
+            "variable": {
+              "name": "total_page_count",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "script": "import io\n\nfrom pypdf import PdfReader\n\nfrom pypdf.errors import PdfReadError\n\n# ==================== KIZEN AUTHENTICATION ====================\n\n# (You usually get these from secrets \u2013 adjust if your environment provides them differently)\n\nbusiness_id, user_id, api_key = secrets[\"kizen_api\"].split(\":\")\n\nimport requests\n\ns = requests.Session()\n\ns.headers.update({\n\n    \"X-BUSINESS-ID\": business_id,\n\n    \"X-USER-ID\": user_id,\n\n    \"X-API-KEY\": api_key,\n\n    \"accept\": \"application/json\",\n\n})\n\n# ==================== DOWNLOAD THE PDF ====================\n\nfile_ids = inputs.document_file_field\n\nif not file_ids:\n\n    outputs.total_page_count = \"0\"\n\nelse:\n\n    # For simplicity: process only the first file\n\n    # If you need to handle multiple files, you can loop and e.g. sum pages\n\n    file_id = file_ids[0]\n\n    try:\n\n        # Download the file content\n\n        file_res = s.get(f\"https://app.go.kizen.com/api/files/{file_id}/download\")\n\n        file_res.raise_for_status()\n\n        # Read PDF from the downloaded bytes\n\n        pdf_content = file_res.content\n\n        reader = PdfReader(io.BytesIO(pdf_content))\n\n        # Get page count\n\n        total_pages = len(reader.pages)\n\n        outputs.total_page_count = str(total_pages)\n\n    except (PdfReadError, requests.RequestException, ValueError):\n\n        # Handle invalid PDF, network issues, wrong file type, etc.\n\n        outputs.total_page_count = \"0\""
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "2d226f87-a8eb-4813-96b2-e077984c1b25",
+      "step_type": "condition",
+      "order": 15,
+      "description": "Document (Variable Value 'total_page_count' Equals Static Value 1) OR (Variable Value 'total_page_count' Equals Static Value 0)",
+      "user_description": "Determine if the document has a single page. If so, jump to single document classification, else proceed with multi-doc LLM logic",
+      "stats": {
+        "number_completed": 529,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 215,
+        "number_no": 314
+      },
+      "parent_step_id": "9d187c03-e566-4518-8920-e98b7852284a",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": "1",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "total_page_count",
+                        "data_type": "string"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "equals"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      "1"
+                    ]
+                  ],
+                  "description": "Variable Value 'total_page_count' Equals Static Value 1",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "total_page_count"
+                }
+              ]
+            },
+            {
+              "id": "query-1",
+              "and": false,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": "0",
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "total_page_count",
+                        "data_type": "string"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "equals"
+                    ],
+                    [
+                      "value_type",
+                      "static"
+                    ],
+                    [
+                      "value",
+                      "0"
+                    ]
+                  ],
+                  "description": "Variable Value 'total_page_count' Equals Static Value 0",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "total_page_count"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "62bc13d7-e13d-47a3-939b-f95ff6c6bf2e"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "7b31146e-e791-4737-afa6-189cacc263a1"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "62bc13d7-e13d-47a3-939b-f95ff6c6bf2e",
+      "step_type": "go_to_automation_step",
+      "order": 16,
+      "description": "Go To Step [Action: Change Fields \u2018Document Classification Status\u2019 to \u2018Needs Classification\u2019, \u2018Contains Multiple Documents?\u2019 to \u2018No\u2019, and \u2018Total Page Count\u2019 to Variable \u2018total_page_count\u2019]",
+      "user_description": "if 0 or 1 page document, send to single doc classification",
+      "stats": {
+        "number_completed": 190,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "2d226f87-a8eb-4813-96b2-e077984c1b25",
+      "parent_condition": "yes",
+      "action_go_to_automation_step": {
+        "trigger": null,
+        "step": {
+          "id": "acce31c8-24c4-40d7-9655-7ede12ac864b",
+          "step_type": "change_field_value",
+          "order": 25,
+          "parent_step_id": "d5b4ac8b-afa0-4e30-aa8e-53110e34033b"
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "7b31146e-e791-4737-afa6-189cacc263a1",
+      "step_type": "file_content_extraction",
+      "order": 17,
+      "description": "Extract Content from  \u2018File\u2019 field",
+      "user_description": "LLM Decision #1",
+      "stats": {
+        "number_completed": 545,
+        "number_failed": 34,
+        "number_pending": 2
+      },
+      "parent_step_id": "2d226f87-a8eb-4813-96b2-e077984c1b25",
+      "parent_condition": "no",
+      "action_file_content_extraction": {
+        "model_name": "gemini/gemini-flash-latest",
+        "business_plugin_app": {
+          "id": "1e8cecec-8f9c-4b06-8b6b-019fbc526c42",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are now an expert document classifier for underwriters. Analyze the document provided. Your goal is to decide if the document contains any subdocuments within. For example, if you decide that the document contains a paystub, then that means it is a single document and you should respond \"No\".For reference, below is an array of all possible document types and their respective category. If you find that there are multiple types in the document, then return \"Yes\". IF there is just one type in the document, then respond \"No\".Additional Rules:-If you identify a page as a screenshot, don't be confused by the contents of a screenshot, they wont matter.. it still counts as a single pageArray of document types:{{ automation_variable.classification_array }}If any key considerations from past detection corrections are listed below, treat them as high-priority guidance when deciding whether a document contains multiple sub-documents or should remain as a single document. If none are listed, proceed with standard detection logic:{{ automation_variable.key_considerations }}",
+        "html_prompt": "<p>You are now an expert document classifier for underwriters. Analyze the document provided. Your goal is to decide if the document contains any subdocuments within. For example, if you decide that the document contains a paystub, then that means it is a single document and you should respond \"No\".</p><p></p><p>For reference, below is an array of all possible document types and their respective category. If you find that there are multiple types in the document, then return \"Yes\". IF there is just one type in the document, then respond \"No\".</p><p></p><p>Additional Rules:</p><p>-If you identify a page as a screenshot, don't be confused by the contents of a screenshot, they wont matter.. it still counts as a single page</p><p></p><p>Array of document types:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"classification_array\" data-merge-field-relationship=\"automation_variable.classification_array\">{{ automation_variable.classification_array }}</span></p><p></p><p>If any key considerations from past detection corrections are listed below, treat them as high-priority guidance when deciding whether a document contains multiple sub-documents or should remain as a single document. If none are listed, proceed with standard detection logic:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"key_considerations\" data-merge-field-relationship=\"automation_variable.key_considerations\">{{ automation_variable.key_considerations }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "59ebb4a9-7347-43ec-98d1-0c0ed4ff6500",
+              "name": "llm_decision_1",
+              "data_type": "boolean",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false,
+        "data_type": "image",
+        "input_field": {
+          "id": "ea866c74-4c97-4e75-b352-f9357e8313d8",
+          "name": "document_file_field",
+          "display_name": "Document File Field",
+          "deleted": false,
+          "field_type": "files",
+          "options": [],
+          "relation": null,
+          "rating": null
+        }
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "016f326e-cf3e-46f6-bae1-e670ef5dca5f",
+      "step_type": "file_content_extraction",
+      "order": 18,
+      "description": "Extract Content from  \u2018File\u2019 field",
+      "user_description": "LLM Decision #2",
+      "stats": {
+        "number_completed": 561,
+        "number_failed": 13,
+        "number_pending": 5
+      },
+      "parent_step_id": "7b31146e-e791-4737-afa6-189cacc263a1",
+      "parent_condition": "",
+      "action_file_content_extraction": {
+        "model_name": "gemini/gemini-pro-latest",
+        "business_plugin_app": {
+          "id": "1e8cecec-8f9c-4b06-8b6b-019fbc526c42",
+          "plugin_app_api_name": "gemini",
+          "plugin_app_name": "Gemini",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "gemini__api_key",
+              "obfuscated_value": "AI*******************GQ"
+            }
+          ]
+        },
+        "prompt": "You are now an expert document classifier for underwriters. Analyze the document provided. Your goal is to decide if the document contains any subdocuments within. For example, if you decide that the document contains a paystub, then that means it is a single document and you should respond \"No\".For reference, below is an array of all possible document types and their respective category. If you find that there are multiple types in the document, then return \"Yes\". IF there is just one type in the document, then respond \"No\".Additional Rules:-If you identify a page as a screenshot, don't be confused by the contents of a screenshot, they wont matter.. it still counts as a single pageArray of document types:{{ automation_variable.classification_array }}If any key considerations from past detection corrections are listed below, treat them as high-priority guidance when deciding whether a document contains multiple sub-documents or should remain as a single document. If none are listed, proceed with standard detection logic:{{ automation_variable.key_considerations }}",
+        "html_prompt": "<p>You are now an expert document classifier for underwriters. Analyze the document provided. Your goal is to decide if the document contains any subdocuments within. For example, if you decide that the document contains a paystub, then that means it is a single document and you should respond \"No\".</p><p></p><p>For reference, below is an array of all possible document types and their respective category. If you find that there are multiple types in the document, then return \"Yes\". IF there is just one type in the document, then respond \"No\".</p><p></p><p>Additional Rules:</p><p>-If you identify a page as a screenshot, don't be confused by the contents of a screenshot, they wont matter.. it still counts as a single page</p><p></p><p>Array of document types:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"classification_array\" data-merge-field-relationship=\"automation_variable.classification_array\">{{ automation_variable.classification_array }}</span></p><p></p><p>If any key considerations from past detection corrections are listed below, treat them as high-priority guidance when deciding whether a document contains multiple sub-documents or should remain as a single document. If none are listed, proceed with standard detection logic:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"key_considerations\" data-merge-field-relationship=\"automation_variable.key_considerations\">{{ automation_variable.key_considerations }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "a4f60b68-393c-4dc5-b075-2504ea407f45",
+              "name": "llm_decision_2",
+              "data_type": "boolean",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false,
+        "data_type": "image",
+        "input_field": {
+          "id": "ea866c74-4c97-4e75-b352-f9357e8313d8",
+          "name": "document_file_field",
+          "display_name": "Document File Field",
+          "deleted": false,
+          "field_type": "files",
+          "options": [],
+          "relation": null,
+          "rating": null
+        }
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "3c0ceb32-bda5-4dc1-a460-11ff04a30053",
+      "step_type": "code_step",
+      "order": 19,
+      "description": "Run Python 3.13 Code on (llm_decision_1, and 2 more) and set (llm_decision_1, and 2 more)",
+      "user_description": "sanitize the LLM outputs to \"yes\" or \"no\" for evaluation",
+      "stats": {
+        "number_completed": 166,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "016f326e-cf3e-46f6-bae1-e670ef5dca5f",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "llm_decision_1",
+            "variable": {
+              "name": "llm_decision_1",
+              "deleted": false
+            },
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "llm_decision_2",
+            "variable": {
+              "name": "llm_decision_2",
+              "deleted": false
+            },
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "llm_decision_3",
+            "variable": {
+              "name": "llm_decision_3",
+              "deleted": false
+            },
+            "data_type": "boolean",
+            "is_list": false
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "llm_decision_1",
+            "variable": {
+              "name": "llm_decision_1",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "llm_decision_2",
+            "variable": {
+              "name": "llm_decision_2",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "llm_decision_3",
+            "variable": {
+              "name": "llm_decision_3",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "boolean",
+            "is_list": false
+          }
+        ],
+        "script": "# Normalize and validate the three LLM decisions\n\ndecisions = {\n    'llm_decision_1': inputs.llm_decision_1,\n    'llm_decision_2': inputs.llm_decision_2,\n    'llm_decision_3': inputs.llm_decision_3,\n}\n\nfor key, value in decisions.items():\n    if value is None or str(value).strip() == '':\n        normalized = 'no'\n    else:\n        normalized = str(value).strip().lower()\n\n    setattr(outputs, key, normalized)"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "841ac964-aada-4568-9449-4379a66b2a71",
+      "step_type": "condition",
+      "order": 20,
+      "description": "Document Variable Value 'llm_decision_1' Is Yes AND Variable Value 'llm_decision_2' Is Yes",
+      "user_description": "check model output after 2 runs",
+      "stats": {
+        "number_completed": 166,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 68,
+        "number_no": 98
+      },
+      "parent_step_id": "3c0ceb32-bda5-4dc1-a460-11ff04a30053",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": true,
+          "query": [
+            {
+              "id": "query-0",
+              "and": true,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_1",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_1' Is Yes ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_1"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_2",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_2' Is Yes",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_2"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "da565f1a-af05-4ffe-8fc9-277aa607be76"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "5a147c58-513b-449d-bdaf-d9def8b89b99"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "da565f1a-af05-4ffe-8fc9-277aa607be76",
+      "step_type": "go_to_automation_step",
+      "order": 21,
+      "description": "Go To Step [Action: Change Fields \u2018Document Classification Status\u2019 to \u2018N/A\u2019, \u2018Contains Multiple Documents?\u2019 to \u2018Yes\u2019, and \u2018Total Page Count\u2019 to Variable \u2018total_page_count\u2019]",
+      "user_description": "Jump to contains mulit branch, since there are 2. \"yes\" outputs",
+      "stats": {
+        "number_completed": 68,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "841ac964-aada-4568-9449-4379a66b2a71",
+      "parent_condition": "yes",
+      "action_go_to_automation_step": {
+        "trigger": null,
+        "step": {
+          "id": "414c2a55-d1ef-4f5a-99e6-4a8a170f3941",
+          "step_type": "change_field_value",
+          "order": 28,
+          "parent_step_id": "d5b4ac8b-afa0-4e30-aa8e-53110e34033b"
+        }
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "5a147c58-513b-449d-bdaf-d9def8b89b99",
+      "step_type": "file_content_extraction",
+      "order": 22,
+      "description": "Extract Content from  \u2018File\u2019 field",
+      "user_description": "LLM Decision #3",
+      "stats": {
+        "number_completed": 507,
+        "number_failed": 14,
+        "number_pending": 0
+      },
+      "parent_step_id": "841ac964-aada-4568-9449-4379a66b2a71",
+      "parent_condition": "no",
+      "action_file_content_extraction": {
+        "model_name": "openai/gpt-5.2",
+        "business_plugin_app": {
+          "id": "8127ac02-a10a-4471-9d40-480bf50e3be7",
+          "plugin_app_api_name": "open_ai",
+          "plugin_app_name": "OpenAI",
+          "disabled": false,
+          "secrets": [
+            {
+              "api_name": "open_ai__api_key",
+              "obfuscated_value": "sk*******************kA"
+            }
+          ]
+        },
+        "prompt": "You are now an expert document classifier for underwriters. Analyze the document provided. Your goal is to decide if the document contains any subdocuments within. For example, if you decide that the document contains a paystub, then that means it is a single document and you should respond \"No\".For reference, below is an array of all possible document types and their respective category. If you find that there are multiple types in the document, then return \"Yes\". IF there is just one type in the document, then respond \"No\".Additional Rules:-If you identify a page as a screenshot, don't be confused by the contents of a screenshot, they wont matter.. it still counts as a single pageArray of document types:{{ automation_variable.classification_array }}If any key considerations from past detection corrections are listed below, treat them as high-priority guidance when deciding whether a document contains multiple sub-documents or should remain as a single document. If none are listed, proceed with standard detection logic:{{ automation_variable.key_considerations }}",
+        "html_prompt": "<p>You are now an expert document classifier for underwriters. Analyze the document provided. Your goal is to decide if the document contains any subdocuments within. For example, if you decide that the document contains a paystub, then that means it is a single document and you should respond \"No\".</p><p></p><p>For reference, below is an array of all possible document types and their respective category. If you find that there are multiple types in the document, then return \"Yes\". IF there is just one type in the document, then respond \"No\".</p><p></p><p>Additional Rules:</p><p>-If you identify a page as a screenshot, don't be confused by the contents of a screenshot, they wont matter.. it still counts as a single page</p><p></p><p>Array of document types:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"classification_array\" data-merge-field-relationship=\"automation_variable.classification_array\">{{ automation_variable.classification_array }}</span></p><p></p><p>If any key considerations from past detection corrections are listed below, treat them as high-priority guidance when deciding whether a document contains multiple sub-documents or should remain as a single document. If none are listed, proceed with standard detection logic:</p><p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"key_considerations\" data-merge-field-relationship=\"automation_variable.key_considerations\">{{ automation_variable.key_considerations }}</span></p>",
+        "merge_field_validation": "default_to_unknown",
+        "destinations": [
+          {
+            "related_object_field": null,
+            "field": null,
+            "variable": {
+              "id": "db0b2e92-c6f3-41a0-9d98-e46722c5cfd4",
+              "name": "llm_decision_3",
+              "data_type": "boolean",
+              "data_subtype": null,
+              "deleted": false,
+              "is_array": false
+            },
+            "conflict_resolution": null,
+            "options": [],
+            "confidence_threshold": 0.7,
+            "is_required": false
+          }
+        ],
+        "is_advanced": false,
+        "data_type": "image",
+        "input_field": {
+          "id": "ea866c74-4c97-4e75-b352-f9357e8313d8",
+          "name": "document_file_field",
+          "display_name": "Document File Field",
+          "deleted": false,
+          "field_type": "files",
+          "options": [],
+          "relation": null,
+          "rating": null
+        }
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "a493cfaa-98eb-411c-9f3d-c220197516b4",
+      "step_type": "code_step",
+      "order": 23,
+      "description": "Run Python 3.13 Code on (llm_decision_1, and 2 more) and set (llm_decision_1, and 2 more)",
+      "user_description": "sanitize the LLM outputs to \"yes\" or \"no\" for evaluation",
+      "stats": {
+        "number_completed": 214,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "5a147c58-513b-449d-bdaf-d9def8b89b99",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "llm_decision_1",
+            "variable": {
+              "name": "llm_decision_1",
+              "deleted": false
+            },
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "llm_decision_2",
+            "variable": {
+              "name": "llm_decision_2",
+              "deleted": false
+            },
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "llm_decision_3",
+            "variable": {
+              "name": "llm_decision_3",
+              "deleted": false
+            },
+            "data_type": "boolean",
+            "is_list": false
+          }
+        ],
+        "outputs": [
+          {
+            "output_type": "variable",
+            "name": "llm_decision_1",
+            "variable": {
+              "name": "llm_decision_1",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "llm_decision_2",
+            "variable": {
+              "name": "llm_decision_2",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "boolean",
+            "is_list": false
+          },
+          {
+            "output_type": "variable",
+            "name": "llm_decision_3",
+            "variable": {
+              "name": "llm_decision_3",
+              "deleted": false
+            },
+            "conflict_resolution": "overwrite",
+            "create_missing_option": false,
+            "data_type": "boolean",
+            "is_list": false
+          }
+        ],
+        "script": "# Normalize and validate the three LLM decisions\n\ndecisions = {\n    'llm_decision_1': inputs.llm_decision_1,\n    'llm_decision_2': inputs.llm_decision_2,\n    'llm_decision_3': inputs.llm_decision_3,\n}\n\nfor key, value in decisions.items():\n    if value is None or str(value).strip() == '':\n        normalized = 'no'\n    else:\n        normalized = str(value).strip().lower()\n\n    setattr(outputs, key, normalized)"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "d5b4ac8b-afa0-4e30-aa8e-53110e34033b",
+      "step_type": "condition",
+      "order": 24,
+      "description": "Document (Variable Value 'llm_decision_1' Is Yes AND Variable Value 'llm_decision_2' Is Yes AND Variable Value 'llm_decision_3' Is Yes) OR (Variable Value 'llm_decision_1' Is Yes AND Variable Value 'llm_decision_2' Is Yes AND Variable Value 'llm_decision_3' Is No) OR (Variable Value 'llm_decision_1' Is Yes AND Variable Value 'llm_decision_2' Is No AND Variable Value 'llm_decision_3' Is Yes) OR (Variable Value 'llm_decision_1' Is No AND Variable Value 'llm_decision_2' Is Yes AND Variable Value 'llm_decision_3' Is Yes)",
+      "user_description": "Consensus logic",
+      "stats": {
+        "number_completed": 497,
+        "number_failed": 0,
+        "number_pending": 3,
+        "number_yes": 148,
+        "number_no": 348
+      },
+      "parent_step_id": "a493cfaa-98eb-411c-9f3d-c220197516b4",
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [
+            {
+              "id": "query-0",
+              "and": true,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_1",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_1' Is Yes ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_1"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_2",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_2' Is Yes ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_2"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_3",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_3' Is Yes",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_3"
+                }
+              ]
+            },
+            {
+              "id": "query-1",
+              "and": true,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_1",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_1' Is Yes ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_1"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_2",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_2' Is Yes ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_2"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": false,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_3",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_no"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_3' Is No",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_3"
+                }
+              ]
+            },
+            {
+              "id": "query-2",
+              "and": true,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_1",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_1' Is Yes ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_1"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": false,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_2",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_no"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_2' Is No ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_2"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_3",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_3' Is Yes",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_3"
+                }
+              ]
+            },
+            {
+              "id": "query-3",
+              "and": true,
+              "filters": [
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": false,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_1",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_no"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_1' Is No ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_1"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_2",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_2' Is Yes ",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_2"
+                },
+                {
+                  "type": "variable",
+                  "subtype": "automation_variable",
+                  "condition": "=",
+                  "rhs_value": true,
+                  "view_model": [
+                    [
+                      "filter_type",
+                      {
+                        "vars": [
+                          [
+                            "fields_settings_search",
+                            true
+                          ],
+                          [
+                            "custom_object_id",
+                            "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574"
+                          ],
+                          [
+                            "object_type",
+                            "standard"
+                          ],
+                          [
+                            "client_tag_field_id",
+                            "b2c26f96-abe0-46e5-afcd-0f6fbb3a9029"
+                          ]
+                        ],
+                        "filter_type": "variable"
+                      }
+                    ],
+                    [
+                      "lhs_variable",
+                      {
+                        "name": "llm_decision_3",
+                        "data_type": "boolean"
+                      }
+                    ],
+                    [
+                      "condition",
+                      "is_yes"
+                    ]
+                  ],
+                  "description": "Variable Value 'llm_decision_3' Is Yes",
+                  "rhs_value_type": "static",
+                  "lhs_variable_name": "llm_decision_3"
+                }
+              ]
+            }
+          ],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [
+          {
+            "id": "414c2a55-d1ef-4f5a-99e6-4a8a170f3941"
+          }
+        ],
+        "no_steps": [
+          {
+            "id": "acce31c8-24c4-40d7-9655-7ede12ac864b"
+          }
+        ],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "acce31c8-24c4-40d7-9655-7ede12ac864b",
+      "step_type": "change_field_value",
+      "order": 25,
+      "description": "Change Fields \u2018Document Classification Status\u2019 to \u2018Needs Classification\u2019, \u2018Contains Multiple Documents?\u2019 to \u2018No\u2019, and \u2018Total Page Count\u2019 to Variable \u2018total_page_count\u2019",
+      "user_description": "change fields",
+      "stats": {
+        "number_completed": 564,
+        "number_failed": 0,
+        "number_pending": 2
+      },
+      "parent_step_id": "d5b4ac8b-afa0-4e30-aa8e-53110e34033b",
+      "parent_condition": "no",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "ab7aadcd-2e9e-4ac1-9fa2-fe8396ab9948",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "51a0523b-1033-4e6f-a803-a26323bac96e",
+              "name": "document_classification_status",
+              "display_name": "Document Classification Status",
+              "deleted": false,
+              "field_type": "status",
+              "options": [
+                {
+                  "id": "87dd5e5f-675b-46e0-8a3c-fb9dc5c15264",
+                  "code": "",
+                  "name": "Classified",
+                  "order": 1,
+                  "meta": {
+                    "color": "rgba(50,192,85,1)"
+                  }
+                },
+                {
+                  "id": "3f54ad54-3d0f-4007-a972-7fb32eb43f05",
+                  "code": "",
+                  "name": "Needs Classification",
+                  "order": 2,
+                  "meta": {
+                    "color": "rgba(8,91,238,1)"
+                  }
+                },
+                {
+                  "id": "3d1c6831-c17a-46ca-96d0-897036032472",
+                  "code": "",
+                  "name": "Manual Review",
+                  "order": 3,
+                  "meta": {
+                    "color": "rgba(243,168,0,1)"
+                  }
+                },
+                {
+                  "id": "bce84de2-dbb4-4e34-87fd-d7caad87b5a5",
+                  "code": "",
+                  "name": "N/A",
+                  "order": 4,
+                  "meta": {
+                    "color": "rgba(0,0,0,1)"
+                  }
+                },
+                {
+                  "id": "c9e3cf4c-6405-4eb8-9c25-10500a9dc451",
+                  "code": "",
+                  "name": "Failed",
+                  "order": 5,
+                  "meta": {
+                    "color": "rgba(220,20,34,1)"
+                  }
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "3f54ad54-3d0f-4007-a972-7fb32eb43f05",
+              "name": "Needs Classification",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "57a43c4c-aaf6-48a6-8078-811a02e2db31",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "ed259ff0-8ff8-407f-b7ec-992bd25bc014",
+              "name": "contains_multiple_documents",
+              "display_name": "Contains Multiple Documents?",
+              "deleted": false,
+              "field_type": "yesnomaybe",
+              "options": [
+                {
+                  "id": "c5b71872-d0ea-4f61-b4cc-e62e276f1cab",
+                  "code": "yes",
+                  "name": "Yes",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "84810afe-5fbd-4384-b587-d7154dc03a3c",
+                  "code": "no",
+                  "name": "No",
+                  "order": 2,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "84810afe-5fbd-4384-b587-d7154dc03a3c",
+              "name": "No",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "4fdf33a3-72b0-4218-9088-d9458f784192",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "0f3395ca-79c4-4b54-b2f0-3aa5c6ef5d58",
+              "name": "total_page_count",
+              "display_name": "Total Page Count",
+              "deleted": false,
+              "field_type": "integer",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "a8391500-fed5-495a-a43a-ad7b5b0c102c",
+              "name": "total_page_count",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-02-02T17:19:15.652445Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "4a538b60-ca7b-40de-91e6-2cf6a5e1cde0",
+      "step_type": "code_step",
+      "order": 26,
+      "description": "Run Python 3.13 Code on (entity_record_id, and 3 more) and set (0 outputs)",
+      "user_description": "Webhook to middleware notifying of job status",
+      "stats": {
+        "number_completed": 450,
+        "number_failed": 0,
+        "number_pending": 1
+      },
+      "parent_step_id": "acce31c8-24c4-40d7-9655-7ede12ac864b",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "992876d6-8b1e-48aa-bebe-14dc6a9cc133",
+            "name": "kizen_webhook_signing_key",
+            "deleted": false
+          },
+          {
+            "id": "3a66449f-baf8-40e3-a23f-570e285359d7",
+            "name": "webhook_base_url",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "entity_record_id",
+            "variable": {
+              "name": "entity_record_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_execution_id",
+            "variable": {
+              "name": "automation_execution_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_id",
+            "variable": {
+              "name": "automation_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "job_id",
+            "field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [],
+        "script": "import hashlib\nimport hmac\nimport base64\nimport json\nimport requests\n\nsigning_key = secrets[\"kizen_webhook_signing_key\"]\nwebhook_base_url = secrets[\"webhook_base_url\"]\n\nentity_id = inputs.entity_record_id\n\npayload = {\n    \"automationType\": \"ContainsMultipleDocuments\",\n    \"entityId\": entity_id,\n    \"containsMultipleDocuments\": False,\n    \"automationId\": inputs.automation_id,\n    \"automationExecutionId\": inputs.automation_execution_id,\n    \"jobId\": inputs.job_id\n}\n\npayload_string = json.dumps(payload, separators=(',', ':'), ensure_ascii=False)\n\nsig = hmac.new(\n    signing_key.encode('utf-8'),\n    payload_string.encode('utf-8'),\n    hashlib.sha256\n).digest()\nsignature = base64.b64encode(sig).decode('utf-8')\n\nurl = f\"{webhook_base_url}/kizen-webhooks\"\nheaders = {\n    \"Content-Type\": \"application/json\",\n    \"x-kizen-signature\": signature\n}\n\ntry:\n    resp = requests.post(url, data=payload_string, headers=headers)\n\n    if resp.status_code >= 400:\n        outputs.log(f\"ERROR: Webhook request failed with status {resp.status_code}\")\nexcept Exception as e:\n    outputs.log(f\"ERROR: {str(e)}\")"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "25316c2c-4dfc-40ee-a224-60fdf07a99f2",
+      "step_type": "start_automation",
+      "order": 27,
+      "description": "Start Automations 'Single Document Classification'",
+      "user_description": "start single doc classification",
+      "stats": {
+        "number_completed": 479,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "4a538b60-ca7b-40de-91e6-2cf6a5e1cde0",
+      "parent_condition": "",
+      "action_start_automation": {
+        "record_source": "this_record",
+        "relationship_fields": [],
+        "automation_variable": null,
+        "automations": [
+          {
+            "id": "ac94016e-2e29-4701-b102-d5a6a0f11809",
+            "name": "Single Document Classification",
+            "deleted": false,
+            "active": true
+          }
+        ],
+        "resume_paused_automations": false,
+        "automation_variable_overrides": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "414c2a55-d1ef-4f5a-99e6-4a8a170f3941",
+      "step_type": "change_field_value",
+      "order": 28,
+      "description": "Change Fields \u2018Document Classification Status\u2019 to \u2018N/A\u2019, \u2018Contains Multiple Documents?\u2019 to \u2018Yes\u2019, and \u2018Total Page Count\u2019 to Variable \u2018total_page_count\u2019",
+      "user_description": "Change fields",
+      "stats": {
+        "number_completed": 246,
+        "number_failed": 0,
+        "number_pending": 5
+      },
+      "parent_step_id": "d5b4ac8b-afa0-4e30-aa8e-53110e34033b",
+      "parent_condition": "yes",
+      "action_change_field_value": {
+        "actions": [
+          {
+            "id": "c4d99c41-f68e-4a75-8b52-1bcc6bfa2fb9",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "51a0523b-1033-4e6f-a803-a26323bac96e",
+              "name": "document_classification_status",
+              "display_name": "Document Classification Status",
+              "deleted": false,
+              "field_type": "status",
+              "options": [
+                {
+                  "id": "87dd5e5f-675b-46e0-8a3c-fb9dc5c15264",
+                  "code": "",
+                  "name": "Classified",
+                  "order": 1,
+                  "meta": {
+                    "color": "rgba(50,192,85,1)"
+                  }
+                },
+                {
+                  "id": "3f54ad54-3d0f-4007-a972-7fb32eb43f05",
+                  "code": "",
+                  "name": "Needs Classification",
+                  "order": 2,
+                  "meta": {
+                    "color": "rgba(8,91,238,1)"
+                  }
+                },
+                {
+                  "id": "3d1c6831-c17a-46ca-96d0-897036032472",
+                  "code": "",
+                  "name": "Manual Review",
+                  "order": 3,
+                  "meta": {
+                    "color": "rgba(243,168,0,1)"
+                  }
+                },
+                {
+                  "id": "bce84de2-dbb4-4e34-87fd-d7caad87b5a5",
+                  "code": "",
+                  "name": "N/A",
+                  "order": 4,
+                  "meta": {
+                    "color": "rgba(0,0,0,1)"
+                  }
+                },
+                {
+                  "id": "c9e3cf4c-6405-4eb8-9c25-10500a9dc451",
+                  "code": "",
+                  "name": "Failed",
+                  "order": 5,
+                  "meta": {
+                    "color": "rgba(220,20,34,1)"
+                  }
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "bce84de2-dbb4-4e34-87fd-d7caad87b5a5",
+              "name": "N/A",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "b842e8f1-fc3f-4720-b120-d72fa74c5c9b",
+            "change_type": "specific_value",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "ed259ff0-8ff8-407f-b7ec-992bd25bc014",
+              "name": "contains_multiple_documents",
+              "display_name": "Contains Multiple Documents?",
+              "deleted": false,
+              "field_type": "yesnomaybe",
+              "options": [
+                {
+                  "id": "c5b71872-d0ea-4f61-b4cc-e62e276f1cab",
+                  "code": "yes",
+                  "name": "Yes",
+                  "order": 1,
+                  "meta": {}
+                },
+                {
+                  "id": "84810afe-5fbd-4384-b587-d7154dc03a3c",
+                  "code": "no",
+                  "name": "No",
+                  "order": 2,
+                  "meta": {}
+                }
+              ],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": {
+              "id": "c5b71872-d0ea-4f61-b4cc-e62e276f1cab",
+              "name": "Yes",
+              "deleted": false
+            },
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [
+              {
+                "target_values": [],
+                "source_values": [],
+                "order": 0
+              }
+            ],
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          },
+          {
+            "id": "e76b8dfa-9554-4636-96ec-5e1c3f9f30b9",
+            "change_type": "variable",
+            "field_resolution": "overwrite",
+            "field_to_modify": {
+              "id": "0f3395ca-79c4-4b54-b2f0-3aa5c6ef5d58",
+              "name": "total_page_count",
+              "display_name": "Total Page Count",
+              "deleted": false,
+              "field_type": "integer",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "specific_field_value": null,
+            "automation_target_relationship_field": null,
+            "related_object": null,
+            "related_object_field": null,
+            "field_value_mappings": [],
+            "variable": {
+              "id": "a8391500-fed5-495a-a43a-ad7b5b0c102c",
+              "name": "total_page_count",
+              "data_type": "string",
+              "data_subtype": null,
+              "input_format": null,
+              "output_format": null,
+              "created": "2026-02-02T17:19:15.652445Z",
+              "deleted": false,
+              "is_array": false
+            },
+            "fields_to_clear": [],
+            "update_mode": "update_fields"
+          }
+        ]
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "b37332f6-edf5-4db9-bf46-86ea04e8561d",
+      "step_type": "code_step",
+      "order": 29,
+      "description": "Run Python 3.13 Code on (entity_record_id, and 3 more) and set (0 outputs)",
+      "user_description": "Webhook to middleware notifying of job status",
+      "stats": {
+        "number_completed": 191,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "414c2a55-d1ef-4f5a-99e6-4a8a170f3941",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [
+          {
+            "id": "992876d6-8b1e-48aa-bebe-14dc6a9cc133",
+            "name": "kizen_webhook_signing_key",
+            "deleted": false
+          },
+          {
+            "id": "3a66449f-baf8-40e3-a23f-570e285359d7",
+            "name": "webhook_base_url",
+            "deleted": false
+          }
+        ],
+        "inputs": [
+          {
+            "input_type": "variable",
+            "name": "entity_record_id",
+            "variable": {
+              "name": "entity_record_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_execution_id",
+            "variable": {
+              "name": "automation_execution_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "variable",
+            "name": "automation_id",
+            "variable": {
+              "name": "automation_id",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          },
+          {
+            "input_type": "field",
+            "name": "job_id",
+            "field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false
+            },
+            "data_type": "string",
+            "is_list": false
+          }
+        ],
+        "outputs": [],
+        "script": "import hashlib\nimport hmac\nimport base64\nimport json\nimport requests\n\nsigning_key = secrets[\"kizen_webhook_signing_key\"]\nwebhook_base_url = secrets[\"webhook_base_url\"]\n\nentity_id = inputs.entity_record_id\n\npayload = {\n    \"automationType\": \"ContainsMultipleDocuments\",\n    \"entityId\": entity_id,\n    \"containsMultipleDocuments\": True,\n    \"automationId\": inputs.automation_id,\n    \"automationExecutionId\": inputs.automation_execution_id,\n    \"jobId\": inputs.job_id\n}\n\npayload_string = json.dumps(payload, separators=(',', ':'), ensure_ascii=False)\n\nsig = hmac.new(\n    signing_key.encode('utf-8'),\n    payload_string.encode('utf-8'),\n    hashlib.sha256\n).digest()\nsignature = base64.b64encode(sig).decode('utf-8')\n\nurl = f\"{webhook_base_url}/kizen-webhooks\"\nheaders = {\n    \"Content-Type\": \"application/json\",\n    \"x-kizen-signature\": signature\n}\n\ntry:\n    resp = requests.post(url, data=payload_string, headers=headers)\n\n    if resp.status_code >= 400:\n        outputs.log(f\"ERROR: Webhook request failed with status {resp.status_code}\")\nexcept Exception as e:\n    outputs.log(f\"ERROR: {str(e)}\")"
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "68252abe-59a2-46f0-8612-45fe5c303908",
+      "step_type": "start_automation",
+      "order": 30,
+      "description": "Start Automations 'Create Audit Log, Multiple Document - Index & Create Child Entity'",
+      "user_description": "Start Multi-doc workflow & create audit log",
+      "stats": {
+        "number_completed": 198,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "b37332f6-edf5-4db9-bf46-86ea04e8561d",
+      "parent_condition": "",
+      "action_start_automation": {
+        "record_source": "this_record",
+        "relationship_fields": [],
+        "automation_variable": null,
+        "automations": [
+          {
+            "id": "be222b84-7abd-49cf-8580-eb01c6645683",
+            "name": "Multiple Document - Index & Create Child Entity",
+            "deleted": false,
+            "active": true
+          },
+          {
+            "id": "f900dbbd-d503-4aee-9d4c-bb656151ddcb",
+            "name": "Create Audit Log",
+            "deleted": false,
+            "active": true
+          }
+        ],
+        "resume_paused_automations": false,
+        "automation_variable_overrides": []
+      },
+      "action_on_failure": "silent_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [
+    {
+      "id": "4416e1cd-5c04-47c1-bf44-13224cf0a10d",
+      "name": "entity_record_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-08T22:09:34.487669Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "873d6a3f-54b2-485b-b3c1-30121b61bc7d",
+      "name": "automation_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-28T19:38:42.267869Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "693a25ea-5f2b-4662-a5b7-a93fa5ceb69f",
+      "name": "automation_execution_id",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-28T20:21:37.829761Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "59ebb4a9-7347-43ec-98d1-0c0ed4ff6500",
+      "name": "llm_decision_1",
+      "data_type": "boolean",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "yes_no",
+      "created": "2026-01-30T02:54:08.413054Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "db0b2e92-c6f3-41a0-9d98-e46722c5cfd4",
+      "name": "llm_decision_3",
+      "data_type": "boolean",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "yes_no",
+      "created": "2026-01-30T02:54:08.419899Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "a4f60b68-393c-4dc5-b075-2504ea407f45",
+      "name": "llm_decision_2",
+      "data_type": "boolean",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": "yes_no",
+      "created": "2026-01-30T02:54:08.427176Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "262e305c-da52-47e1-99ad-4eb80d7682bf",
+      "name": "classification_array",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-01-30T03:06:47.790974Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "a8391500-fed5-495a-a43a-ad7b5b0c102c",
+      "name": "total_page_count",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-02-02T17:19:15.652445Z",
+      "deleted": false,
+      "is_array": false
+    },
+    {
+      "id": "5ec35643-a0d1-499d-8b42-5b76ac6b3d00",
+      "name": "key_considerations",
+      "data_type": "string",
+      "data_subtype": null,
+      "input_format": null,
+      "output_format": null,
+      "created": "2026-03-05T18:38:00.386221Z",
+      "deleted": false,
+      "is_array": false
+    }
+  ],
+  "revision": 105,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 1,
+  "number_paused": 0,
+  "number_completed": 1120,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2025-12-05T16:35:02.510601-06:00",
+  "updated": "2026-05-09T01:31:04.608896-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

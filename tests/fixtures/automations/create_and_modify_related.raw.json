@@ -1,0 +1,390 @@
+{
+  "id": "f900dbbd-d503-4aee-9d4c-bb656151ddcb",
+  "name": "Create Audit Log",
+  "api_name": "audit_0awadbvy",
+  "ai_description": "\nWhen manually run on a 'Document Sets' record, this 2-step automation creates an audit trail for document classification changes. The workflow begins by creating a new related record in the 'Audit Logs' object. Immediately after, it updates this new audit log record, setting its 'Initial Document Type' field with the value from the triggering 'Document Sets' record's 'Document Type' field, in addition to six other field updates.\n",
+  "active": true,
+  "type": "record_based",
+  "custom_object": {
+    "id": "8fa0a1cb-8d96-4ec4-9bbf-7ace6dd5a574",
+    "name": "document_sets",
+    "description": "The Document Sets object stores and categorizes financial documents for mortgage transactions, classifying them by type like 'Appraisal' or 'W2'. It tracks classification status, records an execution date, and identifies multi-document files. Each set is linked to a primary Deal, Party, and Contact, and supports parent-child hierarchies for grouping related documents.",
+    "entity_name": "Document",
+    "object_name": "Document Sets",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "12c476f6-564e-4f54-a4d2-7a9be9d6f22d",
+    "name": "Utility"
+  },
+  "triggers": [
+    {
+      "id": "f399fa41-1ef8-4d25-aff1-85d3140e755f",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 2217
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "2673b677-3732-4b33-b18d-d2efb5d79ca5",
+      "step_type": "create_related_entity",
+      "order": 0,
+      "description": "Create New Entity in \u2018Audit Logs\u2019",
+      "user_description": "Create new audit log record for each manual classification/re-classification that occurs on a document record",
+      "stats": {
+        "number_completed": 2209,
+        "number_failed": 8,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_create_related_entity": {
+        "new_entity_name": "{{ entity_record.name }} - Audit Log",
+        "new_entity_name_html": "<p><span class=\"kzn-merge-field\" data-merge-field-fallback-label=\"Document Set Name\" data-merge-field-relationship=\"entity_record.name\">{{ entity_record.name }}</span> - Audit Log</p>",
+        "new_entity_owner_type": "assign_from_context_record",
+        "new_entity_owner_sub_type": null,
+        "new_entity_stage": null,
+        "new_entity_owner_role": null,
+        "new_entity_owner_variable": null,
+        "context_entity_field": {
+          "id": "13392cb9-25f5-4d7c-beb3-0ee01fe4b9b6",
+          "name": "primary_audit_log_record",
+          "display_name": "Primary Audit Log Record",
+          "field_type": "relationship",
+          "deleted": false,
+          "relation": {
+            "related_object_name": "Audit Logs",
+            "related_object_object_name": "audit_logs",
+            "related_entity_name": "Audit Log",
+            "cardinality": "one_to_one",
+            "relation_type": "one_to_one"
+          }
+        },
+        "target_custom_object": {
+          "id": "c9870848-7d42-4fbb-b324-3853f8114e08",
+          "name": "audit_logs",
+          "entity_name": "Audit Log",
+          "object_name": "Audit Logs",
+          "object_type": "standard",
+          "deleted": false
+        },
+        "target_variable": null,
+        "variable_field_resolution": "overwrite",
+        "context_entity_field_resolution": "overwrite",
+        "new_entity_owner_employees": [],
+        "automations_to_start": [],
+        "existing_record_found_action": "error_do_not_create",
+        "archived_record_found_action": "overwrite"
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "7b66571f-20d1-42ca-a308-5b3c37e6a83a",
+      "step_type": "modify_related_entities",
+      "order": 1,
+      "description": "Change Related Entity \u2018Audit Logs: Audit Log\u2019 \u2018Initial Document Type\u2019 Field on \u2018Primary Audit Log Record\u2019 to Value of \u2018Document Sets: Document Type\u2019 Field, and 6 Additional Field Updates",
+      "user_description": "Update initial fields for the audit log",
+      "stats": {
+        "number_completed": 2217,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "2673b677-3732-4b33-b18d-d2efb5d79ca5",
+      "parent_condition": "",
+      "action_modify_related_entities": {
+        "id": "6b4303a4-78b7-462d-a6ab-90a2480cc95f",
+        "object_to_modify": {
+          "id": "c9870848-7d42-4fbb-b324-3853f8114e08",
+          "name": "audit_logs",
+          "description": null,
+          "entity_name": "Audit Log",
+          "object_name": "Audit Logs",
+          "object_class": "custom_objects",
+          "object_type": "standard",
+          "default_on_activities": true,
+          "deleted": false
+        },
+        "automation_target_relationship_fields": [
+          {
+            "id": "13392cb9-25f5-4d7c-beb3-0ee01fe4b9b6",
+            "name": "primary_audit_log_record",
+            "display_name": "Primary Audit Log Record",
+            "deleted": false,
+            "field_type": "relationship",
+            "options": [],
+            "relation": {
+              "id": "b1561e75-f692-470c-ab62-a6e06c269c03",
+              "related_field": "62ee0383-5b03-4ff2-b5b5-2c36b8d17d03",
+              "related_object": "c9870848-7d42-4fbb-b324-3853f8114e08",
+              "related_object_name": "Audit Logs",
+              "related_object_object_name": "audit_logs",
+              "related_entity_name": "Audit Log",
+              "related_category": "1e3d9537-cda8-437f-a585-e02d95b1ba7f",
+              "related_name": "Primary Document Record",
+              "relation_type": "one_to_one",
+              "cardinality": "one_to_one",
+              "fetch_url": "standard"
+            },
+            "rating": null
+          }
+        ],
+        "fields_to_modify": [
+          {
+            "field_to_modify": {
+              "id": "0b91b35e-0f4b-43d3-8667-da537ab74093",
+              "name": "initial_document_type",
+              "display_name": "Initial Document Type",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "651a92b7-68f6-436f-b70b-ec9e850851eb",
+              "name": "document_type",
+              "display_name": "Document Type",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-04-22T16:22:56.804796-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "8100fcf7-0031-4943-81bf-6b0fd61886be"
+          },
+          {
+            "field_to_modify": {
+              "id": "ed45230b-ccc2-4f28-8ee3-0baf27652c21",
+              "name": "initial_classification_reason",
+              "display_name": "Initial Classification Reason",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "aa3344f2-753d-4de3-9ff2-b924c0460b60",
+              "name": "classification_reason",
+              "display_name": "Classification Reason",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-04-22T16:22:56.824482-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "980a67fd-df97-4efb-a7c9-1406f513a792"
+          },
+          {
+            "field_to_modify": {
+              "id": "f7604dd5-6527-4561-afb0-9e73233e8c47",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "044bd47b-1c31-47b9-a272-7eb42d127189",
+              "name": "job_id",
+              "display_name": "Job ID",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-04-22T16:22:56.843757-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "1b51c774-8c29-4d15-aaab-544fc115f4f6"
+          },
+          {
+            "field_to_modify": {
+              "id": "9f47275c-64a5-4c8a-8a5c-fd72dbb4bff3",
+              "name": "primary_business_logic_record",
+              "display_name": "Primary Business Logic Record",
+              "deleted": false,
+              "field_type": "relationship",
+              "options": [],
+              "relation": {
+                "id": "14a91e28-0298-4825-9407-db3286b449fb",
+                "related_field": "b2f7e96c-a4d4-4f68-982e-066ff32496f3",
+                "related_object": "4f977da3-7d94-43f7-947e-7ba7ab065c1e",
+                "related_object_name": "Business Logic",
+                "related_object_object_name": "business_logic",
+                "related_entity_name": "Business Logic",
+                "related_category": "15aad56c-9715-49ed-a9cd-4799930f041b",
+                "related_name": "Primary Audit Log Record",
+                "relation_type": "one_to_one",
+                "cardinality": "one_to_one",
+                "fetch_url": "standard"
+              },
+              "rating": null
+            },
+            "value_type": "specific_value",
+            "specific_field_value": {
+              "id": "1b92e74a-98e0-49ca-ae16-4d1c022b4ca0",
+              "deleted": false,
+              "name": "Business Logic",
+              "display_name": "Business Logic"
+            },
+            "context_entity_field": null,
+            "created": "2026-04-22T16:22:56.862768-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "84d43e5c-6efa-4414-9f2d-dcc835cee39b"
+          },
+          {
+            "field_to_modify": {
+              "id": "1855d52d-cec7-46e8-be4a-34f168e2f27f",
+              "name": "llm2_type_output",
+              "display_name": "Validation Type",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "651a92b7-68f6-436f-b70b-ec9e850851eb",
+              "name": "document_type",
+              "display_name": "Document Type",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-04-22T16:22:56.887040-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "da7f189f-2744-491b-9639-6d8002f1ad81"
+          },
+          {
+            "field_to_modify": {
+              "id": "597bb930-0f79-4b58-8fc7-3a061e70051e",
+              "name": "llm2_reason",
+              "display_name": "Validation Reason",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "aa3344f2-753d-4de3-9ff2-b924c0460b60",
+              "name": "classification_reason",
+              "display_name": "Classification Reason",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-04-22T16:22:56.907423-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "91e1ad7c-77f8-42cc-9201-6894cf3adf5f"
+          },
+          {
+            "field_to_modify": {
+              "id": "1102790a-d81b-4d46-92db-4bb1678d57d1",
+              "name": "llm2_confidence",
+              "display_name": "Validation Confidence",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "value_type": "context_entity_value",
+            "specific_field_value": null,
+            "context_entity_field": {
+              "id": "5c7f4f71-44aa-46a2-bb8a-94bba85141a3",
+              "name": "classification_confidence",
+              "display_name": "Classification Confidence",
+              "deleted": false,
+              "field_type": "text",
+              "options": [],
+              "relation": null,
+              "rating": null
+            },
+            "created": "2026-04-22T16:22:56.927070-05:00",
+            "field_value_mappings": [],
+            "field_resolution": "overwrite",
+            "variable": null,
+            "fields_to_clear": [],
+            "update_mode": "update_fields",
+            "id": "3ba7a3ef-08aa-4092-9e03-cc12e1f0bcb9"
+          }
+        ],
+        "record_source": "related_object_field",
+        "record_source_variables": [],
+        "automation_variables": []
+      },
+      "action_on_failure": "notify_continue",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [],
+  "revision": 12,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 2217,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-02-20T08:54:57.726540-06:00",
+  "updated": "2026-04-22T22:23:25.441086-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

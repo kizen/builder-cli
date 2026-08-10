@@ -1,0 +1,6 @@
+# sdists carry the docs tree too, independent of how a given setuptools
+# version treats package-data. The wheel gets it via [tool.setuptools.package-data].
+graft src/kizen_builder/docs
+include README.md
+global-exclude .DS_Store
+global-exclude *.py[cod]

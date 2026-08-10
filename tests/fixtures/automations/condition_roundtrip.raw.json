@@ -1,0 +1,126 @@
+{
+  "id": "607f5702-bbcd-48a3-b09f-b4fa37673dda",
+  "name": "Test Cond Get Round Trip",
+  "api_name": "test_cond_rt",
+  "ai_description": null,
+  "active": false,
+  "type": "record_based",
+  "custom_object": {
+    "id": "76572554-4933-4b8b-b66a-f38fdc986953",
+    "name": "conditions",
+    "description": "Represents a clinical condition, problem, or diagnosis associated with a patient. Maps to FHIR R4 Condition resource.",
+    "entity_name": "Condition",
+    "object_name": "Conditions",
+    "object_class": "custom_objects",
+    "object_type": "standard",
+    "default_on_activities": true,
+    "deleted": false
+  },
+  "user_description": "",
+  "folder": {
+    "id": "44b300c0-ce2c-4c49-a427-44a25f85bfad",
+    "name": "<business_root>"
+  },
+  "triggers": [
+    {
+      "id": "2c124894-6817-4429-a27a-343235c5883e",
+      "description": "New Entity Created",
+      "user_description": "",
+      "trigger_type": "new_entity_created",
+      "trigger_new_entity_created": {
+        "action": "create_only"
+      },
+      "stats": {
+        "number_completed": 0
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "d2f3892e-1249-4c14-b789-2992e3e5a7c1",
+      "step_type": "condition",
+      "order": 0,
+      "description": "Condition",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0,
+        "number_yes": 0,
+        "number_no": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": {
+          "and": false,
+          "query": [],
+          "invalid": false
+        },
+        "llm_decision": null,
+        "yes_steps": [],
+        "no_steps": [],
+        "groups": []
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "1cbc5786-7d1a-4e87-9a05-75c44674be7b",
+      "step_type": "stop_execution",
+      "order": 1,
+      "description": "Stop Execution",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_stop_execution": {
+        "action": null,
+        "notify": false
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "fbc9f09c-2a71-4a29-98ba-93bbbb44655b",
+      "step_type": "stop_execution",
+      "order": 2,
+      "description": "Stop Execution",
+      "user_description": "",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_stop_execution": {
+        "action": null,
+        "notify": false
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [],
+  "revision": 1,
+  "error_notification_email": "",
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 0,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-04-16T10:22:53.206333-05:00",
+  "updated": "2026-04-16T10:22:53.206363-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}

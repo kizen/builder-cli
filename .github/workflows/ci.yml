@@ -1,0 +1,125 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: tests (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v7
+
+      # setup-uv must be pinned to an exact version, not `@v9`. It published
+      # floating major tags through v7 and stopped: there is no `v8` or `v9`
+      # ref, so the short form fails the run outright with "unable to find
+      # version". Bump this deliberately. (actions/checkout does still publish
+      # `v7`, which is why that one differs.)
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+
+      # --locked, not plain sync: the committed uv.lock is the contract. If a
+      # dependency change didn't come with a re-lock, this fails here rather
+      # than resolving to something nobody has ever run.
+      #
+      # No `--extra connectors` — chdb is a ~100MB native wheel, and the one
+      # test that needs it already importorskips.
+      - name: Install the locked dev environment
+        run: uv sync --locked --extra dev
+
+      # `--cov` reports the number as a side effect of the run that was
+      # already happening — a second pytest invocation just to measure would
+      # double the job for no extra signal.
+      #
+      # Deliberately no `--cov-fail-under`. This is the first coverage run
+      # this repo has ever had, so there's no baseline to gate on yet, and a
+      # threshold picked on day one would block every PR against a number
+      # nobody chose. Add a gate once there's a baseline worth holding to.
+      - name: Run the suite (with coverage)
+        run: uv run pytest --cov -q
+
+  lint:
+    name: lint + typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+
+      - name: Install the locked dev environment
+        run: uv sync --locked --extra dev
+
+      - name: ruff check
+        run: uv run ruff check
+
+      - name: ruff format --check
+        run: uv run ruff format --check
+
+      - name: mypy
+        run: uv run mypy src
+
+  # The reason to have CI at all. Everything above runs against the source
+  # tree, where the repo root is on the path and the docs are "present"
+  # whether or not they ship. This job is the only thing that would have
+  # caught the class of bug 0.2.0 fixed: a wheel that installs cleanly and
+  # then can't find its own documentation.
+  build-smoke:
+    name: wheel install (no repo on the path)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v9.0.0
+        with:
+          enable-cache: true
+          python-version: "3.13"
+
+      - name: Build sdist + wheel
+        run: uv build
+
+      - name: Check the distribution metadata
+        run: uvx twine check dist/*
+
+      # Opt-in marker, excluded from the default run: builds a wheel, installs
+      # it, and asserts the docs tree is inside it.
+      - name: Packaging tests
+        run: uv run --locked --extra dev pytest -m wheel -q
+
+      - name: Install the wheel somewhere the checkout can't reach
+        run: |
+          set -euo pipefail
+          wheel="$(ls -1 "$PWD"/dist/*.whl | head -1)"
+          uv venv --python 3.13 "$RUNNER_TEMP/smoke"
+          VIRTUAL_ENV="$RUNNER_TEMP/smoke" uv pip install "$wheel"
+          kizen="$RUNNER_TEMP/smoke/bin/kizen"
+
+          # cd out of the checkout: from here nothing in src/ is importable and
+          # no doc file resolves by accident, which is the whole point.
+          cd "$RUNNER_TEMP"
+          "$kizen" --version
+          "$kizen" docs list
+          "$kizen" docs path
+          "$kizen" docs show operating > /dev/null
+          "$kizen" docs show automation > /dev/null
+          "$kizen" init --help > /dev/null
+          # Must succeed and exit 0 even with no distribution channel wired up.
+          "$kizen" upgrade --check

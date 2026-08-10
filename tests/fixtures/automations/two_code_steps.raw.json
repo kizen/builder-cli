@@ -1,0 +1,88 @@
+{
+  "id": "8f14edbc-3f7f-44c4-802b-8fb6dc262749",
+  "name": "Test Two Code Steps",
+  "api_name": "test_two_code_steps",
+  "ai_description": null,
+  "active": false,
+  "type": "global",
+  "custom_object": null,
+  "user_description": "",
+  "folder": {
+    "id": "44b300c0-ce2c-4c49-a427-44a25f85bfad",
+    "name": "<business_root>"
+  },
+  "triggers": [
+    {
+      "id": "199dc9cf-2754-4dba-b53f-344fc1a9db5b",
+      "description": "Manual",
+      "user_description": "",
+      "trigger_type": "manual",
+      "stats": {
+        "number_completed": 0
+      }
+    }
+  ],
+  "steps": [
+    {
+      "id": "a2a569b3-67f6-48ed-b043-a22775ad8546",
+      "step_type": "code_step",
+      "order": 0,
+      "description": "Run Python 3.13 Code",
+      "user_description": "Step 1",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": null,
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [],
+        "inputs": [],
+        "outputs": [],
+        "script": "outputs.log(\"step 1\")"
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    },
+    {
+      "id": "2ed0252a-8408-4444-9da3-4ac4bbb0e228",
+      "step_type": "code_step",
+      "order": 1,
+      "description": "Run Python 3.13 Code",
+      "user_description": "Step 2",
+      "stats": {
+        "number_completed": 0,
+        "number_failed": 0,
+        "number_pending": 0
+      },
+      "parent_step_id": "a2a569b3-67f6-48ed-b043-a22775ad8546",
+      "parent_condition": "",
+      "action_code_step": {
+        "runtime": "python-3-13",
+        "secrets": [],
+        "inputs": [],
+        "outputs": [],
+        "script": "outputs.log(\"step 2\")"
+      },
+      "action_on_failure": "notify_pause",
+      "should_skip_execution": false,
+      "error_notification_severity_level": "inherit"
+    }
+  ],
+  "variables": [],
+  "revision": 2,
+  "error_notification_email": null,
+  "skip_non_working_days": false,
+  "number_active": 0,
+  "number_paused": 0,
+  "number_completed": 0,
+  "priority_rank": 10,
+  "trigger_throttle_seconds": 0.5,
+  "created": "2026-03-31T15:16:10.371658-05:00",
+  "updated": "2026-03-31T15:21:32.259880-05:00",
+  "debug_next_n_executions": 0,
+  "error_notification_severity_level": "error"
+}
