@@ -41,6 +41,14 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Fixed
 
+- **Running a command against a profile name that was never configured now
+  fails with a clear error instead of an unhandled `AttributeError`.**
+  `load_env_config()` resolved the profile name but silently returned `None`
+  when it wasn't in `~/.config/kizen/credentials.toml`; every caller assumed a
+  real `EnvConfig` and crashed the moment it touched `.base_url` or
+  `.auth_headers()`. It now raises `ConfigError` naming the missing profile and
+  the `kizen init --profile <name>` command to fix it.
+
 - **`smart-connectors seeds add`/`seeds remove` no longer drop another
   seeded object's field restriction.** Both commands rebuild the full seed
   list from a fresh read, but `fields_ids` is write-only and never comes back

@@ -26,7 +26,7 @@ def envs_list(
     output: str = OUTPUT_OPTION,
     json_out: bool = JSON_OPTION,
 ) -> None:
-    """List the Kizen env configured in this worktree."""
+    """List the Kizen env configured in this directory."""
     fmt = out.resolve_format(output, json_out)
     items = env_tools.list_envs()
 

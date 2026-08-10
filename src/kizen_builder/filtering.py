@@ -35,7 +35,7 @@ DEFAULT_FIELDS = {"name", "email", "first_name", "last_name", "created", "stage"
 
 def get_default_client():
     """Return the process-wide schema client, creating one from the
-    worktree's credentials on first use."""
+    resolved profile's credentials on first use."""
     global _default_client
     if _default_client is None:
         from kizen_builder.api.schema import SchemaClient

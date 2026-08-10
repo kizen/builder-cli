@@ -106,11 +106,14 @@ def load_env_config(
     return config
 
 
-def _load_profile(name: str) -> EnvConfig | None:
-    """Build an EnvConfig from the central credential store, if present."""
+def _load_profile(name: str) -> EnvConfig:
+    """Build an EnvConfig from the central credential store."""
     creds = profiles.get_profile(name)
     if creds is None:
-        return None
+        raise ConfigError(
+            f"No profile named '{name}' in {profiles.credentials_path()}. "
+            f"Run `kizen init --profile {name}` to configure it."
+        )
     if not creds.api_key or not creds.business_id or not creds.user_id:
         raise ConfigError(
             f"Profile '{name}' in {profiles.credentials_path()} is missing "
@@ -123,4 +126,3 @@ def _load_profile(name: str) -> EnvConfig | None:
         user_id=creds.user_id,
         base_url=creds.base_url,
     )
-

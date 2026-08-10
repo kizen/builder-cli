@@ -23,12 +23,10 @@ file that records the expected `business_id`; the credentials themselves live
 centrally in `~/.config/kizen/credentials.toml` (0600), keyed by profile name.
 Commands resolve the profile from the pin automatically — no env label argument
 — and refuse to run if the resolved profile's `business_id` doesn't match the
-pin. A second environment is a second folder with its own pin (not a branch,
-not a git worktree). Profile-name resolution order: `--profile`/`-p` >
-`$KIZEN_PROFILE` > `.kizen/profile` pin > `$KIZEN_ENV` (legacy label); the
-credentials for that name come from the central store, or fall back to legacy
-unprefixed `.env` keys. `kizen envs list` shows what the current directory
-resolves to.
+pin. A second environment is a second folder with its own pin. Profile-name
+resolution order: `--profile`/`-p` > `$KIZEN_PROFILE` > `.kizen/profile` pin >
+`$KIZEN_ENV` (legacy label); the credentials for that name come from the
+central store. `kizen envs list` shows what the current directory resolves to.
 
 **2. Pull live before reasoning.** Before planning any change, call the
 relevant read commands to fetch the current state of the env. Don't assume
