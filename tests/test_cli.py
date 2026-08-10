@@ -233,12 +233,12 @@ def test_config_error_exits_nonzero(monkeypatch):
     from kizen_builder.config import ConfigError
 
     def boom():
-        raise ConfigError("Missing API_KEY in .env.")
+        raise ConfigError("No profile named 'sandbox' in credentials.toml.")
 
     monkeypatch.setattr(obj_tools, "list_objects", boom)
     result = runner.invoke(cli.app, ["objects", "list"])
     assert result.exit_code == 1
-    assert "Missing API_KEY" in result.stderr
+    assert "No profile named 'sandbox'" in result.stderr
 
 
 def test_apply_reads_plan_from_stdin_with_yes(monkeypatch):

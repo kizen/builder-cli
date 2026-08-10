@@ -100,7 +100,7 @@ Profile-name resolution order:
 ```
 
 To work against a second environment, use a **different folder** pinned to its
-own profile — one folder, one environment (not a branch, not a git worktree).
+own profile — one folder, one environment.
 `kizen envs list` shows what the current directory resolves to. A one-off
 `--profile <name>` overrides the pin, but a pinned directory still refuses any
 profile whose `business_id` doesn't match.
