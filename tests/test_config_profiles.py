@@ -1,4 +1,4 @@
-"""Profile resolution: precedence ladder, business_id checksum, legacy fallback.
+"""Profile resolution: precedence ladder, business_id checksum, missing profile.
 
 These exercise the anti-drift guarantees in ``config.load_env_config`` and the
 IO in ``profiles``. The autouse ``fake_env`` fixture points XDG_CONFIG_HOME at
@@ -57,10 +57,14 @@ def test_write_then_read_profile_roundtrips():
 
 
 def test_write_profile_is_upsert_not_clobber():
+    # fake_env has already seeded a "testenv" profile; writing alpha and beta
+    # must add to the store, not replace what's there.
     _store("alpha", "AAAA")
     _store("beta", "BBBB")
     names = [p.name for p in profiles.list_profiles()]
-    assert names == ["alpha", "beta"]
+    assert names.count("alpha") == 1
+    assert names.count("beta") == 1
+    assert "testenv" in names
 
 
 def test_write_pin_then_load_pin_roundtrips(tmp_path, monkeypatch):
@@ -132,23 +136,19 @@ def test_checksum_passes_when_identity_matches(monkeypatch):
     assert load_env_config().business_id == "AAAA"
 
 
-# --- legacy fallback --------------------------------------------------------
+# --- missing profile ---------------------------------------------------------
 
 
-def test_legacy_env_used_when_no_stored_profile(monkeypatch):
-    # No profile in the store; fake_env's API_KEY/BUSINESS_ID env vars stand in.
-    from tests.conftest import FAKE_BUSINESS_ID
-
-    monkeypatch.setenv("KIZEN_ENV", "testenv")
-    cfg = load_env_config()
-    assert cfg.name == "testenv"
-    assert cfg.business_id == FAKE_BUSINESS_ID
+def test_unknown_profile_raises(monkeypatch):
+    # KIZEN_ENV names a profile that was never stored.
+    monkeypatch.setenv("KIZEN_ENV", "does-not-exist")
+    with pytest.raises(ConfigError, match="No profile named 'does-not-exist'"):
+        load_env_config()
 
 
 def test_no_env_at_all_raises(monkeypatch, tmp_path):
     monkeypatch.delenv("KIZEN_ENV", raising=False)
     monkeypatch.delenv("KIZEN_PROFILE", raising=False)
-    monkeypatch.delenv("API_KEY", raising=False)
     # Explicit path bypasses find_dotenv so the repo's own .env can't leak in.
     with pytest.raises(ConfigError, match="No environment specified"):
         load_env_config(dotenv_path=tmp_path / "nonexistent.env")

@@ -6,10 +6,11 @@ replaced). Object files are `kizen objects get --json` output; automation
 `.raw.json` files are `kizen automations get --raw` output (the unmodified
 API response).
 
-No test may hit the network: credentials are faked via env vars (BASE_URL
-points at https://kizen.test, which respx intercepts where needed), and the
-live-lookup seams (`get_object`, `list_automations`, LiveContext field
-lookups) are monkeypatched to serve from fixtures.
+No test may hit the network: credentials come from a fake profile in an
+isolated credential store (BASE_URL points at https://kizen.test, which respx
+intercepts where needed), and the live-lookup seams (`get_object`,
+`list_automations`, LiveContext field lookups) are monkeypatched to serve from
+fixtures.
 """
 
 from __future__ import annotations
@@ -34,24 +35,36 @@ def load_fixture(rel_path: str) -> Any:
 
 @pytest.fixture(autouse=True)
 def fake_env(monkeypatch: pytest.MonkeyPatch, tmp_path_factory) -> None:
-    """Point every config lookup at fake credentials.
+    """Isolate every config lookup from the developer's real machine state.
 
-    `load_env_config` reads os.environ first (load_dotenv uses
-    override=False), so setting these guarantees no test ever picks up the
-    real .env in the repo root. XDG_CONFIG_HOME is redirected to an empty
-    temp dir so no test reads the developer's real central credential store —
-    this also keeps the legacy-.env resolution path in force for the suite.
-    XDG_CACHE_HOME is redirected for the same reason: the upgrade check caches
-    there, and a test must never read or overwrite the developer's own.
+    XDG_CONFIG_HOME is redirected to an empty temp dir so no test reads or
+    writes the developer's real central credential store, then a "testenv"
+    profile is written into that (fake) store so any code path that calls
+    `load_env_config()` — directly, or transitively through a CLI/planner
+    function — resolves real, non-network credentials (BASE_URL points at
+    https://kizen.test, which respx intercepts where needed). Tests that need
+    to see a genuinely empty or differently-populated store, such as the IO
+    tests in test_config_profiles.py, repoint XDG_CONFIG_HOME at their own temp
+    dir. XDG_CACHE_HOME is redirected for the same reason as XDG_CONFIG_HOME:
+    the upgrade check caches there, and a test must never read or overwrite the
+    developer's own. KIZEN_ENV names the profile most tests resolve to;
+    resolution-order tests are free to override it.
     """
+    from kizen_builder import profiles
+
     monkeypatch.setenv("KIZEN_ENV", "testenv")
-    monkeypatch.setenv("API_KEY", "test-api-key")
-    monkeypatch.setenv("BUSINESS_ID", FAKE_BUSINESS_ID)
-    monkeypatch.setenv("USER_ID", FAKE_USER_ID)
-    monkeypatch.setenv("BASE_URL", FAKE_BASE_URL)
     monkeypatch.delenv("KIZEN_PROFILE", raising=False)
     monkeypatch.setenv("XDG_CONFIG_HOME", str(tmp_path_factory.mktemp("xdg")))
     monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path_factory.mktemp("xdg-cache")))
+    profiles.write_profile(
+        profiles.ProfileCreds(
+            name="testenv",
+            api_key="test-api-key",
+            business_id=FAKE_BUSINESS_ID,
+            user_id=FAKE_USER_ID,
+            base_url=FAKE_BASE_URL,
+        )
+    )
     # No directory pin by default; pin-specific tests re-patch this.
     monkeypatch.setattr("kizen_builder.profiles.find_pin", lambda start=None: None)
 
