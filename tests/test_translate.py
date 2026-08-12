@@ -18,6 +18,8 @@ import pytest
 from kizen_builder.translate import (
     live_to_payload,
     semantic_diff,
+    synthesize_step_keys,
+    synthesize_trigger_keys,
     validate_payload,
 )
 from tests.conftest import load_fixture
@@ -96,6 +98,54 @@ def test_no_variable_ids_survive_translation(path: str) -> None:
         iv = s.get("action_initialize_variable")
         if iv and isinstance(iv.get("variable"), dict):
             assert "id" not in iv["variable"]
+
+
+@pytest.mark.parametrize("path", ALL_FIXTURES)
+def test_step_and_trigger_ids_are_echoed_back(path: str) -> None:
+    """Every step/trigger `live_to_payload` builds already exists (it came
+    from a GET), so its real server `id` must always be echoed back on the
+    PUT — that's what keeps its identity, and its execution history, across
+    a `kizen automations steps add/edit/remove` / `roundtrip` write instead
+    of the server assigning a fresh id."""
+    raw = load_fixture(path)
+    payload = live_to_payload(raw)
+    raw_step_ids = {s["id"] for s in raw.get("steps") or []}
+    raw_trigger_ids = {t["id"] for t in raw.get("triggers") or []}
+    assert {s["id"] for s in payload["steps"]} == raw_step_ids
+    assert {t["id"] for t in payload["triggers"]} == raw_trigger_ids
+
+    # Per-id check, not just set membership — a permutation (step A's id
+    # landing on step B) would pass the set comparisons above while still
+    # corrupting every affected step's execution history.
+    step_keys = synthesize_step_keys(raw)
+    trigger_keys = synthesize_trigger_keys(raw)
+    for s in payload["steps"]:
+        assert s["key"] == step_keys[s["id"]], (
+            f"step id {s['id']} landed on key '{s['key']}', expected "
+            f"'{step_keys[s['id']]}'"
+        )
+    for t in payload["triggers"]:
+        assert t["key"] == trigger_keys[t["id"]], (
+            f"trigger id {t['id']} landed on key '{t['key']}', expected "
+            f"'{trigger_keys[t['id']]}'"
+        )
+
+    # Goal steps embed their own nested triggers (wait-until conditions),
+    # which carry ids in the same way top-level triggers do.
+    for raw_step in raw.get("steps") or []:
+        if raw_step["step_type"] != "goal":
+            continue
+        raw_nested_ids = {
+            t["id"] for t in (raw_step.get("step_goal") or {}).get("triggers") or []
+        }
+        wire_step = next(s for s in payload["steps"] if s["id"] == raw_step["id"])
+        wire_nested_ids = {
+            t["id"] for t in wire_step["step_goal"]["triggers"] if t.get("id")
+        }
+        assert wire_nested_ids == raw_nested_ids, (
+            f"goal step {raw_step['id']}'s nested trigger ids were not echoed "
+            "back — this orphans that trigger's execution history"
+        )
 
 
 @pytest.mark.parametrize("path", ALL_FIXTURES)

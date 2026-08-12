@@ -4,10 +4,16 @@ The automations API reads and writes different dialects:
 
 * GET returns steps with server ``id``s, ``parent_step_id`` linkage, and
   ``parent_condition`` ("yes"/"no"/"") — and returns ``key: null`` (the
-  client-supplied keys sent on write are NOT stored). Step UUIDs rotate on
-  every PUT, so a GET→edit→PUT cycle must synthesize fresh keys, rewrite
-  all id-based cross-references (``parent_step_id``,
-  ``go_to_automation_step.step``) to those keys, and complete atomically.
+  client-supplied keys sent on write are NOT stored), so a GET→edit→PUT
+  cycle must synthesize fresh keys and rewrite all id-based
+  cross-references (``parent_step_id``, ``go_to_automation_step.step``) to
+  those keys. Step/trigger ``id``s are a *separate* matter from ``key``:
+  echoing a step's or trigger's real ``id`` back on PUT preserves that
+  step/trigger's identity — and its execution history — across the write;
+  omitting ``id`` gets a fresh server-assigned one every time, which
+  orphans prior executions' history against the old id. This module always
+  echoes the ``id`` it already has from the GET, since every step/trigger
+  it touches is by definition one that already exists.
 * PUT takes ``key`` / ``parent_key`` / ``parent_yes_no`` linkage, bare
   UUIDs where reads return expanded ``{id, name, …}`` objects, and requires
   sequential trigger ``order`` values (reads return gaps/nulls).
@@ -148,6 +154,7 @@ def _live_step_to_wire(
         action_on_failure = "notify_pause"
 
     p: dict[str, Any] = {
+        "id": step["id"],
         "key": step_keys[step["id"]],
         "parent_key": step_keys.get(parent_id) if parent_id else None,
         "parent_yes_no": branch,
@@ -215,6 +222,7 @@ def _live_trigger_to_wire(
 ) -> dict[str, Any]:
     trigger_type = trigger["trigger_type"]
     p: dict[str, Any] = {
+        "id": trigger["id"],
         "key": key,
         "type": trigger_type,
         "prefix": "trigger",
@@ -267,6 +275,22 @@ def validate_payload(payload: dict[str, Any]) -> list[str]:
     if len(keys) != len(key_set):
         dupes = sorted({k for k in keys if keys.count(k) > 1})
         problems.append(f"duplicate step keys: {dupes}")
+
+    ids = [s["id"] for s in steps if s.get("id")]
+    for s in steps:
+        if s.get("type") == "goal":
+            ids.extend(
+                t["id"]
+                for t in (s.get("step_goal") or {}).get("triggers") or []
+                if t.get("id")
+            )
+    ids.extend(t["id"] for t in (payload.get("triggers") or []) if t.get("id"))
+    if len(ids) != len(set(ids)):
+        dupe_ids = sorted({i for i in ids if ids.count(i) > 1})
+        problems.append(
+            f"duplicate step/trigger ids (would merge separate steps' "
+            f"execution history on write): {dupe_ids}"
+        )
 
     by_key = {s.get("key"): s for s in steps}
     roots = [s for s in steps if not s.get("parent_key")]

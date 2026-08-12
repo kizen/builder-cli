@@ -419,7 +419,10 @@ def build_wire_step(
 ) -> dict[str, Any]:
     """Build one wire step from a spec-shaped dict (same shapes as
     ``automations create`` step specs: field_refs, api_names, or raw wire).
-    Linkage fields are ignored here — placement belongs to insert_step.
+    Linkage fields are ignored here — placement belongs to insert_step. Any
+    ``id`` on the spec is dropped too: this builds a *new* step, and a spec
+    authored by copying an existing step's ``steps get`` output must not
+    carry that step's id along and hijack its identity.
     """
     from kizen_builder.models.spec import AutomationDef, AutomationStepDef
     from kizen_builder.tools.planners.automations import (
@@ -429,7 +432,7 @@ def build_wire_step(
     from kizen_builder.tools.steps import synthesize_key
 
     spec = dict(spec)
-    for linkage in ("parent_key", "parent_branch"):
+    for linkage in ("parent_key", "parent_branch", "id"):
         spec.pop(linkage, None)
     spec["order"] = 0  # placeholder; insert_step assigns real placement
     spec.setdefault("key", synthesize_key(payload, spec["step_type"]))

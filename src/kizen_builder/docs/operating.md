@@ -159,10 +159,14 @@ Kizen, attached to the env. If a code step references a secret that
 isn't configured on the env, it'll fail at runtime — surface this to
 the user when authoring any automation that uses secrets.
 
-### Step UUIDs rotate on update
+### Step/trigger identity across an update depends on `id`
 
-Every PUT replaces the step set instead of merging, so `parent_step_id`
-values change every time. Fine for the conversational model where
-UUIDs aren't user-visible, but if the user has anything outside the
-automation that depends on a specific step UUID, flag it.
+Every PUT replaces the whole step set instead of merging. `kizen automations
+steps add/edit/remove` and `roundtrip` always echo back the `id` of every
+step/trigger they read from GET, so anything that isn't the one node you're
+touching keeps its identity — and its execution history in the Kizen UI —
+across the write (confirmed live 2026-08-10). A step/trigger built from a
+hand-authored spec (`plan-update-automation`) only keeps its id if the spec
+sets one explicitly; a spec author who didn't seed from a live read gets a
+fresh id for that step, same as before.
 

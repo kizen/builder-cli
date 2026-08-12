@@ -68,6 +68,11 @@ kizen automations create --spec-file auto.json --dry-run
 
 - Every step has a unique **`key`**. Chain by **`parent_key`** (the predecessor's
   key). **Exactly one** step has `parent_key: null` — the root.
+- **`id`** (steps and triggers both) is optional and separate from `key` —
+  set it to a step/trigger's real server UUID (from a live read, e.g. `kizen
+  automations show`) to keep that step's identity and execution history
+  across this update. Omit it for anything actually new; the server assigns
+  one.
 - For the **first** step inside a YES/NO branch under a `condition` (or `goal`),
   set **`parent_branch: "yes"`** (or `"no"`). Linear successors *inside* a branch
   leave `parent_branch` unset.
@@ -492,8 +497,12 @@ like `link_url`/`created`/`estimated_close_date`.
 - **`code_step.secrets` are env-specific** — the spec carries secret *names*; the
   target env must have each configured or the step fails at runtime. Surface
   this when authoring.
-- **Step UUIDs rotate on every update** (PUT replaces the step set). Fine here,
-  but flag it if anything outside the automation depends on a step UUID.
+- **A step/trigger's `id` field controls whether it keeps its identity across
+  an update.** PUT replaces the whole step set, so a step without `id` gets a
+  fresh server-assigned one every time — which orphans that step's execution
+  history against the old id (confirmed live 2026-08-10). Set `id` (copied
+  from a live read, e.g. `kizen automations show`) on any step that isn't
+  actually new, and it keeps the same id and history across the write.
 - **`condition.filter_config`** uses the filtering DSL (`{"all"|"any": [...]}`,
   single conditions wrapped in `{"all": [...]}`) — same as `saved-views.md`.
   Fields are **bare api_names**; **ops are per field type** (e.g. dropdown uses
@@ -516,10 +525,13 @@ faithful for every type in that automation.
 
 Why a translator is mandatory rather than nice-to-have:
 
-- **GET discards step keys** (`key: null`) and **step/trigger UUIDs rotate on
-  every PUT.** The translator synthesizes deterministic keys
-  (`s07_condition`, `t3_new_entity_created`) from order + type and rewrites
-  id-based cross-references (`go_to` targets) onto those keys.
+- **GET discards step keys** (`key: null`), so a GET→PUT cycle needs fresh
+  keys. The translator synthesizes deterministic ones (`s07_condition`,
+  `t3_new_entity_created`) from order + type and rewrites id-based
+  cross-references (`go_to` targets) onto those keys. **`id` is a separate,
+  persistent identity** — the translator always echoes the `id` it read from
+  GET back on PUT, which is what keeps a step's execution history attached
+  across `kizen automations steps add/edit/remove`.
 - **Read linkage is `parent_step_id` + `parent_condition`; write linkage is
   `parent_key` + `parent_yes_no`.** `yes_steps`/`no_steps`/`groups` on
   conditions are derived read-only mirrors — **never send them back**.

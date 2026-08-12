@@ -196,14 +196,16 @@ def edit_step(
 
     Top-level keys replace wholesale — including the ``action_*`` /
     ``step_*`` config block, so a config edit must send the complete block
-    (start from the current wire step and modify). ``key`` and ``type`` are
-    immutable: other steps reference the key, and a type change invalidates
-    the config block (remove + add instead).
+    (start from the current wire step and modify). ``key``, ``type``, and
+    ``id`` are immutable: other steps reference the key, a type change
+    invalidates the config block (remove + add instead), and changing ``id``
+    would reassign this step's execution history to whatever step the patch's
+    id was copied from.
 
     Returns {field: (before, after)} for the changed keys.
     """
     step = find_step(payload, key)
-    for frozen in ("key", "type"):
+    for frozen in ("key", "type", "id"):
         if frozen in patch and patch[frozen] != step.get(frozen):
             raise PlanError(
                 f"'{frozen}' cannot be changed on an existing step "

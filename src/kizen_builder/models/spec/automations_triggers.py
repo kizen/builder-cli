@@ -332,6 +332,16 @@ class AutomationTriggerDef(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     trigger_type: str
+    id: str | None = Field(
+        default=None,
+        description=(
+            "This trigger's server-assigned UUID, if known (e.g. copied "
+            "from `kizen automations show`). When set, it's echoed back on "
+            "PUT so the trigger keeps its identity instead of the server "
+            "assigning a fresh id. Omit for a new trigger; the server "
+            "assigns one."
+        ),
+    )
     order: int | None = None
     description: str | None = None
     user_description: str = ""

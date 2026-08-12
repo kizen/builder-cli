@@ -47,6 +47,28 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Fixed
 
+- **Editing an automation no longer orphans its execution history.** Every
+  automation-writing path (`automations steps add/edit/remove`, `roundtrip`,
+  and `plan-update-automation`/`apply`) previously rebuilt every step and
+  trigger from scratch on each PUT without ever sending back its real
+  server `id` — which the live API uses to track identity across writes,
+  including a goal step's own nested wait-until triggers. The result: a step
+  that hadn't changed at all would get a fresh id on every edit, and Kizen's
+  execution-history view would show its prior runs as "Deleted." `kizen
+  automations steps add/edit/remove`, `roundtrip`, and `show` now always echo
+  back the `id` they read from GET for every step/trigger — including goal
+  steps' nested triggers — matching what a normal save from the Kizen web UI
+  already does. `AutomationStepDef`/`AutomationTriggerDef` also gained an
+  optional `id` field so a hand-authored `plan-update-automation` spec —
+  seeded from a live read — can opt into the same identity preservation.
+  Because `steps get` output now carries `id`, two misuse guards were added
+  so copying it around can't silently corrupt a different step's history:
+  `steps edit` rejects a patch that tries to change `id` (matching how
+  `key`/`type` are already frozen), `steps add` drops any `id` on a new-step
+  spec (a new step never inherits one), and `validate_payload` flags
+  duplicate step/trigger ids anywhere in a payload as a last-resort check on
+  every write path.
+
 - **Running a command against a profile name that was never configured now
   fails with a clear error instead of an unhandled `AttributeError`.**
   `load_env_config()` resolved the profile name but silently returned `None`

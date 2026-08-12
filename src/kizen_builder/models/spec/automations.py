@@ -135,6 +135,16 @@ class AutomationStepDef(BaseModel):
             "within the automation."
         ),
     )
+    id: str | None = Field(
+        default=None,
+        description=(
+            "This step's server-assigned UUID, if known (e.g. copied from "
+            "`kizen automations show`). When set, it's echoed back on PUT so "
+            "the step keeps its identity — and its execution history — "
+            "instead of the server assigning a fresh id. Omit for a new "
+            "step; the server assigns one."
+        ),
+    )
     parent_key: str | None = Field(
         default=None,
         description=(
