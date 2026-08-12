@@ -86,6 +86,70 @@ def test_condition_action_on_failure_forced_to_notify_pause(patch_live_lookups):
     assert check["action_on_failure"] == "notify_pause"
 
 
+def test_step_and_trigger_id_omitted_when_not_in_spec(patch_live_lookups):
+    """A step/trigger with no `id` in the spec gets none in the payload —
+    the server assigns a fresh one, same as before this field existed."""
+    payload = _build(BRANCHING_SPEC)
+    for step in payload["steps"]:
+        assert "id" not in step
+    for trigger in payload["triggers"]:
+        assert "id" not in trigger
+
+
+def test_step_and_trigger_id_forwarded_when_set_in_spec(patch_live_lookups):
+    """A spec seeded from a live read (e.g. `kizen automations show`) can set
+    `id` on a step/trigger it isn't changing, to keep that step's identity —
+    and its execution history — across the update instead of rotating."""
+    spec = dict(BRANCHING_SPEC)
+    spec["triggers"] = [{**BRANCHING_SPEC["triggers"][0], "id": "trigger-uuid-123"}]
+    spec["steps"] = [
+        dict(s, id="check-step-uuid-456") if s["key"] == "check" else s
+        for s in BRANCHING_SPEC["steps"]
+    ]
+    payload = _build(spec)
+    by_key = {s["key"]: s for s in payload["steps"]}
+    assert by_key["check"]["id"] == "check-step-uuid-456"
+    assert "id" not in by_key["stop_yes"]
+    assert "id" not in by_key["stop_no"]
+    by_type = {t["type"]: t for t in payload["triggers"]}
+    assert by_type["new_entity_created"]["id"] == "trigger-uuid-123"
+    # the auto-injected manual trigger is genuinely new — no id of its own
+    assert "id" not in by_type["manual"]
+
+
+def test_goal_step_nested_trigger_id_forwarded_when_set_in_spec(patch_live_lookups):
+    """A goal step's own wait-until triggers go through `_step_goal`, a
+    separate code path from top-level triggers — it needs its own id-echo
+    coverage."""
+    spec = dict(BRANCHING_SPEC)
+    spec["steps"] = [
+        BRANCHING_SPEC["steps"][0],
+        {
+            "key": "goal",
+            "step_type": "goal",
+            "order": 1,
+            "parent_key": "check",
+            "parent_branch": "yes",
+            "step_goal": {
+                "wait_type": "delay",
+                "delay_type": "minutes",
+                "delay_amount": 5,
+                "triggers": [
+                    {
+                        "trigger_type": "activity_logged",
+                        "order": 0,
+                        "id": "goal-trigger-uuid-789",
+                        "trigger_activity_logged": {"activity_type_id": "act-1"},
+                    }
+                ],
+            },
+        },
+    ]
+    payload = _build(spec)
+    goal = next(s for s in payload["steps"] if s["key"] == "goal")
+    assert goal["step_goal"]["triggers"][0]["id"] == "goal-trigger-uuid-789"
+
+
 def test_stop_execution_emits_config_block(patch_live_lookups):
     payload = _build(BRANCHING_SPEC)
     stop = next(s for s in payload["steps"] if s["key"] == "stop_yes")

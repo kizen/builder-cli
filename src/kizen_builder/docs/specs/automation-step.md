@@ -103,9 +103,13 @@ Consequences worth knowing:
 - **The post-apply diff is positional**, so a mid-graph change shows up as
   every later step shifting. Verify structure with `show` and treat the diff as
   the audit trail, not as a minimal changeset.
-- **Editing rotates ALL step UUIDs**, because the PUT replaces the step set.
-  Nothing *inside* the automation breaks — `go_to` references are re-keyed — but
-  anything outside it that stored a step UUID does.
+- **Step/trigger `id`s survive editing** — every verb echoes back the `id` it
+  read from GET for every step/trigger, including the ones it isn't touching,
+  so nothing outside the automation that stored a step UUID breaks, and
+  Kizen's own execution-history view keeps showing history against the same
+  steps (confirmed live 2026-08-10) instead of marking them deleted. Only the
+  synthesized `key`s rotate — `go_to` references are re-keyed onto those, same
+  as before.
 
 ## See also
 

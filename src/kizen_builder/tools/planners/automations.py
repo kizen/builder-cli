@@ -7,9 +7,15 @@ Wire format (reverse-engineered from captured UI payloads):
   Linear successors leave ``parent_yes_no`` empty.
 * The condition step's ``yes_step_ids`` field is NEVER used — that field
   returns HTTP 500 in the live API.
-* Step and trigger ``key``s are client-supplied strings; the server preserves
-  whatever we send and assigns its own ``id``. For the no-state-file model
-  we send spec keys on create and don't track step UUIDs across sessions.
+* Step and trigger ``key``s are client-supplied strings, scoped to one PUT —
+  they only need to be unique within that payload. Identity that persists
+  *across* PUTs (and with it, execution history) is carried by ``id``, not
+  ``key``: a step/trigger whose spec sets ``id`` gets that same id echoed
+  back and keeps it; one that doesn't gets a fresh server-assigned id every
+  time. This is a deliberate no-state-file model: we don't track step UUIDs
+  across sessions ourselves, but a spec authored from a live read (e.g.
+  seeded from ``kizen automations show``, which round-trips ``id``) can opt
+  in.
 * Read responses expand reference fields (``field_to_modify``,
   ``target_custom_object``, ``activity_type``, etc.) into full ``{id, name,
   …}`` objects. Writes take just the bare UUID for those fields.
@@ -650,6 +656,8 @@ def _build_trigger_payload(t: AutomationTriggerDef, ctx: LiveContext) -> dict[st
         "should_skip_execution": t.should_skip_execution,
         "order": t.order if t.order is not None else 0,
     }
+    if t.id:
+        p["id"] = t.id
     if t.description:
         p["description"] = t.description
     if t.skip_non_working_days is not None:
@@ -882,6 +890,8 @@ def _build_step_payload(
         "should_skip_execution": step.should_skip_execution,
         "goal_type": step.step_type == "goal",
     }
+    if step.id:
+        p["id"] = step.id
     if step.description:
         p["description"] = step.description
 
@@ -1028,6 +1038,8 @@ def _step_goal(
             "should_skip_execution": t.get("should_skip_execution", False),
             "order": t.get("order") if t.get("order") is not None else i,
         }
+        if t.get("id"):
+            p["id"] = t["id"]
         if t.get("description"):
             p["description"] = t["description"]
         cfg_field = f"trigger_{trigger_type}"
