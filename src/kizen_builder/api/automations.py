@@ -106,9 +106,10 @@ def get_execution_history(
 # Execution control (pause/resume/cancel/skip/debug) — confirmed live
 # (2026-07-22) for pause/play/cancel against a real delayed
 # execution (status flipped active -> paused -> active -> cancelled on the
-# following GET each time); debug-* wired from the public /api/docs/schema
-# `DebugRerunRequest`/`DebugStepRequest` shapes but NOT live-exercised (needs
-# a debug-mode execution with real step/history ids to test meaningfully).
+# following GET each time). `debug-step` confirmed live 2026-08-13: it
+# returns a full `LightAutomationHistory`, not an empty body — the schema
+# `$ref`s the same shape for `debug-rerun`/`debug-restart` too. Only
+# `debug-sendit` returned `null` in that same session.
 #
 # pause/play/cancel/debug-sendit all share one quirk: the request body is a
 # full `LightReadAutomationExecutionRequest` — id/automation_id/client_id/
