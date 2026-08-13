@@ -79,8 +79,8 @@ wire behavior in one place. **Don't grep for a quirk; open the surface's doc.**
 
 - **Never invent api_names.** When the user asks about an object or
   automation, run `kizen objects list` (or `kizen automations list`) and pick
-  from what's actually there. Note: `kizen objects list` shows **custom objects
-  only** — contacts are not listed there. Contacts are always reachable via
+  from what's actually there. `kizen objects list` includes built-in objects
+  (Contacts) alongside custom ones. Contacts are also reachable via
   `kizen records list client_client` (or `kizen records get client_client <uuid>`).
   For contact field schemas and option UUIDs, use `kizen objects get client_client`.
 - **Kizen is the source of truth, not your notes.** If a prior session's

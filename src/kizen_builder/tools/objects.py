@@ -21,15 +21,18 @@ def _normalize_stage(s: dict[str, Any]) -> dict[str, Any]:
 
 
 def list_objects() -> list[dict[str, Any]]:
-    """Return a summary of every custom object in the configured env."""
+    """Return a summary of every object in the configured env, custom and built-in.
+
+    ``custom_only=False`` so built-ins like ``client_client`` (Contacts) come
+    back alongside custom objects in the same paginated call — the pattern
+    already used by ``schema.py`` and the smart-connector authoring helpers.
+    """
     config = load_env_config()
     with KizenClient(config) as client:
-        raw = co_api.list_objects(client)
+        raw = co_api.list_objects(client, custom_only=False)
 
     out: list[dict[str, Any]] = []
     for obj in raw:
-        if not obj.get("is_custom", True):
-            continue
         out.append(
             {
                 "env": config.name,

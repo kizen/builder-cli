@@ -23,7 +23,7 @@
 │ init              Set up this directory as a Kizen environment folder.                           │
 │ docs              Read the documentation that ships with this CLI.                               │
 │ envs              Discover and inspect configured envs.                                          │
-│ objects           Read, create, and update custom objects.                                       │
+│ objects           Read objects, custom and built-in; create, update, and delete custom objects.  │
 │ dashboards        Read, create, and update dashboards and homepages.                             │
 │ layouts           Read and update record layouts for a custom object.                            │
 │ records           Read individual records from a custom object.                                  │
@@ -1485,12 +1485,12 @@
 │ --help          Show this message and exit.                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ list  List the Kizen env configured in this worktree's .env.                                     │
+│ list  List the Kizen env configured in this directory.                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: envs list [OPTIONS]                                                                         
                                                                                                     
- List the Kizen env configured in this worktree's .env.                                             
+ List the Kizen env configured in this directory.                                                   
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --output  -o      <str>  Output format: table (default), json, or csv.                           │
@@ -2214,13 +2214,13 @@
                                                                                                     
  Usage: objects [OPTIONS] COMMAND [ARGS]...                                                         
                                                                                                     
- Read, create, and update custom objects.                                                           
+ Read objects, custom and built-in; create, update, and delete custom objects.                      
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
-│ list    List custom objects in the configured env.                                               │
+│ list    List objects in the configured env, custom and built-in (e.g. Contacts).                 │
 │ get     Show one object plus its categories and fields.                                          │
 │ create  Create one custom object (no fields/categories yet).                                     │
 │ update  Update one custom object. Only the flags you set are changed.                            │
@@ -2287,7 +2287,7 @@
                                                                                                     
  Usage: objects list [OPTIONS]                                                                      
                                                                                                     
- List custom objects in the configured env.                                                         
+ List objects in the configured env, custom and built-in (e.g. Contacts).                           
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --output  -o      <str>  Output format: table (default), json, or csv.                           │
