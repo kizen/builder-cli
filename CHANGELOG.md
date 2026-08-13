@@ -30,6 +30,16 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Added
 
+- **`kizen docs show examples`: a complete, worked, end-to-end example.**
+  Every other topic covers one surface; this one walks a single object, an
+  activity type logged against it, an automation with a branching graph, and
+  a generated dashboard, wired together in the order you'd actually build
+  them — object → fields → activity → automation → dashboard, with every
+  cross-entity UUID reference named and every step confirmed against a real
+  environment. Backed by committed fixtures under
+  `tests/fixtures/examples/service_ticket/`, checked two ways: an offline
+  test that fails if the doc and the fixtures ever diverge, and an opt-in
+  drift test that applies the same fixtures live.
 - **The package declares its license.** `kizen-builder` is MIT-licensed, and the
   built wheel and sdist now carry `License-Expression: MIT` along with a copy of
   `LICENSE`.

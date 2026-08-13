@@ -28,7 +28,14 @@ SPECS_DIRNAME = "specs"
 #: Cross-cutting topics that aren't about one entity. Order matters: it's the
 #: order `kizen docs list` presents them in, which is also roughly the order a
 #: newcomer should read them.
-GUIDE_TOPICS = ("operating", "commands", "reference", "code-steps", "filters")
+GUIDE_TOPICS = (
+    "operating",
+    "commands",
+    "reference",
+    "code-steps",
+    "filters",
+    "examples",
+)
 
 
 class DocsUnavailable(RuntimeError):
