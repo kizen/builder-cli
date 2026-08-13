@@ -12,7 +12,7 @@ from __future__ import annotations
 import httpx
 import respx
 
-from kizen_builder.tools.objects import get_object
+from kizen_builder.tools.objects import get_object, list_objects
 from tests.conftest import FAKE_BASE_URL
 
 OBJ_ID = "7cb5ce29-bf20-4f0f-bdc9-412a8c777ff8"
@@ -29,6 +29,47 @@ OBJECT_LIST = {
     ],
     "next": None,
 }
+
+OBJECT_LIST_WITH_CONTACTS = {
+    "results": [
+        {
+            "id": OBJ_ID,
+            "name": "policies_policy",
+            "object_name": "Policies",
+            "is_custom": True,
+        },
+        {
+            "id": CONTACTS_ID,
+            "name": "client_client",
+            "object_name": "Contacts",
+            "is_custom": False,
+        },
+    ],
+    "next": None,
+}
+
+
+@respx.mock
+def test_list_objects_includes_builtin_objects_like_contacts():
+    """`list_objects()` must ask the server for built-ins too (custom_only=false)
+    and must not filter them back out client-side — Contacts should come back
+    alongside custom objects in one call, not a second round trip."""
+    route = respx.get(f"{FAKE_BASE_URL}/api/custom-objects").mock(
+        return_value=httpx.Response(200, json=OBJECT_LIST_WITH_CONTACTS)
+    )
+
+    objs = list_objects()
+
+    assert route.calls.last.request.url.params["custom_only"] == "false"
+    assert len(route.calls) == 1
+    by_api_name = {o["api_name"]: o for o in objs}
+    assert set(by_api_name) == {"policies_policy", "client_client"}
+    contacts = by_api_name["client_client"]
+    assert contacts["display_name"] == "Contacts"
+    assert contacts["id"] == CONTACTS_ID
+    policy = by_api_name["policies_policy"]
+    assert policy["id"] == OBJ_ID
+    assert policy["display_name"] == "Policies"
 
 
 @respx.mock

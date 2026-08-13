@@ -68,9 +68,10 @@ back after writing** and reference the stored name from then on.
 ### Contacts are `client_client`
 
 Contacts are a records-API object like any other, identified as `client_client`.
-They do **not** appear in `kizen objects list`, but `kizen objects get
-client_client` returns their schema and option UUIDs normally. The
-`/api/client/` endpoint family is deprecated.
+They appear in `kizen objects list` alongside custom objects, and `kizen
+objects get client_client` returns their schema and option UUIDs normally —
+see `kizen docs show objects`. The `/api/client/` endpoint family is
+deprecated.
 
 ### Trailing slashes
 

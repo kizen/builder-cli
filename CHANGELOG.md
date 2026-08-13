@@ -14,6 +14,20 @@ called out explicitly under **Changed** or **Removed**.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`kizen objects list` now includes built-in objects like Contacts
+  (`client_client`), not just custom ones.** The server excludes built-ins by
+  default; `list_objects()` called it without `custom_only=false` and then
+  filtered any built-in back out client-side even if it had come back. Both
+  filters are gone — one paginated call now returns everything, matching the
+  `custom_only=false` pattern already used by `schema.py` and the
+  smart-connector authoring helpers. This also fixes a real break, not just a
+  missing display row: `kizen activities list --object client_client` and
+  associating an activity type with Contacts via `activities update --object
+  client_client` previously failed with `object 'client_client' not found`,
+  since both resolve through the same `list_objects()` call.
+
 ### Added
 
 - **The package declares its license.** `kizen-builder` is MIT-licensed, and the

@@ -13,7 +13,7 @@ each entity — `kizen docs list` for the surface topics.
 
 ```
 kizen envs list                              # show env this directory resolves to
-kizen objects list                           # list custom objects
+kizen objects list                           # list objects, custom and built-in (e.g. Contacts)
 kizen objects get <api_name>                 # one object incl. categories, fields, option UUIDs; full stage detail for pipelines
 kizen objects stages list <pipeline>         # a pipeline's stages: name, status, chance-to-close, order
 kizen automations list                       # list automations (summary)

@@ -19,13 +19,14 @@ is the answer to "how do I find the option UUID for X".
 It also resolves each relationship field's target to a readable api_name plus
 cardinality, so you never hand-resolve a `related_object` UUID.
 
-Two things it does **not** cover:
+One thing it does **not** cover:
 
-- **`kizen objects list` shows custom objects only.** Contacts are not there.
-  Contacts are reachable as the object identifier `client_client` —
-  `kizen objects get client_client` returns their field schema and option UUIDs
-  in the same format as any custom object.
 - Pipeline **stages** are a separate resource, below.
+
+`kizen objects list` includes built-in objects (Contacts, identifier
+`client_client`) alongside custom ones. `kizen objects get client_client`
+returns their field schema and option UUIDs in the same format as any custom
+object.
 
 ## Kizen rewrites api_names
 

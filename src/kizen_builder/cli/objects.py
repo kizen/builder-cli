@@ -1,4 +1,4 @@
-"""`kizen objects` — custom objects: reads, then create/update/delete."""
+"""`kizen objects` — reads cover custom and built-in objects; create/update/delete are custom-only."""
 
 from __future__ import annotations
 
@@ -21,7 +21,8 @@ from kizen_builder.tools import objects as obj_tools
 from kizen_builder.tools.planners import objects as object_planners
 
 objects_app = typer.Typer(
-    help="Read, create, and update custom objects.", no_args_is_help=True
+    help="Read objects, custom and built-in; create, update, and delete custom objects.",
+    no_args_is_help=True,
 )
 app.add_typer(objects_app, name="objects")
 
@@ -31,13 +32,13 @@ def objects_list(
     output: str = OUTPUT_OPTION,
     json_out: bool = JSON_OPTION,
 ) -> None:
-    """List custom objects in the configured env."""
+    """List objects in the configured env, custom and built-in (e.g. Contacts)."""
     fmt = out.resolve_format(output, json_out)
     with cli_errors():
         items = obj_tools.list_objects()
 
     def table() -> None:
-        t = Table(title="Custom objects")
+        t = Table(title="Objects")
         t.add_column("api_name")
         t.add_column("display_name")
         t.add_column("entity_name")
