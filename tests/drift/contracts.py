@@ -330,37 +330,63 @@ KNOWN_SCHEMA_OMISSIONS: dict[str, dict[str, str]] = {
 # ---------------------------------------------------------------------------
 
 
-def _type_of(node: Any) -> str:
+def _type_of(node: Any, components: dict[str, Any] | None = None) -> str:
     """Compact, human-readable type descriptor for one schema node.
 
     Deliberately lossy: enough to catch a field changing type, format, enum,
     nullability or target ref (the ``config_metadata`` string-vs-object class
     of drift), without dragging descriptions and examples into the diff.
+
+    ``components`` (the document's ``components.schemas``, when available)
+    lets a ``$ref`` that points at a bare named enum — drf-spectacular's usual
+    way of extracting a ``ChoiceField`` — carry its values, the same as an
+    inline enum does below. A ref to anything else (the common case) is
+    unaffected.
     """
     if not isinstance(node, dict):
         return "?"
     if "$ref" in node:
-        return _ref_name(node["$ref"])
+        ref_name = _ref_name(node["$ref"])
+        target = (components or {}).get(ref_name)
+        if _is_bare_enum(target):
+            return ref_name + "{" + ",".join(str(e) for e in target["enum"]) + "}"
+        return ref_name
     # `allOf: [{$ref}]` + siblings is drf-spectacular's way of decorating a ref
     if "allOf" in node and isinstance(node["allOf"], list):
-        inner = [_type_of(x) for x in node["allOf"]]
+        inner = [_type_of(x, components) for x in node["allOf"]]
         base = inner[0] if len(inner) == 1 else "allOf(" + ",".join(inner) + ")"
         return f"{base}?" if node.get("nullable") else base
     if "oneOf" in node:
-        return "oneOf(" + ",".join(_type_of(x) for x in node["oneOf"]) + ")"
+        return "oneOf(" + ",".join(_type_of(x, components) for x in node["oneOf"]) + ")"
     parts: list[str] = [str(node.get("type", "any"))]
     if node.get("format"):
         parts.append(f"<{node['format']}>")
     if node.get("enum"):
         parts.append("{" + ",".join(str(e) for e in node["enum"]) + "}")
     if node.get("type") == "array":
-        parts.append(f"[{_type_of(node.get('items') or {})}]")
+        parts.append(f"[{_type_of(node.get('items') or {}, components)}]")
     out = "".join(parts)
     if node.get("nullable"):
         out += "?"
     if node.get("writeOnly"):
         out += " (writeOnly)"
     return out
+
+
+def _is_bare_enum(node: Any) -> bool:
+    """True when a component schema is nothing but a named enum.
+
+    ``type`` in ``{"string", "integer"}``, an ``enum`` key, and nothing
+    structurally meaningful beyond ``title``/``description``. A ref to a real
+    object schema, a ``oneOf``, etc. is not a bare enum and is left alone.
+    """
+    if not isinstance(node, dict):
+        return False
+    if node.get("type") not in ("string", "integer"):
+        return False
+    if "enum" not in node:
+        return False
+    return not (set(node) - {"type", "enum", "title", "description"})
 
 
 def _ref_name(ref: str) -> str:
@@ -399,7 +425,9 @@ def _follow(components: dict[str, Any], node: Any) -> dict[str, Any] | None:
     return node
 
 
-def _shape(node: dict[str, Any] | None) -> dict[str, Any]:
+def _shape(
+    node: dict[str, Any] | None, components: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Snapshot-able shape of one object schema."""
     if node is None:
         return {"present": False}
@@ -408,7 +436,7 @@ def _shape(node: dict[str, Any] | None) -> dict[str, Any]:
         "present": True,
         "type": node.get("type", "object"),
         "required": sorted(node.get("required") or []),
-        "properties": {k: _type_of(v) for k, v in sorted(props.items())},
+        "properties": {k: _type_of(v, components) for k, v in sorted(props.items())},
     }
 
 
@@ -450,13 +478,13 @@ def extract(schema: dict[str, Any]) -> dict[str, Any]:
                     _ref_name(node["$ref"]) if "$ref" in node else None
                 )
                 entry["request_required"] = bool(body.get("required"))
-                entry["request_body"] = _shape(_follow(components, node))
+                entry["request_body"] = _shape(_follow(components, node), components)
             else:
                 entry["request_schema"] = None
             out[c.key] = entry
         else:
             entry = {"surface": c.surface, "label": c.label}
-            entry.update(_shape(_resolve(schema, c.schema_name)))
+            entry.update(_shape(_resolve(schema, c.schema_name), components))
             out[c.key] = entry
 
     return out

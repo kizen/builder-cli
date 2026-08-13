@@ -20,6 +20,7 @@ from rich.table import Table
 
 from kizen_builder.cli._shared import cli_errors, console, err_console
 from kizen_builder.tools import plans as plan_tools
+from kizen_builder.tools.planners.automations import known_choices_addendum
 from kizen_builder.tools.plans import PlanError
 
 
@@ -124,12 +125,31 @@ def _run_mutation(
     with cli_errors():
         result = plan_tools.apply_plan(plan)
 
+    _enrich_known_choice_failures(result)
+
     if json_out:
         typer.echo(plan_tools.result_to_json(result))
     else:
         _render_result(result)
     if not result.all_ok:
         raise typer.Exit(code=1)
+
+
+def _enrich_known_choice_failures(result: plan_tools.ApplyResult) -> None:
+    """Append whatever this repo already knows about a rejected enum value
+    to a failed automation op's message. Called right after `apply_plan()`
+    returns, by every caller of it (`_run_mutation` here, `apply_cmd` in
+    `cli/apply.py`), before either output branch (`--json` or the Rich
+    table) reads `.message`. A miss is silent: `known_choices_addendum`
+    returns `None` for anything it doesn't recognize, so an unrelated 400 is
+    untouched.
+    """
+    for r in result.results:
+        if r.kind != "automation" or r.status != "failed" or r.raw is None:
+            continue
+        addendum = known_choices_addendum(r.raw)
+        if addendum:
+            r.message = f"{r.message} {addendum}" if r.message else addendum
 
 
 def _read_spec(spec_file: str, what: str = "automation") -> tuple[dict[str, Any], bool]:

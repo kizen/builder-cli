@@ -44,6 +44,7 @@ from __future__ import annotations
 
 import html
 import re
+from dataclasses import dataclass
 from typing import Any
 
 from kizen_builder.config import load_env_config
@@ -815,6 +816,51 @@ _TRIGGER_BUILDERS: dict[str, Any] = {
     "scheduled_activity_overdue": _trigger_scheduled_activity_overdue,
     "form_submitted": _trigger_form_submitted,
     "survey_submitted": _trigger_survey_submitted,
+}
+
+
+# ---------------------------------------------------------------------------
+# Known enum choices — enriching a real 400, not rejecting a spec value
+# ---------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class KnownChoices:
+    """Values this repo has confirmed for one enum-typed field, plus where
+    that confirmation came from.
+
+    Deliberately not "the enum" — for every field these tables cover, what's
+    here is a partial, unreviewed sample of values seen live or in a fixture,
+    not an exhaustive set the server enforces. Used only to enrich a real
+    400's message (:func:`known_choices_addendum`); never to reject a spec
+    value the server hasn't rejected yet.
+    """
+
+    values: tuple[str, ...]
+    source: str
+
+
+# `KNOWN_ENUM_CHOICES` (steps, next to `_STEP_BUILDERS` below) and
+# `KNOWN_ENUM_CHOICES_TRIGGERS` (triggers, here) are keyed by
+# `(step_or_trigger_type, dotted_field_path)`, never by bare field name —
+# `docs/specs/automation.md` documents at least three different enums all
+# named `type`, so a flat `field_name → choices` table would mismatch the
+# moment it touched an ambiguous name.
+#
+# Not exhaustive. Add an entry the moment a value is confirmed elsewhere in
+# this repo (a fixture, a docstring, a drift finding, or a captured live
+# session) — do not also write the list into `automation.md` prose (check
+# the registry, not the prose).
+KNOWN_ENUM_CHOICES_TRIGGERS: dict[str, dict[str, KnownChoices]] = {
+    "on_or_around_date": {
+        "date_offset": KnownChoices(
+            values=("on_day", "on_day_and_time", "days_before", "days_after"),
+            source=(
+                "tests/fixtures/automations/kitchen_sink_triggers.raw.json, "
+                "on_or_around_date_goto.raw.json"
+            ),
+        ),
+    },
 }
 
 
@@ -2191,3 +2237,121 @@ _STEP_BUILDERS: dict[str, Any] = {
     "math_operator": _step_math_operator,
     "search_records": _step_search_records,
 }
+
+
+# See the module comment above `KNOWN_ENUM_CHOICES_TRIGGERS` for what this
+# table is and isn't.
+KNOWN_ENUM_CHOICES: dict[str, dict[str, KnownChoices]] = {
+    "create_related_entity": {
+        "new_entity_owner_type": KnownChoices(
+            values=("assign_from_context_record", "newly_assigned_owner"),
+            source=(
+                "tests/fixtures/automations/create_and_modify_related.raw.json, "
+                "form_submission.raw.json"
+            ),
+        ),
+    },
+    "notify_member_via_text": {
+        "team_member.type": KnownChoices(
+            values=("employee",),
+            source=(
+                "First-Use-Feedback session, confirmed live 2026-08-11 "
+                "(00-inbox/First-Use-Feedback.md); no repo fixture yet"
+            ),
+        ),
+    },
+}
+
+assert set(KNOWN_ENUM_CHOICES) <= set(_STEP_BUILDERS), (
+    "KNOWN_ENUM_CHOICES has an entry for a step type _STEP_BUILDERS doesn't wire"
+)
+assert set(KNOWN_ENUM_CHOICES_TRIGGERS) <= set(_TRIGGER_BUILDERS), (
+    "KNOWN_ENUM_CHOICES_TRIGGERS has an entry for a trigger type "
+    "_TRIGGER_BUILDERS doesn't wire"
+)
+
+
+# block key (the wire dict key a step/trigger's config rides under, e.g.
+# "action_create_related_entity", "trigger_on_or_around_date" — the exact
+# mapping `_block_field_for()` / `trigger_{type}` already use when building a
+# payload) -> (step_or_trigger_type, its KnownChoices table).
+_KNOWN_CHOICES_BLOCK_TABLES: dict[str, tuple[str, dict[str, KnownChoices]]] = {
+    **{
+        _block_field_for(step_type): (step_type, table)
+        for step_type, table in KNOWN_ENUM_CHOICES.items()
+    },
+    **{
+        f"trigger_{trigger_type}": (trigger_type, table)
+        for trigger_type, table in KNOWN_ENUM_CHOICES_TRIGGERS.items()
+    },
+}
+
+
+def _flatten_error_leaves(node: Any, prefix: str = "") -> list[tuple[str, Any]]:
+    """Dotted-path leaves of a nested DRF error dict.
+
+    ``{"team_member": {"type": ["... not a valid choice."]}}`` ->
+    ``[("team_member.type", ["... not a valid choice."])]``.
+    """
+    if isinstance(node, dict):
+        out: list[tuple[str, Any]] = []
+        for key, value in node.items():
+            child = f"{prefix}.{key}" if prefix else key
+            out.extend(_flatten_error_leaves(value, child))
+        return out
+    return [(prefix, node)]
+
+
+def _is_invalid_choice_message(leaf: Any) -> bool:
+    if isinstance(leaf, list):
+        return any(_is_invalid_choice_message(item) for item in leaf)
+    return isinstance(leaf, str) and "not a valid choice" in leaf.lower()
+
+
+def known_choices_addendum(raw: Any) -> str | None:
+    """Enrich a failed automation op's raw error body with whatever this
+    repo already knows about a rejected enum value, or ``None``.
+
+    Walks the whole error tree (the exact top-level nesting isn't pinned to
+    one depth) looking for a dict key naming a wired step/trigger block that
+    also has an entry in `KNOWN_ENUM_CHOICES`/`KNOWN_ENUM_CHOICES_TRIGGERS`.
+    Within that block, every leaf error message containing "not a valid
+    choice" at a known field path gets the known values appended — a single
+    400 can carry several simultaneous field rejections. Anything else — an
+    unrecognized field, an unrecognized block, a different kind of error —
+    is left alone: "we don't know this one" must come back as ``None``, never
+    a crash or a misleading guess.
+    """
+    hits = _search_for_known_choice(raw)
+    return " ".join(hits) if hits else None
+
+
+def _search_for_known_choice(node: Any) -> list[str]:
+    if isinstance(node, dict):
+        hits = [
+            hit for key, value in node.items() for hit in _match_known_block(key, value)
+        ]
+        for value in node.values():
+            hits.extend(_search_for_known_choice(value))
+        return hits
+    if isinstance(node, list):
+        return [hit for item in node for hit in _search_for_known_choice(item)]
+    return []
+
+
+def _match_known_block(key: str, value: Any) -> list[str]:
+    if not isinstance(value, dict):
+        return []
+    entry = _KNOWN_CHOICES_BLOCK_TABLES.get(key)
+    if entry is None:
+        return []
+    block_type, table = entry
+    hits = []
+    for path, leaf in _flatten_error_leaves(value):
+        known = table.get(path)
+        if known is not None and _is_invalid_choice_message(leaf):
+            hits.append(
+                f"Known valid values for {block_type}.{path}: "
+                f"{', '.join(known.values)} (source: {known.source})."
+            )
+    return hits
