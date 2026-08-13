@@ -56,6 +56,16 @@ so quietly, so it's safe to run unconditionally. `kizen upgrade` then applies
 it, using whatever is right for how this CLI was installed. Docs ship with the
 package, so upgrading updates the instructions too.
 
+**6. Confirm rendered output in the browser.** Build and re-apply changes
+through the CLI — it's the source of truth for what got written and it's
+where approval happens. But the CLI has no renderer: it cannot show you a
+dashlet's chart, an email's HTML body, or a condition's resolved option
+labels, so a write it reports as successful can still be wrong on screen.
+Treat the two surfaces as one workflow rather than the browser being a
+fallback for when something looks broken — open it to confirm anything a
+human would look at: a dashboard, a dashlet, an email body, a condition or
+filter's displayed labels.
+
 ## Where to find things
 
 These sources, in this order — don't guess, and don't grep `src/` for any of them:
@@ -93,6 +103,40 @@ wire behavior in one place. **Don't grep for a quirk; open the surface's doc.**
   project for blast-radius reasons. If the user asks to push something
   from dev to staging/prod, redirect them rather than scripting it here.
 
+
+## Verifying rendered output
+
+A write that the CLI reports as successful can still be wrong on screen.
+Nothing in the CLI renders a chart, an HTML body, or a resolved label — it
+plans and applies the underlying data, and stops there. Confirming the
+rendered result needs a human in the browser, every time the change touches
+something a human looks at:
+
+- **Dashboard and dashlet layout and data.** A dashlet spec that plans clean
+  and applies clean can still duplicate on screen (a repeat `dashboards
+  update` without the existing dashlet `id`s creates instead of updating) or
+  render its data wrong (a filter the CLI reported as a clean success can
+  still break the dashlet that consumes it). Open the dashboard.
+- **Email and other HTML body rendering.** The CLI validates and stores the
+  template; it has no renderer for the HTML that gets sent. Open the
+  template or a test send.
+- **Condition and filter label display.** A condition step's option values
+  are stored and evaluated correctly even when the automation builder UI
+  shows their labels as blank or malformed — this is a known display bug in
+  the Kizen product's builder UI, not a CLI limitation. Confirm the
+  underlying filter is correct (e.g. with `automations get` or a negative
+  test against the gate) rather than trusting what the builder UI displays
+  for the labels.
+
+**The record Timeline is the single best artifact for confirming an
+automation actually did what it was supposed to** — it shows the automation's
+provenance against the record the way nothing else does, and the CLI has no
+equivalent view today. Open it even when nothing looks wrong, not only when
+chasing a failure.
+
+For how to confirm a run itself reached a terminal state, see
+`kizen docs show automation-runtime` — that's where the run-verification
+mechanic is documented, whatever form it currently takes.
 
 ## What's *not* in the repo (and why)
 
