@@ -103,6 +103,11 @@ called out explicitly under **Changed** or **Removed**.
   — the same source `seeds list` already uses to show it, since it's the one
   place the restriction survives a read.
 
+- **`kizen objects get`'s table and CSV output now include field option
+  UUIDs** (previously JSON only). A choice/status/yesnomaybe field's options
+  render as `name (id)` — the full UUID, since it's pasted into a spec, not
+  just read.
+
 ### Added
 
 - **New docs topic: `kizen docs show code-steps`.** Writing the Python inside a
