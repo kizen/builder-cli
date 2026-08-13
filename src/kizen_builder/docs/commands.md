@@ -91,6 +91,7 @@ kizen automations start <api_name> --record <uuid> \
     --var org_match=true --var llm_notes="known input"          # seed variables for the run
 kizen automations start <api_name> --record <uuid> \
     --vars-json '{"org_match": true}'                           # same, from a JSON object
+kizen automations start <api_name> --record <uuid> --wait --show-logs  # fire, block, and stream step status + each step's log once it finishes
 
 kizen code test --script s.py \
     --input n=21:number --input who=world:string \

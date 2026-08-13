@@ -39,6 +39,27 @@ POST /api/automation2/automations/<automation-identifier>/start
   `{"execution": null}` if a UUID was passed as the identifier instead of the
   api_name.
 
+### `--wait` / `--show-logs` — start and follow a run in one command
+
+```bash
+kizen automations start <api_name> --record <uuid> --wait
+kizen automations start <api_name> --record <uuid> --wait --show-logs
+```
+
+Composes this section's `start` with "Watching a run" below's
+`wait_for_execution()` and step history — no second poll loop, no second
+`detailed_log` renderer. `--wait` blocks until the run reaches a terminal
+status, printing each new step's status line the moment it appears (plus a
+throttled heartbeat during a real gap between steps); `--show-logs` also
+prints each step's `detailed_log` once that step finishes and implies
+`--wait` — a `code_step`'s log is released on completion, not while it's
+still running (see "Watching a run" below). `--timeout` /
+`--poll-interval` are the same flags, same defaults, as `runs view --wait`
+below, and the exit-code mapping (`completed` → 0, `failed`/`cancelled` → 1,
+timeout or `paused*` → 3) is the same logic, reused rather than duplicated.
+`--json --wait` never interleaves streaming text with the JSON blob; with
+`--show-logs` its payload also carries the full step history under `steps`.
+
 ## Watching a run
 
 ```
@@ -71,7 +92,11 @@ block until the run finishes). `runs logs <exec_uuid>` prints each step's
   a code step carries `{logs, inputs, values, duration, http_requests}` (a
   full outbound HTTP trace); an action-step failure carries `{reasons}`; a
   debug advance carries `{debug_action}`. `runs logs` renders the shapes it
-  can name and falls back to pretty-printed JSON for the rest.
+  can name and falls back to pretty-printed JSON for the rest. **Owner-
+  confirmed 2026-08-13**: a `code_step`'s log is released only once the step
+  finishes — it does not fill in incrementally while the step runs — so
+  anything that watches for it (`start --wait --show-logs` included) is
+  printing a completed log, not tailing a running one.
 
 ### Execution status — drive terminal detection off the schema, not off what's been seen
 

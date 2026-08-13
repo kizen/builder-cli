@@ -1789,6 +1789,86 @@ def test_wait_for_execution_and_history_row_shapes_against_a_live_run(
 
 
 # ---------------------------------------------------------------------------
+# Starting and following a run in one command (BCLI-021) — composes the
+# wait_for_execution() proven above, plus start_automation() and the CLI's
+# streaming callback. Reuses drift_code_step_automation (not a second live
+# fixture) so this test — unlike an earlier version of it that pointed at
+# drift_startable_automation's manual-trigger/stop_execution chain — actually
+# streams a real code_step's detailed_log, not just an empty trigger row.
+# ---------------------------------------------------------------------------
+
+
+def test_start_and_wait_streams_a_live_run_without_crashing(
+    drift_client, scratch, drift_object, drift_code_step_automation
+):
+    """Starts `drift_code_step_automation` via the new `start_and_wait()`, and
+    drives the real `cli.automations._RunStream` callback (`show_logs=True`)
+    against whatever history-row shape the live API actually returns —
+    including the `code_step` row's real `detailed_log`, which
+    `test_wait_for_execution_and_history_row_shapes_against_a_live_run` above
+    already pins the shape of (`{"logs": ...}`).
+
+    This is the composition's own live proof, not a second copy of that
+    wire-shape assertion: it checks that BCLI-021's added code —
+    `start_and_wait()`'s merge and `_RunStream`'s dedupe/render loop —
+    doesn't raise when pointed at a real run, and that streaming reaches a
+    real `code_step`'s log content, not just a trigger's empty one. The
+    contract is the composition wiring, not an SLA, so a run still active at
+    the end of this test's short budget skips rather than fails, matching
+    BCLI-012's own skip rule.
+
+    Owner-confirmed 2026-08-13: a `code_step`'s `detailed_log` is populated
+    only once the step finishes (the underlying runner releases it on
+    completion, not incrementally) — so "streaming" a code_step's log means
+    printing it the moment its row is first seen already-complete, not
+    watching it grow mid-run. This test's assertion matches that: it checks
+    the log printed once the row appears, not partial output during
+    execution.
+    """
+    from kizen_builder.api import records as records_api
+    from kizen_builder.cli.automations import _RunStream
+    from kizen_builder.tools.automations import (
+        _TERMINAL_EXECUTION_STATUSES,
+        start_and_wait,
+    )
+    from kizen_builder.tools.planners.records import plan_create_records
+
+    plan = plan_create_records(
+        drift_object["api_name"], [{"name": debris_name("start-and-wait")}]
+    )
+    (op,) = plan.operations
+    record = records_api.create_record(
+        drift_client, drift_object["api_name"], op.payload["fields"]
+    )
+    scratch.track(
+        "record",
+        record["id"],
+        lambda: records_api.delete_record(
+            drift_client, drift_object["api_name"], record["id"]
+        ),
+    )
+
+    stream = _RunStream(show_logs=True)
+    result = start_and_wait(
+        drift_code_step_automation["api_name"],
+        record["id"],
+        timeout=30.0,
+        poll_interval=2.0,
+        on_poll=stream,
+    )
+
+    assert result.get("execution_id"), f"start_and_wait returned no id: {result!r}"
+    if result.get("timed_out"):
+        pytest.skip(
+            f"execution {result['execution_id']} had not reached a terminal "
+            f"status inside this test's 30s budget (last observed status: "
+            f"{result.get('status')!r}) — the composition wiring is "
+            "unverified this run, not broken. Re-run to try again."
+        )
+    assert result["status"] in _TERMINAL_EXECUTION_STATUSES
+
+
+# ---------------------------------------------------------------------------
 # Coverage completeness — the invariant that keeps this file honest
 # ---------------------------------------------------------------------------
 

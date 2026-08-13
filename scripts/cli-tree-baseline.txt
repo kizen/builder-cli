@@ -940,18 +940,42 @@
  plan/preview/confirm gate that guards create/update. That is a standing                            
  decision, not an oversight.                                                                        
                                                                                                     
+ `--wait` blocks until the run finishes, printing each new step's status                            
+ the moment it appears (a dim heartbeat during a real gap between steps —                           
+ see `kizen docs show automation-runtime`'s "Watching a run" for the                                
+ timeout/status vocabulary this shares with `runs view --wait`).                                    
+ `--show-logs` additionally prints each step's `detailed_log` once that                             
+ step finishes (a `code_step`'s log is released only on completion, not                             
+ incrementally) and implies `--wait`. `--timeout`/`--poll-interval` mirror                          
+ `runs view --wait`'s flags of the same name. Exit code mirrors `runs view                          
+ --wait`: `completed` → 0, `failed`/`cancelled` → 1, a timeout or any                               
+ `paused*` status → 3 (the wait ended without the run finishing, not                                
+ necessarily a failure).                                                                            
+                                                                                                    
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    api_name      <str>  Automation api_name. [required]                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --record     -r      <str>  Record/contact UUID to run on. Omit for global (record-less)         │
-│                             automations.                                                         │
-│ --var                <str>  Seed a variable for this run: --var name=value (repeatable). Value   │
-│                             is sent as a string; the server coerces it by the variable's type.   │
-│ --vars-json          <str>  Seed variables from a JSON object, e.g. '{"org_match": true}'.       │
-│                             Merged with --var (--var wins on conflict).                          │
-│ --json                      Emit JSON.                                                           │
-│ --help                      Show this message and exit.                                          │
+│ --record         -r               <str>    Record/contact UUID to run on. Omit for global        │
+│                                            (record-less) automations.                            │
+│ --var                             <str>    Seed a variable for this run: --var name=value        │
+│                                            (repeatable). Value is sent as a string; the server   │
+│                                            coerces it by the variable's type.                    │
+│ --vars-json                       <str>    Seed variables from a JSON object, e.g.               │
+│                                            '{"org_match": true}'. Merged with --var (--var wins  │
+│                                            on conflict).                                         │
+│ --wait               --no-wait             Block until the run reaches a terminal status,        │
+│                                            streaming step status as it arrives.                  │
+│                                            [default: no-wait]                                    │
+│ --timeout                         <float>  With --wait: seconds to wait before giving up (0 = no │
+│                                            deadline).                                            │
+│                                            [default: 900.0]                                      │
+│ --poll-interval                   <float>  With --wait: seconds between polls. [default: 5.0]    │
+│ --show-logs                                Print each new step's detailed_log once that step     │
+│                                            finishes — a code_step's log is only available then,  │
+│                                            not while it's still running. Implies --wait.         │
+│ --json                                     Emit JSON.                                            │
+│ --help                                     Show this message and exit.                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: automations steps [OPTIONS] COMMAND [ARGS]...                                               
