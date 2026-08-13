@@ -167,11 +167,13 @@ def render(
 # ---------------------------------------------------------------------------
 
 
-def _record_field_map(record: dict[str, Any]) -> dict[str, Any]:
+def record_field_map(record: dict[str, Any]) -> dict[str, Any]:
     """Map field ``name`` → value for one record's ``fields`` dict.
 
     Records come back as ``{"fields": {<uuid>: {name, value, ...}}}``. This
-    collapses that to ``{<field_name>: <value>}`` for flat CSV columns.
+    collapses that to ``{<field_name>: <value>}`` for flat CSV columns, and
+    is reused by ``cli/records.py`` to build the ``--fields`` table columns
+    so there is one field-lookup implementation, not two.
     """
     out: dict[str, Any] = {}
     for fdata in (record.get("fields") or {}).values():
@@ -194,7 +196,7 @@ def record_csv_columns(records: Sequence[dict[str, Any]]) -> list[Column]:
     columns: list[Column] = [Column("id", lambda r: r.get("id") or "")]
     seen: set[str] = set()
     for record in records:
-        for name in _record_field_map(record):
+        for name in record_field_map(record):
             if name not in seen:
                 seen.add(name)
 
@@ -203,7 +205,7 @@ def record_csv_columns(records: Sequence[dict[str, Any]]) -> list[Column]:
                 # type of a lambda's extra default-valued parameter against
                 # `Column.value`'s narrower `Callable[[dict[str, Any]], Any]`.
                 def _cell(r: dict[str, Any], n: str = name) -> Any:
-                    return _record_field_map(r).get(n)
+                    return record_field_map(r).get(n)
 
                 columns.append(Column(name, _cell))
     return columns

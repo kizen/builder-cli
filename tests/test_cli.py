@@ -109,6 +109,93 @@ def test_json_flag_and_output_json_are_equivalent(monkeypatch):
     assert json.loads(a.stdout) == json.loads(b.stdout) == records
 
 
+def test_records_list_forwards_fields(monkeypatch):
+    seen = {}
+
+    def fake_search(
+        object_api_name, filters=None, search=None, limit=100, field_names=None
+    ):
+        seen.update(field_names=field_names)
+        return []
+
+    monkeypatch.setattr(record_tools, "search_records", fake_search)
+    result = runner.invoke(
+        cli.app,
+        ["records", "list", "tax_lot", "--fields", "ticker_symbol,purchase_price"],
+    )
+    assert result.exit_code == 0
+    assert seen["field_names"] == ["ticker_symbol", "purchase_price"]
+
+
+def test_records_list_table_shows_requested_field_columns(monkeypatch):
+    records = load_fixture("records/list_tax_lot.json")
+    monkeypatch.setattr(record_tools, "search_records", lambda *a, **k: records)
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "ticker_symbol"]
+    )
+    assert result.exit_code == 0
+    assert "ticker_symbol" in result.stdout
+    assert "VTI" in result.stdout  # the fixture's ticker_symbol value
+
+
+def test_records_list_unknown_field_rejected_before_table(monkeypatch):
+    def fake_search(
+        object_api_name, filters=None, search=None, limit=100, field_names=None
+    ):
+        raise LookupError(
+            f"field 'bogus_field' not found on '{object_api_name}'. "
+            "Available: ['name', 'ticker_symbol']"
+        )
+
+    monkeypatch.setattr(record_tools, "search_records", fake_search)
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "bogus_field"]
+    )
+    assert result.exit_code == 1
+    assert "bogus_field" in result.stderr
+    assert "Available" in result.stderr
+    assert "record(s)" not in result.stdout  # no table rendered on validation failure
+
+
+# Shaped like the tools layer's own output once field_names has narrowed the
+# server's response: only the requested field plus the auto-added `name`,
+# never the object's other fields.
+_FIELD_SCOPED_RECORDS = [
+    {
+        "id": "r1",
+        "fields": {
+            "u1": {"name": "ticker_symbol", "value": "VTI"},
+            "u2": {"name": "name", "value": "Lot A"},
+        },
+    }
+]
+
+
+def test_records_list_csv_shows_id_name_and_requested_fields(monkeypatch):
+    monkeypatch.setattr(
+        record_tools, "search_records", lambda *a, **k: _FIELD_SCOPED_RECORDS
+    )
+    result = runner.invoke(
+        cli.app,
+        ["records", "list", "tax_lot", "--fields", "ticker_symbol", "-o", "csv"],
+    )
+    assert result.exit_code == 0
+    header = result.stdout.strip().splitlines()[0].split(",")
+    assert header == ["id", "ticker_symbol", "name"]
+
+
+def test_records_list_json_shows_id_name_and_requested_fields(monkeypatch):
+    monkeypatch.setattr(
+        record_tools, "search_records", lambda *a, **k: _FIELD_SCOPED_RECORDS
+    )
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "ticker_symbol", "--json"]
+    )
+    assert result.exit_code == 0
+    field_names = {f["name"] for f in json.loads(result.stdout)[0]["fields"].values()}
+    assert field_names == {"ticker_symbol", "name"}
+
+
 def test_invalid_output_format_is_usage_error(monkeypatch):
     monkeypatch.setattr(obj_tools, "list_objects", lambda: [])
     result = runner.invoke(cli.app, ["objects", "list", "-o", "yaml"])

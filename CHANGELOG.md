@@ -30,6 +30,15 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Added
 
+- **`kizen records list <object> --fields a,b,c`** fetches `id`, `name`, and
+  those field api_names in the same search call already used today, and
+  shows them all as table columns — previously the table only ever showed
+  `id` and `name`, no matter what the object carried. `--output json`/
+  `--output csv` show the same `id` + `name` + requested set. An
+  unrecognized api_name (a typo, a display label, or a field
+  UUID) is rejected up front, listing the object's real field api_names,
+  instead of silently returning a result missing that field.
+
 - **The package declares its license.** `kizen-builder` is MIT-licensed, and the
   built wheel and sdist now carry `License-Expression: MIT` along with a copy of
   `LICENSE`.
