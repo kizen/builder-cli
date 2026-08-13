@@ -732,15 +732,17 @@ def test_init_stores_profile_and_pins_directory(monkeypatch, tmp_path):
 
     config.set_profile_override(None)
     monkeypatch.chdir(tmp_path)  # pin is written to cwd
+    # Fourth prompt is now "Environment" (a curated name), not a free-typed URL.
     result = runner.invoke(
         cli.app,
         ["init", "--profile", "alpha", "--skip-validation"],
-        input="apikey\nAAAA\nuser1\nhttps://app.go.kizen.com\n",
+        input="apikey\nAAAA\nuser1\ngo\n",
     )
     assert result.exit_code == 0, result.output
 
     stored = profiles.get_profile("alpha")
     assert stored is not None and stored.business_id == "AAAA"
+    assert stored.base_url == "https://app.go.kizen.com"
 
     # Read the pin file directly (autouse fixture stubs find_pin to None).
     import tomllib
@@ -749,6 +751,98 @@ def test_init_stores_profile_and_pins_directory(monkeypatch, tmp_path):
     assert pin_file.is_file()
     data = tomllib.loads(pin_file.read_text())
     assert data == {"profile": "alpha", "business_id": "AAAA"}
+
+
+def test_init_environment_picker_resolves_named_host(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "beta", "--skip-validation"],
+        input="apikey\nBBBB\nuser1\nfmo\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("beta")
+    assert stored is not None and stored.base_url == "https://app.fmo.kizen.com"
+
+
+def test_init_environment_picker_rejects_bare_enter(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "zeta", "--skip-validation"],
+        input="apikey\nZZZZ\nuser1\n\nintegration\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("zeta")
+    assert stored is not None and stored.base_url == "https://integration.kizen.dev"
+
+
+def test_init_environment_picker_free_text_url(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "gamma", "--skip-validation"],
+        input="apikey\nCCCC\nuser1\nurl\nhttps://self-hosted.example.com\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("gamma")
+    assert stored is not None and stored.base_url == "https://self-hosted.example.com"
+
+
+def test_init_base_url_flag_accepts_named_host(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        [
+            "init",
+            "--profile",
+            "delta",
+            "--skip-validation",
+            "--base-url",
+            "staging",
+        ],
+        input="apikey\nDDDD\nuser1\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("delta")
+    assert stored is not None and stored.base_url == "https://staging.kizen.com"
+
+
+def test_init_base_url_flag_rejects_unknown_name(monkeypatch, tmp_path):
+    from kizen_builder import config
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        [
+            "init",
+            "--profile",
+            "epsilon",
+            "--skip-validation",
+            "--base-url",
+            "not-a-real-env",
+        ],
+        input="apikey\nEEEE\nuser1\n",
+    )
+    assert result.exit_code == 2, result.output
+    assert "unknown environment" in result.stderr
 
 
 def test_envs_list_json_marks_pinned_profile(monkeypatch):

@@ -31,7 +31,14 @@ def _default_profile_name(directory: Path) -> str:
     return name or "default"
 
 
-def _ask(label: str, default: str, *, flag: str, password: bool = False) -> str:
+def _ask(
+    label: str,
+    default: str | None,
+    *,
+    flag: str,
+    password: bool = False,
+    choices: list[str] | None = None,
+) -> str:
     """Ask for a value, falling back to the default when there's no input.
 
     Handles all three ways `kizen init` gets driven: an interactive terminal,
@@ -40,9 +47,18 @@ def _ask(label: str, default: str, *, flag: str, password: bool = False) -> str:
     when every value was supplied by flag or has a usable default. A missing
     value with no default is a clean usage error naming the flag to pass,
     rather than an EOF traceback.
+
+    `choices`, when given, makes Rich re-prompt on anything else — used for
+    the environment picker so a mistyped answer can't silently fall through.
+    `default=None` means there's genuinely nothing to fall back to: Rich's own
+    "no default" sentinel is Ellipsis, not `None` or `""`, so the `default`
+    kwarg is omitted rather than passed through — passing `None` would make
+    Rich hand back `None` on a bare Enter, bypassing `choices` entirely.
     """
     try:
-        return Prompt.ask(label, default=default, password=password)
+        if default is None:
+            return Prompt.ask(label, password=password, choices=choices)
+        return Prompt.ask(label, default=default, password=password, choices=choices)
     except EOFError:
         if default:
             return default
@@ -51,6 +67,34 @@ def _ask(label: str, default: str, *, flag: str, password: bool = False) -> str:
             f"Pass {flag} (or set the matching KIZEN_* environment variable)."
         )
         raise typer.Exit(code=2) from None
+
+
+_FREE_TEXT_CHOICE = "url"
+
+
+def _ask_base_url(default: str | None, *, flag: str = "--base-url") -> str:
+    """Ask which named environment this is, resolving to a full host.
+
+    `url` stays a deliberate choice, not a bare-Enter default — the only
+    remaining way to reach a host outside the curated map.
+    """
+    choices = [*profiles.ENVIRONMENT_HOSTS, _FREE_TEXT_CHOICE]
+    default_choice = None
+    if default:
+        default_choice = next(
+            (
+                name
+                for name, host in profiles.ENVIRONMENT_HOSTS.items()
+                if host == default
+            ),
+            _FREE_TEXT_CHOICE,
+        )
+
+    choice = _ask("Environment", default_choice, flag=flag, choices=choices)
+    if choice == _FREE_TEXT_CHOICE:
+        url_default = default if default_choice == _FREE_TEXT_CHOICE else None
+        return _ask("BASE_URL", url_default, flag=flag).rstrip("/")
+    return profiles.ENVIRONMENT_HOSTS[choice]
 
 
 @app.command()
@@ -75,7 +119,14 @@ def init(
     user_id_opt: str = typer.Option(
         None, "--user-id", envvar="KIZEN_USER_ID", help="User id (else prompts)."
     ),
-    base_url: str = typer.Option(profiles.DEFAULT_BASE_URL, help="Kizen base URL."),
+    base_url: str | None = typer.Option(
+        None,
+        "--base-url",
+        help=(
+            "Kizen environment: a name (go, fmo, staging, integration) or a "
+            "full URL for self-hosted/one-off setups. Prompts if omitted."
+        ),
+    ),
     no_pin: bool = typer.Option(
         False, "--no-pin", help="Store credentials only; don't pin this directory."
     ),
@@ -124,11 +175,13 @@ def init(
         existing.user_id if existing else "",
         flag="--user-id",
     )
-    base_url_in = _ask(
-        "BASE_URL",
-        existing.base_url if existing else base_url,
-        flag="--base-url",
-    ).rstrip("/")
+    if base_url:
+        try:
+            base_url_in = profiles.resolve_base_url(base_url)
+        except ValueError as exc:
+            raise typer.BadParameter(str(exc), param_hint="--base-url") from exc
+    else:
+        base_url_in = _ask_base_url(existing.base_url if existing else None)
 
     creds = profiles.ProfileCreds(
         name=profile,
