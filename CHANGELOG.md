@@ -30,6 +30,15 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Added
 
+- **`kizen records archive` / `kizen records unarchive`.** Archiving a record —
+  the operation the UI's Archive button performs — is now something the CLI
+  can do, through the same plan → preview → confirm → apply gate as every
+  other record mutation. Previously the only way to archive from a script was
+  `PATCH .../{id}` with `{"archived": true}`, which returns 200 and does
+  nothing — see the `archived` Gotchas entry in `kizen docs show records`.
+  `kizen records delete` also archives rather than erasing (its help text now
+  says so); `archive`/`unarchive` name that operation directly.
+
 - **The package declares its license.** `kizen-builder` is MIT-licensed, and the
   built wheel and sdist now carry `License-Expression: MIT` along with a copy of
   `LICENSE`.

@@ -399,3 +399,89 @@ def plan_delete_records(object_api_name: str, record_ids: list[str]) -> Plan:
         summary=f"Delete {len(operations)} record(s) from {object_api_name}",
         operations=operations,
     )
+
+
+def plan_archive_records(object_api_name: str, record_ids: list[str]) -> Plan:
+    """Plan archiving one or more records by UUID.
+
+    Wraps `POST /api/custom-objects/{id}/bulk-archive-entity-record` — the
+    operation the UI's Archive button performs (confirmed live 2026-08-13
+    against `GET /api/docs/schema`, then exercised on a throwaway record).
+    `object_uuid` — not the api_name — is what that endpoint's path takes, so
+    this resolves the object the same way `plan_set_field` does.
+    """
+    if not record_ids:
+        raise PlanError("no record ids provided to archive")
+
+    env = load_env_config().name
+    try:
+        obj = get_object(object_api_name)
+    except LookupError as e:
+        raise PlanError(f"object '{object_api_name}' not found: {e}") from e
+
+    operations = [
+        PlanOperation(
+            action="update",
+            kind="record_archive",
+            key=f"{object_api_name}#{rid}",
+            preview={
+                "env": env,
+                "object": object_api_name,
+                "id": rid,
+                "warning": (
+                    "archives the record: it drops out of search/list results "
+                    "and 404s on a direct read, but its data is retained and "
+                    "it can be restored with 'records unarchive'. Confirmed "
+                    "live 2026-08-13: 'records delete' reaches this exact "
+                    "same state under a different name — the two are not "
+                    "otherwise different operations."
+                ),
+            },
+            payload={"record_ids": [rid]},
+            existing_uuid=rid,
+            parent_object_uuid=obj["id"],
+        )
+        for rid in record_ids
+    ]
+
+    return Plan.build(
+        env=env,
+        summary=f"Archive {len(operations)} record(s) from {object_api_name}",
+        operations=operations,
+    )
+
+
+def plan_unarchive_records(object_api_name: str, record_ids: list[str]) -> Plan:
+    """Plan unarchiving one or more records by UUID.
+
+    Wraps `PATCH /api/records/{object_identifier}/{entity_id}/unarchive`, the
+    round-trip counterpart to `plan_archive_records` — confirmed live to also
+    restore a record removed by `records delete`, not only one archived by
+    `records archive`. No request body.
+    """
+    if not record_ids:
+        raise PlanError("no record ids provided to unarchive")
+
+    env = load_env_config().name
+    try:
+        get_object(object_api_name)
+    except LookupError as e:
+        raise PlanError(f"object '{object_api_name}' not found: {e}") from e
+
+    operations = [
+        PlanOperation(
+            action="update",
+            kind="record_unarchive",
+            key=f"{object_api_name}#{rid}",
+            preview={"env": env, "object": object_api_name, "id": rid},
+            existing_uuid=rid,
+            parent_object_uuid=object_api_name,
+        )
+        for rid in record_ids
+    ]
+
+    return Plan.build(
+        env=env,
+        summary=f"Unarchive {len(operations)} record(s) on {object_api_name}",
+        operations=operations,
+    )
