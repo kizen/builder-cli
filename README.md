@@ -19,34 +19,35 @@ see exactly what a command would do before anything touches the environment.
 ## Install
 
 Requires [`uv`](https://docs.astral.sh/uv/getting-started/installation/) and
-`git`. If you don't have `uv`:
+`git` (uv shells out to `git` to fetch the repo; you don't run it yourself). If
+you don't have `uv`:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh   # macOS/Linux
 ```
 
-(see the link above for Windows). `kizen` installs from a clone:
+(see the link above for Windows). Then:
 
 ```bash
-git clone https://github.com/kizen/builder-cli.git "Kizen Builder"
-cd "Kizen Builder"
-uv tool install --editable .
+uv tool install https://github.com/kizen/builder-cli.git
 ```
 
-That puts `kizen` on your `PATH` as a standalone tool, which is what you want:
-you'll run it from environment folders elsewhere on disk, not from this
-checkout. `--editable` keeps it pointed at the clone so `kizen upgrade` can
-fast-forward it later. Confirm it worked with `kizen --help`; if your shell
-says `command not found`, open a new terminal (a fresh `uv` install patches
-your shell's startup file, which only takes effect in a new shell) or run
-`uv tool update-shell`.
+That puts `kizen` on your `PATH` as a standalone tool — no local clone to keep
+around, since there's nothing to run it *from*: you'll use it from environment
+folders elsewhere on disk. `kizen upgrade` knows this shape and re-resolves
+against that same URL. Confirm the install worked with `kizen --help`; if your
+shell says `command not found`, open a new terminal (a fresh `uv` install
+patches your shell's startup file, which only takes effect in a new shell) or
+run `uv tool update-shell`.
 
-Without `uv`, `pip install -e .` into whichever virtualenv (or `pip install
---user -e .` into whichever user site) owns your `PATH` works the same way —
-this needs Python 3.12 or newer, which `uv` would otherwise fetch for you
-automatically.
+Without `uv`, `pip install --user
+git+https://github.com/kizen/builder-cli.git` into whichever user site owns
+your `PATH` works the same way — this needs Python 3.12 or newer, which `uv`
+would otherwise fetch for you automatically.
 
-If you're going to *develop* the CLI rather than use it — that setup is `uv sync`.
+If you're going to *develop* the CLI rather than use it, see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) — that setup clones the repo and runs
+`uv sync`.
 
 ## Set up an environment folder
 

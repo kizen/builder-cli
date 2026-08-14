@@ -16,6 +16,19 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Fixed
 
+- **`kizen upgrade --check` can now find a release tag from a `uv tool
+  install`/`pipx`/direct-VCS install, not just an editable checkout.**
+  Previously any non-checkout install shape skipped straight to the
+  unimplemented package-index seam and always reported "no distribution
+  channel is configured for this install" — true or not, and regardless of
+  whether a release existed upstream. `Install` now carries the bare git URL
+  from `direct_url.json` (`repo_url`) when one is known for these shapes, and
+  the check runs the same `git ls-remote --tags` comparison a checkout uses.
+  There's still no local history to fall back to counting commits against for
+  these installs, so before a `vX.Y.Z` tag exists the answer stays
+  inconclusive — just honestly ("the remote has no release tags yet") instead
+  of implying no channel is configured at all.
+
 - **`kizen objects list` now includes built-in objects like Contacts
   (`client_client`), not just custom ones.** The server excludes built-ins by
   default; `list_objects()` called it without `custom_only=false` and then
