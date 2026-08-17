@@ -1,8 +1,8 @@
 {
   "_meta": {
     "base_url": "https://app.go.kizen.com",
-    "captured": "2026-08-06",
-    "contracts_tracked": 64,
+    "captured": "2026-08-13",
+    "contracts_tracked": 66,
     "how_to_refresh": "KIZEN_DRIFT_PROFILE=<profile> KIZEN_DRIFT_UPDATE_SNAPSHOT=1 uv run pytest -m drift",
     "info": {
       "title": "Kizen API",
@@ -100,7 +100,7 @@
           "action_override_create": "string?",
           "ai_confidence_threshold": "string<decimal>",
           "allow_on_forms": "boolean?",
-          "association_source": "CustomObjectAssociationSourceEnum",
+          "association_source": "CustomObjectAssociationSourceEnum{direct,related,direct_and_related}",
           "association_source_fields": "array[AssociationSourceFieldRequest]?",
           "default_color": "string",
           "default_icon": "string",
@@ -115,7 +115,7 @@
           "meta": "any",
           "name": "string",
           "object_name": "string",
-          "object_type": "CustomObjectObjectTypeEnum",
+          "object_type": "CustomObjectObjectTypeEnum{pipeline,standard}",
           "pipeline": "CustomObjectPipelineRequest",
           "quick_filtering_enabled": "boolean?",
           "reasons_disqualified": "array[EmbededFieldOptionRequest]",
@@ -150,9 +150,9 @@
           "category": "string<uuid>",
           "decimal_options": "FieldDecimalOptionRequest?",
           "description": "string",
-          "description_visibility": "DescriptionVisibilityEnum",
+          "description_visibility": "DescriptionVisibilityEnum{all,create_only,settings_only}",
           "display_name": "string",
-          "field_type": "FieldTypeEnum",
+          "field_type": "FieldTypeEnum{checkbox,checkboxes,choices,date,datetime,decimal,dropdown,dynamictags,email,files,integer,longtext,money,phonenumber,radio,rating,relationship,selector,status,team_selector,text,timezone,wysiwyg,yesnomaybe}",
           "is_deletable": "boolean",
           "is_hidden": "boolean",
           "is_hideable": "boolean",
@@ -224,7 +224,7 @@
       "request_body": {
         "present": true,
         "properties": {
-          "archived_conflict": "oneOf(ArchivedConflictEnum,NullEnum)",
+          "archived_conflict": "oneOf(ArchivedConflictEnum{overwrite},NullEnum)",
           "fields": "array[FieldRequest]"
         },
         "required": [],
@@ -232,6 +232,18 @@
       },
       "request_required": false,
       "request_schema": "PatchedEntityRecordUpdateRequest",
+      "responses": [
+        "200",
+        "400"
+      ],
+      "surface": "records"
+    },
+    "PATCH /api/records/{object_identifier}/{entity_id}/unarchive": {
+      "label": "unarchive record",
+      "operation_id": "records_unarchive_partial_update",
+      "present": true,
+      "query_params": [],
+      "request_schema": null,
       "responses": [
         "200",
         "400"
@@ -278,7 +290,7 @@
           "custom_object_id": "string<uuid>?",
           "debug_next_n_executions": "integer",
           "error_notification_email": "string<email>?",
-          "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum",
+          "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum{error,warning,info}",
           "folder_id": "string<uuid>",
           "id": "string<uuid>?",
           "last_revision": "integer",
@@ -288,7 +300,7 @@
           "steps": "array[WriteStepRequest] (writeOnly)",
           "trigger_throttle_seconds": "number<double>",
           "triggers": "array[WriteTriggerRequest] (writeOnly)",
-          "type": "AutomationTypeEnum",
+          "type": "AutomationTypeEnum{record_based,global}",
           "user_description": "string"
         },
         "required": [
@@ -316,7 +328,7 @@
           "action_override_create": "string?",
           "ai_confidence_threshold": "string<decimal>",
           "allow_on_forms": "boolean?",
-          "association_source": "CustomObjectAssociationSourceEnum",
+          "association_source": "CustomObjectAssociationSourceEnum{direct,related,direct_and_related}",
           "association_source_fields": "array[AssociationSourceFieldRequest]?",
           "default_color": "string",
           "default_icon": "string",
@@ -331,7 +343,7 @@
           "meta": "any",
           "name": "string",
           "object_name": "string",
-          "object_type": "CustomObjectObjectTypeEnum",
+          "object_type": "CustomObjectObjectTypeEnum{pipeline,standard}",
           "pipeline": "CustomObjectPipelineRequest",
           "quick_filtering_enabled": "boolean?",
           "reasons_disqualified": "array[EmbededFieldOptionRequest]",
@@ -356,6 +368,30 @@
       ],
       "surface": "objects"
     },
+    "POST /api/custom-objects/{object_pk}/bulk-archive-entity-record": {
+      "label": "archive record",
+      "operation_id": "custom_objects_bulk_archive_entity_record_create",
+      "present": true,
+      "query_params": [],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "bytes_end_index": "integer?",
+          "bytes_start_index": "integer?",
+          "entity_records_set_key": "string?",
+          "record_ids": "array[string<uuid>]?",
+          "send_email_notification": "boolean"
+        },
+        "required": [],
+        "type": "object"
+      },
+      "request_required": false,
+      "request_schema": "BulkArchiveEntityRecordRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "records"
+    },
     "POST /api/custom-objects/{object_pk}/bulk-change-field-value": {
       "label": "bulk change field value",
       "operation_id": "custom_objects_bulk_change_field_value_create",
@@ -368,7 +404,7 @@
           "bytes_start_index": "integer?",
           "entity_records_set_key": "string?",
           "field_id": "string",
-          "field_resolution": "DestinationVariableResolutionEnum",
+          "field_resolution": "DestinationVariableResolutionEnum{overwrite,add_only,remove_only,update_if_blank,overwrite_except_null}",
           "field_value": "object?",
           "record_ids": "array[string<uuid>]?",
           "send_email_notification": "boolean",
@@ -428,9 +464,9 @@
           "category": "string<uuid>",
           "decimal_options": "FieldDecimalOptionRequest?",
           "description": "string",
-          "description_visibility": "DescriptionVisibilityEnum",
+          "description_visibility": "DescriptionVisibilityEnum{all,create_only,settings_only}",
           "display_name": "string",
-          "field_type": "FieldTypeEnum",
+          "field_type": "FieldTypeEnum{checkbox,checkboxes,choices,date,datetime,decimal,dropdown,dynamictags,email,files,integer,longtext,money,phonenumber,radio,rating,relationship,selector,status,team_selector,text,timezone,wysiwyg,yesnomaybe}",
           "is_deletable": "boolean",
           "is_hidden": "boolean",
           "is_hideable": "boolean",
@@ -502,7 +538,7 @@
           "name": "string",
           "order": "integer",
           "percentage_chance_to_close": "integer?",
-          "status": "oneOf(PipelineStageStatusEnum,NullEnum)"
+          "status": "oneOf(PipelineStageStatusEnum{open,won,lost,disqualified},NullEnum)"
         },
         "required": [
           "name"
@@ -613,7 +649,7 @@
           "name": "string",
           "order": "integer",
           "percentage_chance_to_close": "integer?",
-          "status": "PipelineStageStatusEnum"
+          "status": "PipelineStageStatusEnum{open,won,lost,disqualified}"
         },
         "required": [
           "name",
@@ -638,7 +674,7 @@
         "present": true,
         "properties": {
           "fields": "array[FieldRequest]",
-          "unarchive": "oneOf(UnarchiveEnum,NullEnum)"
+          "unarchive": "oneOf(UnarchiveEnum{prompt,unarchive,overwrite},NullEnum)"
         },
         "required": [
           "fields"
@@ -664,8 +700,8 @@
         "present": true,
         "properties": {
           "lookup_value": "string",
-          "oncreate_unarchive": "oneOf(OncreateUnarchiveEnum,NullEnum)",
-          "onupdate_archived_conflict": "oneOf(OnupdateArchivedConflictEnum,NullEnum)"
+          "oncreate_unarchive": "oneOf(OncreateUnarchiveEnum{prompt,unarchive,overwrite},NullEnum)",
+          "onupdate_archived_conflict": "oneOf(OnupdateArchivedConflictEnum{overwrite},NullEnum)"
         },
         "required": [
           "lookup_value"
@@ -723,7 +759,7 @@
           "custom_object_id": "string<uuid>?",
           "debug_next_n_executions": "integer",
           "error_notification_email": "string<email>?",
-          "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum",
+          "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum{error,warning,info}",
           "folder_id": "string<uuid>",
           "id": "string<uuid>?",
           "last_revision": "integer",
@@ -733,7 +769,7 @@
           "steps": "array[WriteStepRequest] (writeOnly)",
           "trigger_throttle_seconds": "number<double>",
           "triggers": "array[WriteTriggerRequest] (writeOnly)",
-          "type": "AutomationTypeEnum",
+          "type": "AutomationTypeEnum{record_based,global}",
           "user_description": "string"
         },
         "required": [
@@ -757,7 +793,7 @@
         "custom_object_id": "string<uuid>?",
         "debug_next_n_executions": "integer",
         "error_notification_email": "string<email>?",
-        "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum",
+        "error_notification_severity_level": "AutomationNotificationSeverityLevelEnum{error,warning,info}",
         "folder_id": "string<uuid>",
         "id": "string<uuid>?",
         "last_revision": "integer",
@@ -767,7 +803,7 @@
         "steps": "array[WriteStepRequest] (writeOnly)",
         "trigger_throttle_seconds": "number<double>",
         "triggers": "array[WriteTriggerRequest] (writeOnly)",
-        "type": "AutomationTypeEnum",
+        "type": "AutomationTypeEnum{record_based,global}",
         "user_description": "string"
       },
       "required": [
@@ -799,7 +835,7 @@
         "action_modify_related_entities_automation": "WriteActionModifyRelatedEntitiesAutomationRequest?",
         "action_notify_member_via_email": "WriteActionNotifyMemberViaEmailRequest?",
         "action_notify_member_via_text": "ActionNotifyMemberViaTextRequest?",
-        "action_on_failure": "ActionOnFailureEnum",
+        "action_on_failure": "ActionOnFailureEnum{notify_continue,notify_pause,silent_continue}",
         "action_plugin_code_step": "ActionPluginCodeStepRequest?",
         "action_request_info_via_text": "WriteActionRequestInfoViaTextRequest?",
         "action_schedule_activity": "ActionScheduleActivityRequest?",
@@ -811,16 +847,16 @@
         "action_start_automation": "WriteActionStartAutomationRequest?",
         "action_update_pipeline_status": "WriteActionUpdatePipelineStatusRequest?",
         "action_update_variable": "ActionUpdateVariableRequest?",
-        "continue_with_branch": "oneOf(ContinueWithBranchEnum,NullEnum)",
+        "continue_with_branch": "oneOf(ContinueWithBranchEnum{yes,no},NullEnum)",
         "description": "string",
-        "error_notification_severity_level": "WriteStepErrorNotificationSeverityLevelEnum",
+        "error_notification_severity_level": "WriteStepErrorNotificationSeverityLevelEnum{error,warning,info,inherit}",
         "is_branch_group_initiator": "boolean",
         "order": "integer",
         "should_skip_execution": "boolean",
         "step_condition": "WriteStepConditionRequest?",
         "step_delay": "WriteStepDelayRequest?",
         "step_goal": "WriteStepGoalRequest?",
-        "step_type": "AutomationStepTypeEnum",
+        "step_type": "AutomationStepTypeEnum{archive_record,assign_team_member,audio_transcription,call_llm,change_field_value,change_tags,code_step,condition,create_related_entity,delay,delete_scheduled_activity,file_content_extraction,goal,go_to_automation_step,http_request,initialize_variable,math_operator,modify_automation,modify_related_entities,modify_related_entities_automation,notify_member_via_email,notify_member_via_text,plugin_code_step,request_info_via_text,schedule_activity,search_records,send_email,send_related_contact_email,send_related_contact_text,send_text,start_automation,stop_execution,update_pipeline_status,update_variable,noop,branch,merge_branches}",
         "user_description": "string"
       },
       "required": [
@@ -834,7 +870,7 @@
       "present": true,
       "properties": {
         "automation_variable_name": "string?",
-        "record_source": "RecordSourceEnum",
+        "record_source": "RecordSourceEnum{this_record,related_object_field,automation_variable,global}",
         "relationship_field_ids": "array[string<uuid>]?"
       },
       "required": [],
@@ -850,7 +886,7 @@
         "field_id": "string<uuid>?",
         "related_field_id": "string<uuid>?",
         "role_id": "string<uuid>?",
-        "type": "AssignTeamMemberWriteTypeEnum"
+        "type": "AssignTeamMemberWriteTypeEnum{team_member,round_robin_role,round_robin_team_members,round_robin_all,team_selector_field,related_team_selector_field}"
       },
       "required": [
         "type"
@@ -863,12 +899,12 @@
       "present": true,
       "properties": {
         "business_plugin_app_id": "string<uuid>?",
-        "data_type": "MediaContentDataTypeEnum",
+        "data_type": "MediaContentDataTypeEnum{image,text,doc,audio,video,message}",
         "destinations": "array[ActionDestinationRequest]",
         "html_prompt": "string?",
         "input_field": "string<uuid>?",
         "is_advanced": "boolean",
-        "merge_field_validation": "MergeFieldValidationEnum",
+        "merge_field_validation": "MergeFieldValidationEnum{error_if_required,default_to_unknown,blank}",
         "model_name": "string",
         "prompt": "string"
       },
@@ -903,7 +939,7 @@
       "properties": {
         "inputs": "array[CodeStepInputRequest]",
         "outputs": "array[CodeStepOutputRequest]",
-        "runtime": "RuntimeEnum",
+        "runtime": "RuntimeEnum{python-3-13,python-3-12}",
         "script": "string",
         "secrets": "array[CodeStepSecretRequest]"
       },
@@ -917,22 +953,22 @@
       "label": "step config: create_related_entity",
       "present": true,
       "properties": {
-        "archived_record_found_action": "ArchivedRecordFoundActionEnum",
+        "archived_record_found_action": "ArchivedRecordFoundActionEnum{unarchive,overwrite,create_append_suffix,error_do_not_create}",
         "automations_to_start": "array[string<uuid>]",
         "context_entity_field": "string<uuid>?",
-        "context_entity_field_resolution": "oneOf(ContextEntityFieldResolutionEnum,NullEnum)",
-        "existing_record_found_action": "ExistingRecordFoundActionEnum",
+        "context_entity_field_resolution": "oneOf(ContextEntityFieldResolutionEnum{overwrite,update_if_blank,add_only},NullEnum)",
+        "existing_record_found_action": "ExistingRecordFoundActionEnum{create_append_suffix,error_do_not_create}",
         "new_entity_name": "string",
         "new_entity_name_html": "string",
         "new_entity_owner_employees": "array[string<uuid>]",
         "new_entity_owner_role": "string<uuid>?",
-        "new_entity_owner_sub_type": "oneOf(NewEntityOwnerSubTypeEnum,NullEnum)",
-        "new_entity_owner_type": "NewEntityOwnerTypeEnum",
+        "new_entity_owner_sub_type": "oneOf(NewEntityOwnerSubTypeEnum{round_robin_any_role,round_robin_specific_role,round_robin_choose_team_members,specific_team_member,assign_from_variable},NullEnum)",
+        "new_entity_owner_type": "NewEntityOwnerTypeEnum{assign_from_context_record,newly_assigned_owner}",
         "new_entity_owner_variable": "string?",
         "new_entity_stage": "string<uuid>?",
         "target_custom_object": "string<uuid>",
         "target_variable": "string?",
-        "variable_field_resolution": "oneOf(VariableFieldResolutionEnum,NullEnum)"
+        "variable_field_resolution": "oneOf(VariableFieldResolutionEnum{overwrite,update_if_blank,add_only},NullEnum)"
       },
       "required": [
         "new_entity_name",
@@ -948,12 +984,12 @@
       "present": true,
       "properties": {
         "business_plugin_app_id": "string<uuid>?",
-        "data_type": "MediaContentDataTypeEnum",
+        "data_type": "MediaContentDataTypeEnum{image,text,doc,audio,video,message}",
         "destinations": "array[ActionDestinationRequest]",
         "html_prompt": "string?",
         "input_field": "string<uuid>?",
         "is_advanced": "boolean",
-        "merge_field_validation": "MergeFieldValidationEnum",
+        "merge_field_validation": "MergeFieldValidationEnum{error_if_required,default_to_unknown,blank}",
         "model_name": "string",
         "prompt": "string"
       },
@@ -980,7 +1016,7 @@
       "label": "step config: initialize_variable",
       "present": true,
       "properties": {
-        "array_aggregation_mode": "oneOf(ArrayAggregationModeEnum,NullEnum)",
+        "array_aggregation_mode": "oneOf(ArrayAggregationModeEnum{add_first_non_blank,add_all},NullEnum)",
         "deduplicate_array": "boolean",
         "is_required": "boolean",
         "sources": "array[VariableSourceRequest]",
@@ -999,8 +1035,8 @@
       "properties": {
         "field_id": "string<uuid>? (writeOnly)",
         "simple_builder_arguments": "array[BuilderArgumentRequest]",
-        "subtype": "SubtypeEnum",
-        "type": "ActionMathOperatorTypeEnum",
+        "subtype": "SubtypeEnum{multiplication,addition}",
+        "type": "ActionMathOperatorTypeEnum{simple_builder}",
         "variable": "VariableRequest?"
       },
       "required": [
@@ -1018,7 +1054,7 @@
         "fields_to_modify": "array[WriteRelatedEntityFieldToModifyRequest]",
         "id": "string<uuid>",
         "object_to_modify": "string<uuid>",
-        "record_source": "WriteActionModifyRelatedEntitiesRecordSourceEnum",
+        "record_source": "WriteActionModifyRelatedEntitiesRecordSourceEnum{related_object_field,automation_variable}",
         "record_source_variables": "array[string]"
       },
       "required": [
@@ -1085,10 +1121,10 @@
       "properties": {
         "custom_object": "_CustomObjectRequest",
         "destination_variable": "_VariableRequest",
-        "destination_variable_resolution": "DestinationVariableResolutionEnum",
+        "destination_variable_resolution": "DestinationVariableResolutionEnum{overwrite,add_only,remove_only,update_if_blank,overwrite_except_null}",
         "filter_config": "any?",
         "filter_groups": "array[_FilterGroupRequest]?",
-        "filter_type": "SearchRecordsFilterTypeEnum"
+        "filter_type": "SearchRecordsFilterTypeEnum{in_group,not_in_group,custom_filter,all_records}"
       },
       "required": [
         "custom_object",
@@ -1134,7 +1170,7 @@
         "automation_ids": "array[string<uuid>]",
         "automation_variable_name": "string?",
         "automation_variable_overrides": "array[AutomationVariableOverridesRequest]",
-        "record_source": "RecordSourceEnum",
+        "record_source": "RecordSourceEnum{this_record,related_object_field,automation_variable,global}",
         "relationship_field_ids": "array[string<uuid>]?",
         "resume_paused_automations": "boolean?"
       },
@@ -1151,7 +1187,7 @@
       "label": "step config: update_variable",
       "present": true,
       "properties": {
-        "array_aggregation_mode": "oneOf(ArrayAggregationModeEnum,NullEnum)",
+        "array_aggregation_mode": "oneOf(ArrayAggregationModeEnum{add_first_non_blank,add_all},NullEnum)",
         "deduplicate_array": "boolean",
         "is_required": "boolean",
         "sources": "array[VariableSourceRequest]",
@@ -1172,7 +1208,7 @@
         "group_ids": "array[string<uuid>]?",
         "llm_decision": "WriteLLMDecisionRequest?",
         "no_step_ids": "array[string<uuid>]?",
-        "type": "RecordFilterTypeEnum",
+        "type": "RecordFilterTypeEnum{in_group,not_in_group,custom_filter,llm_decision}",
         "yes_step_ids": "array[string<uuid>]?"
       },
       "required": [
@@ -1187,13 +1223,13 @@
       "properties": {
         "days": "integer",
         "days_specific_time": "DaysSpecificTimeRequest",
-        "duration_unit": "oneOf(DurationUnitEnum,NullEnum)",
+        "duration_unit": "oneOf(DurationUnitEnum{hours,minutes,days},NullEnum)",
         "hours": "integer",
         "minutes": "integer",
         "months": "integer",
         "skip_non_working_days": "boolean?",
         "time": "string<time>?",
-        "value_origin": "ValueOriginEnum",
+        "value_origin": "ValueOriginEnum{static,automation_variable}",
         "variable": "string?",
         "weeks": "integer",
         "years": "integer"
@@ -1207,12 +1243,12 @@
       "present": true,
       "properties": {
         "delay_amount": "integer?",
-        "delay_type": "oneOf(DurationUnitEnum,BlankEnum)",
+        "delay_type": "oneOf(DurationUnitEnum{hours,minutes,days},BlankEnum)",
         "specific_datetime": "string<date-time>?",
         "triggers": "array[any] (writeOnly)",
-        "value_origin": "oneOf(ValueOriginEnum,NullEnum)",
+        "value_origin": "oneOf(ValueOriginEnum{static,automation_variable},NullEnum)",
         "variable": "string?",
-        "wait_type": "WaitTypeEnum"
+        "wait_type": "WaitTypeEnum{never,delay,specific_datetime}"
       },
       "required": [
         "triggers",
@@ -1274,9 +1310,9 @@
       "properties": {
         "field_id": "string<uuid>",
         "fire_on_create": "boolean",
-        "from_match_mode": "FromMatchModeEnum",
+        "from_match_mode": "FromMatchModeEnum{any_including_blank,any_excluding_blank,blank,specific_value,values_added,values_removed,date_between,contains_any_of,contains_none_of}",
         "from_value": "any?",
-        "to_match_mode": "ToMatchModeEnum",
+        "to_match_mode": "ToMatchModeEnum{any_including_blank,any_excluding_blank,blank,specific_value,values_added,values_removed,date_between,contains_any_of,contains_none_of}",
         "to_value": "any?"
       },
       "required": [
@@ -1306,7 +1342,7 @@
       "label": "trigger config: new_entity_created",
       "present": true,
       "properties": {
-        "action": "WriteTriggerEntityCreatedActionEnum"
+        "action": "WriteTriggerEntityCreatedActionEnum{create_only,create_and_unarchive,unarchive_only}"
       },
       "required": [
         "action"
@@ -1318,12 +1354,12 @@
       "label": "trigger config: on_or_around_date",
       "present": true,
       "properties": {
-        "date_offset": "TriggerOnOrAroundDateOffsetEnum",
+        "date_offset": "TriggerOnOrAroundDateOffsetEnum{on_day,on_day_and_time,days_before,days_after}",
         "date_offset_days": "integer",
         "every_year": "boolean",
         "field_id": "string<uuid>",
-        "past_date_action": "oneOf(PastDateActionEnum,NullEnum)",
-        "period": "oneOf(PeriodEnum,BlankEnum,NullEnum)",
+        "past_date_action": "oneOf(PastDateActionEnum{proceed_down_met_path,proceed_down_not_met_path,wait_for_not_met_path_delay},NullEnum)",
+        "period": "oneOf(PeriodEnum{am,pm},BlankEnum,NullEnum)",
         "skip_non_working_days": "boolean?",
         "time": "string<time>?"
       },
@@ -1376,11 +1412,11 @@
       "label": "trigger config: webhook",
       "present": true,
       "properties": {
-        "content_type": "oneOf(ContentTypeEnum,NullEnum)",
+        "content_type": "oneOf(ContentTypeEnum{application/javascript,application/xml,application/xhtml+xml,application/json,application/x-www-form-urlencoded,text/plain,text/html,text/xml,text/csv},NullEnum)",
         "extract_raw_body_content": "boolean",
         "extract_url_query_string": "boolean",
         "extractors": "array[JSONValueExtractorRequest] (writeOnly)",
-        "http_method": "HttpMethodEnum",
+        "http_method": "HttpMethodEnum{GET,POST}",
         "name": "string",
         "sample_post_body": "string?"
       },

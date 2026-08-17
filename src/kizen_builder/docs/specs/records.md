@@ -77,6 +77,28 @@ Omit both to keep the server's default (conflict-raising) behavior.
 - **Blank cells on `update` are skipped**, not cleared — you can't null a field
   by leaving it empty.
 - **Contacts** are `client_client` here, like everywhere else.
+- **`PATCH /api/records/{object_identifier}/{entity_id}` silently ignores an
+  `archived` key.** `{"fields": [...], "archived": true}` returns 200 and
+  changes nothing — DRF drops undeclared body keys, and
+  `PatchedEntityRecordUpdateRequest` declares only `fields` and
+  `archived_conflict`. Confirmed live 2026-08-13: PATCHing a record with
+  `{"fields": [], "archived": true}` 200s, and the record is still 200 on a
+  direct `GET` and still present in search — nothing archived. The near-miss:
+  `archived_conflict` is a real property on this same endpoint, but it
+  governs what happens when an update collides with an already-archived
+  record's name — it does not archive anything. Use `records archive` /
+  `records unarchive` instead.
+- **`records delete` archives, it does not erase.** A record removed by
+  `DELETE /api/records/{object_identifier}/{entity_id}` 404s on a direct `GET`
+  and drops out of search, but its data survives. Confirmed live 2026-08-13:
+  deleting a record and then calling `records unarchive` directly on it (no
+  `upsert` involved) brings it back. Restoring the same record via `records
+  upsert --oncreate-unarchive unarchive` is expected to work too — it's the
+  same underlying state — but that path itself was not exercised live this
+  session; treat it as untested until it is. `records archive` reaches the
+  same state through the dedicated archive endpoint below; the two commands
+  exist because the API names them differently, not because they do
+  different things.
 
 ---
 
@@ -95,12 +117,16 @@ object are plain custom objects whose identifier is their api_name.
 | Search / list | `POST` | `/api/records/{object_identifier}/search` |
 | Create | `POST` | `/api/records/{object_identifier}/add` |
 | Update (partial) | `PATCH` | `/api/records/{object_identifier}/{entity_id}` |
-| Delete | `DELETE` | `/api/records/{object_identifier}/{entity_id}` |
+| Delete (archives) | `DELETE` | `/api/records/{object_identifier}/{entity_id}` |
 | Upsert | `POST` | `/api/records/{object_identifier}/upsert` |
 | Move between stages | `PATCH` | `/api/records/{object_identifier}/{entity_id}/move` |
+| Archive | `POST` | `/api/custom-objects/{object_uuid}/bulk-archive-entity-record` |
+| Unarchive | `PATCH` | `/api/records/{object_identifier}/{entity_id}/unarchive` |
 
 Search and list paginate via `page` / `page_size` query params — keep requesting
-until a short page comes back.
+until a short page comes back. Archive is the odd one out: it lives under
+`/api/custom-objects` and its path segment is the object's **UUID**, not its
+api_name — every other row above takes either.
 
 ## The `fields` write shape
 
@@ -136,6 +162,16 @@ list in a JSON spec to bypass that entirely.
 records. The `query` structure is the shared filter wire format —
 `kizen docs show filters`.
 
+`confirmed live 2026-08-13`: omitting `field_names` entirely returns **every**
+field on the object (17/17 field keys observed on a test object) — the
+server's own default is "everything," not "id + name." Matching is on field
+**api_name only**; a display label or a field UUID in `field_names` matches
+nothing (an all-bad list returns `"fields": {}`). An unrecognized api_name is
+**silently dropped, not rejected** — the request still returns `200` with
+that name simply absent from `fields`, so client-side validation before
+sending the request is the only way to catch a typo (`kizen records list
+--fields` does this).
+
 ## Bulk change field value (`records set-field`)
 
 `POST /api/custom-objects/{object_pk}/bulk-change-field-value` sets **one field
@@ -162,6 +198,37 @@ kizen records set-field <object> <uuid> [<uuid> …] --field X --value Y [--reso
 - Id-targeted only. The request also accepts `entity_records_set_key` for
   filter-targeted bulk ops, but that needs the separate
   `bulk-action-summary`/`bulk-action-progress` framework, which isn't wired up.
+
+## Archive / unarchive (`records archive` / `records unarchive`)
+
+`POST /api/custom-objects/{object_uuid}/bulk-archive-entity-record` is the
+operation the UI's Archive button performs. Same request family as
+`bulk-change-field-value` (`entity_records_set_key`/`bytes_start_index`/
+`bytes_end_index` for the filter-targeted bulk framework, unused here):
+
+```json
+{"record_ids": ["<record-uuid>", ...]}
+```
+
+```bash
+kizen records archive <object> <uuid> [<uuid> …]
+kizen records unarchive <object> <uuid> [<uuid> …]
+```
+
+- The response is `{"number_archived": N, "async": true}` — archiving is
+  asynchronous server-side. Confirmed live 2026-08-13: the change was already
+  visible in `search_records` well under 2s later, the same order of lag
+  `records set-field` shows.
+- The path segment is the object's **UUID**, not its api_name — unlike every
+  other records endpoint on this page.
+- `records unarchive` wraps `PATCH /api/records/{object_identifier}/{entity_id}/unarchive`
+  — the ordinary object identifier convention, and takes no request body.
+- **Confirmed live 2026-08-13: `DELETE /api/records/{object_identifier}/{entity_id}`
+  reaches the identical externally-observable state as this archive
+  endpoint** — 404 on a direct `GET`, absent from search, and restorable
+  through the same unarchive endpoint either way. `records delete` and
+  `records archive` are not different operations under the hood; `archive`
+  just names what actually happens.
 
 ## See also
 

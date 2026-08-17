@@ -8,6 +8,8 @@ apply_plan wiring for the new ``record`` / ``field_option`` kinds and the
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
 import respx
@@ -20,9 +22,11 @@ from kizen_builder.tools.planners.fields import (
     plan_remove_field_option,
 )
 from kizen_builder.tools.planners.records import (
+    plan_archive_records,
     plan_create_records,
     plan_delete_records,
     plan_set_field,
+    plan_unarchive_records,
     plan_update_records,
     plan_upsert_records,
 )
@@ -210,6 +214,48 @@ def test_delete_records_plan(patch_live_lookups):
 
 
 # ---------------------------------------------------------------------------
+# records — archive / unarchive
+#
+# `records delete` also archives (confirmed live 2026-08-13: a deleted
+# record 404s on GET, drops out of search, and is restorable through the
+# same unarchive endpoint used here) — `archive`/`unarchive` name that
+# operation directly instead of leaving it discoverable only by accident.
+# ---------------------------------------------------------------------------
+
+
+def test_archive_records_plan(patch_live_lookups):
+    plan = plan_archive_records(PATIENTS, ["a", "b"])
+    assert [op.action for op in plan.operations] == ["update", "update"]
+    assert [op.kind for op in plan.operations] == ["record_archive", "record_archive"]
+    assert [op.existing_uuid for op in plan.operations] == ["a", "b"]
+    # bulk-archive-entity-record lives under /api/custom-objects and takes
+    # the object's UUID, not its api_name — unlike plan_delete_records.
+    assert all(op.parent_object_uuid == PATIENTS_ID for op in plan.operations)
+    assert all("warning" in op.preview for op in plan.operations)
+
+
+def test_archive_records_rejects_empty_ids(patch_live_lookups):
+    with pytest.raises(PlanError, match="no record ids"):
+        plan_archive_records(PATIENTS, [])
+
+
+def test_unarchive_records_plan(patch_live_lookups):
+    plan = plan_unarchive_records(PATIENTS, ["a", "b"])
+    assert [op.action for op in plan.operations] == ["update", "update"]
+    assert [op.kind for op in plan.operations] == [
+        "record_unarchive",
+        "record_unarchive",
+    ]
+    assert [op.existing_uuid for op in plan.operations] == ["a", "b"]
+    assert all(op.parent_object_uuid == PATIENTS for op in plan.operations)
+
+
+def test_unarchive_records_rejects_empty_ids(patch_live_lookups):
+    with pytest.raises(PlanError, match="no record ids"):
+        plan_unarchive_records(PATIENTS, [])
+
+
+# ---------------------------------------------------------------------------
 # records — bulk set-field
 #
 # bulk-change-field-value's ``field_value`` takes the bare wire scalar, not
@@ -310,6 +356,30 @@ def test_apply_delete_record_deletes(patch_live_lookups):
     assert route.call_count == 1
     r = result.results[0]
     assert r.status == "ok" and r.action == "delete"
+
+
+@respx.mock
+def test_apply_archive_record_posts_bulk_archive_entity_record(patch_live_lookups):
+    route = respx.post(
+        f"{FAKE_BASE_URL}/api/custom-objects/{PATIENTS_ID}/bulk-archive-entity-record"
+    ).mock(return_value=httpx.Response(200, json={"number_archived": 1, "async": True}))
+    plan = plan_archive_records(PATIENTS, ["rec-9"])
+    result = plan_tools.apply_plan(plan)
+    assert route.call_count == 1
+    assert json.loads(route.calls.last.request.content) == {"record_ids": ["rec-9"]}
+    r = result.results[0]
+    assert r.status == "ok" and r.action == "update"
+
+
+@respx.mock
+def test_apply_unarchive_record_patches(patch_live_lookups):
+    route = respx.patch(f"{FAKE_BASE_URL}/api/records/{PATIENTS}/rec-9/unarchive").mock(
+        return_value=httpx.Response(200, json={"id": "rec-9"})
+    )
+    plan = plan_unarchive_records(PATIENTS, ["rec-9"])
+    result = plan_tools.apply_plan(plan)
+    assert route.call_count == 1
+    assert result.all_ok
 
 
 # ---------------------------------------------------------------------------

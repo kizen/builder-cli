@@ -10,12 +10,13 @@ OpenAPI schema and a live start).
 from __future__ import annotations
 
 import json
+import time
 
 import httpx
 import pytest
 import respx
 
-from kizen_builder.tools.automations import start_automation
+from kizen_builder.tools.automations import start_and_wait, start_automation
 from tests.conftest import FAKE_BASE_URL
 
 AUTO_ID = "1800a96e-fb22-4ec3-a912-ca1795744b7a"
@@ -203,3 +204,79 @@ def test_inactive_automation_errors_before_start():
         start_automation("global_test")
 
     assert not route.called
+
+
+# ---------------------------------------------------------------------------
+# start_and_wait — BCLI-021's composition of start_automation() +
+# wait_for_execution(), over the real (mocked) HTTP wire rather than the
+# tool-layer mocks test_cli.py uses, so the merge of the two dicts is
+# exercised against what each endpoint actually returns.
+# ---------------------------------------------------------------------------
+
+EXEC_BASE = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+
+
+@respx.mock
+def test_start_and_wait_false_returns_exactly_start_automations_result():
+    """wait=False: no status GET at all, and the return is exactly what
+    start_automation() itself returns — no new keys."""
+    _mock_automation(
+        api_name="form_submission", object_name="cd_activity", variables=[]
+    )
+    _start_route("form_submission")
+    exec_route = respx.get(f"{EXEC_BASE}/exec-123").mock(
+        return_value=httpx.Response(200, json={"id": "exec-123", "status": "active"})
+    )
+
+    direct = start_automation("form_submission", "rec-1")
+    started = start_and_wait("form_submission", "rec-1", wait=False)
+
+    assert started == direct
+    assert not exec_route.called
+
+
+@respx.mock
+def test_start_and_wait_merges_start_and_wait_results(monkeypatch):
+    """wait=True: start_automation()'s execution_id feeds wait_for_execution(),
+    and the merged dict keeps start's own keys (raw = the /start response,
+    not the execution GET) plus status/timed_out/polls from the wait."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    _mock_automation(
+        api_name="form_submission", object_name="cd_activity", variables=[]
+    )
+    _start_route("form_submission")
+    respx.get(f"{EXEC_BASE}/exec-123").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "exec-123", "status": "active"}),
+            httpx.Response(200, json={"id": "exec-123", "status": "completed"}),
+        ]
+    )
+
+    result = start_and_wait("form_submission", "rec-1", timeout=60.0, poll_interval=1.0)
+
+    assert result["execution_id"] == "exec-123"
+    assert result["record_id"] == "rec-1"
+    assert result["raw"] == {"execution": {"id": "exec-123"}}  # start's raw, unchanged
+    assert result["status"] == "completed"
+    assert result["timed_out"] is False
+    assert result["polls"] == 2
+
+
+@respx.mock
+def test_start_and_wait_passes_on_poll_through_to_wait_for_execution(monkeypatch):
+    """The on_poll callback BCLI-021's CLI layer needs for streaming reaches
+    wait_for_execution() unchanged — start_and_wait doesn't swallow it."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    _mock_automation(
+        api_name="form_submission", object_name="cd_activity", variables=[]
+    )
+    _start_route("form_submission")
+    respx.get(f"{EXEC_BASE}/exec-123").mock(
+        return_value=httpx.Response(200, json={"id": "exec-123", "status": "completed"})
+    )
+    seen = []
+
+    start_and_wait("form_submission", "rec-1", on_poll=seen.append)
+
+    assert len(seen) == 1
+    assert seen[0]["status"] == "completed"

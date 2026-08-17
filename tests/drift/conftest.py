@@ -53,14 +53,16 @@ def pytest_collection_modifyitems(config, items) -> None:
     """Skip — never error — when no drift environment is configured.
 
     Runs *after* the repo-root hook of the same name; that one only touches
-    `live`-marked tests, so the two don't interact.
+    `live`-marked tests, so the two don't interact. Keyed off the `drift`
+    marker, not the directory: `tests/drift/test_contracts.py` exercises the
+    extraction helpers with synthetic dicts and needs no environment, so it
+    carries no `drift` marker and is untouched by this gate.
     """
     if os.environ.get(PROFILE_ENV_VAR):
         return
     skip = pytest.mark.skip(reason=_SETUP_HELP)
-    here = os.path.dirname(__file__)
     for item in items:
-        if str(item.fspath).startswith(here):
+        if item.get_closest_marker("drift") is not None:
             item.add_marker(skip)
 
 

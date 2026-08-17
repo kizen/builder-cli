@@ -56,6 +56,8 @@ Kind = Literal[
     "activity_field_option",
     "stage",
     "record_move",
+    "record_archive",
+    "record_unarchive",
     "form",
     "form_field",
     "form_field_option",
@@ -491,6 +493,29 @@ def _execute(client: KizenClient, op: PlanOperation) -> Any:
             )
         return records_api.update_record(
             client, object_identifier, op.existing_uuid, op.payload.get("fields", [])
+        )
+
+    if op.kind == "record_archive":
+        # parent_object_uuid carries the object's UUID here, not the
+        # api_name — the bulk-archive-entity-record endpoint lives under
+        # /api/custom-objects, same convention as record_bulk_field_value.
+        if op.parent_object_uuid is None or op.existing_uuid is None:
+            raise PlanError(
+                f"record_archive op '{op.key}' missing object/record id — planning bug"
+            )
+        return records_api.archive_record(
+            client, op.parent_object_uuid, op.existing_uuid
+        )
+
+    if op.kind == "record_unarchive":
+        # parent_object_uuid carries the object_identifier (api_name or
+        # uuid) here, same convention as kind="record".
+        if op.parent_object_uuid is None or op.existing_uuid is None:
+            raise PlanError(
+                f"record_unarchive op '{op.key}' missing object/record id — planning bug"
+            )
+        return records_api.unarchive_record(
+            client, op.parent_object_uuid, op.existing_uuid
         )
 
     if op.kind == "automation":

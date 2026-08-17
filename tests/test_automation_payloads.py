@@ -1157,6 +1157,97 @@ def test_plan_update_strips_variable_ids(patch_live_lookups):
 
 
 # ---------------------------------------------------------------------------
+# `active`: preserve-on-omission (the regression the reporter hit)
+# ---------------------------------------------------------------------------
+
+
+def test_plan_update_omitted_active_preserves_live_active(patch_live_lookups):
+    """An update spec that says nothing about `active` must not deactivate a
+    running automation. `form_submission` is live `active: true`; the spec
+    below omits the key entirely — this is the exact shape the reporter
+    hit without realising it (First-Use Feedback §7/§9 row #12)."""
+    spec = {
+        "api_name": "form_submission",
+        "name": "Form Submission",
+        "type": "global",
+        "steps": [],
+    }
+    plan = plan_update_automation(spec)
+    (op,) = plan.operations
+    assert op.payload["active"] is True
+    # no live state was disturbed, so the preview shows a plain value
+    assert op.preview["active"] is True
+
+
+def test_plan_update_explicit_false_deactivates_and_preview_names_transition(
+    patch_live_lookups,
+):
+    """A spec that explicitly asks to turn a live-active automation off is a
+    legitimate request and still does it — but the preview must name it as a
+    transition, not a bare value, so `--dry-run` output is legible."""
+    spec = {
+        "api_name": "form_submission",
+        "name": "Form Submission",
+        "type": "global",
+        "active": False,
+        "steps": [],
+    }
+    plan = plan_update_automation(spec)
+    (op,) = plan.operations
+    assert op.payload["active"] is False
+    assert op.preview["active"] == "True → False (DEACTIVATES a live automation)"
+
+
+def test_plan_update_explicit_true_activates_and_preview_names_transition(
+    patch_live_lookups,
+):
+    """The mirror case: explicitly activating a live-inactive automation is
+    likewise shown as a transition. `test_two_code_steps` is live
+    `active: false`."""
+    spec = {
+        "api_name": "test_two_code_steps",
+        "name": "Test Two Code Steps",
+        "type": "global",
+        "active": True,
+        "steps": [],
+    }
+    plan = plan_update_automation(spec)
+    (op,) = plan.operations
+    assert op.payload["active"] is True
+    assert op.preview["active"] == "False → True (ACTIVATES an inactive automation)"
+
+
+def test_plan_update_active_matches_live_shows_plain_value(patch_live_lookups):
+    """When the resolved `active` equals the live value, the preview must not
+    raise a false alarm — a plain bool, not a transition string."""
+    spec = {
+        "api_name": "test_two_code_steps",
+        "name": "Test Two Code Steps",
+        "type": "global",
+        "active": False,
+        "steps": [],
+    }
+    plan = plan_update_automation(spec)
+    (op,) = plan.operations
+    assert op.preview["active"] is False
+
+
+def test_plan_create_omitted_active_defaults_false(patch_live_lookups):
+    """A create spec has no live state to preserve — an omitted `active`
+    keeps today's documented default of False."""
+    spec = {
+        "api_name": "brand_new_automation",
+        "name": "Brand New Automation",
+        "type": "global",
+        "steps": [],
+    }
+    plan = plan_create_automation(spec)
+    (op,) = plan.operations
+    assert op.payload["active"] is False
+    assert op.preview["active"] is False
+
+
+# ---------------------------------------------------------------------------
 # condition filter_config: JSON spec rendering + raw normalization
 # ---------------------------------------------------------------------------
 

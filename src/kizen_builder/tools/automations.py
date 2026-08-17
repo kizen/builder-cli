@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import contextlib
+import time
+from collections.abc import Callable
 from typing import Any
 
 from kizen_builder.api import automations as auto_api
@@ -578,18 +580,41 @@ def start_automation(
     }
 
 
-def get_execution(execution_id: str) -> dict[str, Any]:
-    """Return details for one automation execution."""
-    config = load_env_config()
-    with KizenClient(config) as client:
-        raw = auto_api.get_execution(client, execution_id)
+# ReadEntityAutomationExecutionStatusEnum, confirmed live 2026-08-13. The
+# three paused_* variants are their own outcome (halted, resumable), not a
+# failure and not "still running" — see wait_for_execution below.
+_TERMINAL_EXECUTION_STATUSES = frozenset(
+    {
+        "completed",
+        "failed",
+        "cancelled",
+        "paused",
+        "paused_by_automation",
+        "paused_by_failure",
+    }
+)
+PAUSED_EXECUTION_STATUSES = frozenset(
+    {"paused", "paused_by_automation", "paused_by_failure"}
+)
+# A transient poll failure (network blip, 5xx) is tolerated this many times
+# in a row before wait_for_execution gives up and re-raises. Public (no
+# leading underscore) because cli/automations.py's _RunStream reuses it for
+# the same tolerance on its own get_execution_history() polling.
+MAX_CONSECUTIVE_POLL_ERRORS = 3
+
+
+def _summarize_execution(config_name: str, raw: dict[str, Any]) -> dict[str, Any]:
+    """The GET .../automation-execution/{id} -> summary-dict mapping shared by
+    get_execution() and wait_for_execution(), so both return the same keys.
+
+    The API has no started_at/finished_at; it exposes `created` (when the
+    execution began) and `updated` (last state change ≈ finish for a
+    completed run). Mirror list_executions, which maps started_at ← created.
+    """
     record = raw.get("record") or {}
     automation = raw.get("automation") or {}
-    # The API has no started_at/finished_at; it exposes `created` (when the
-    # execution began) and `updated` (last state change ≈ finish for a
-    # completed run). Mirror list_executions, which maps started_at ← created.
-    return {
-        "env": config.name,
+    summary: dict[str, Any] = {
+        "env": config_name,
         "execution_id": raw.get("id"),
         "status": raw.get("status"),
         "automation_api_name": automation.get("api_name")
@@ -598,6 +623,159 @@ def get_execution(execution_id: str) -> dict[str, Any]:
         "started_at": raw.get("created"),
         "finished_at": raw.get("updated"),
         "raw": raw,
+    }
+    # Only present on a halted execution (confirmed live on paused_by_failure,
+    # 2026-08-13): the exact step it stopped on and whether it branches. Add
+    # it only when the API actually sends it, so a normal (non-paused) read's
+    # summary shape is unchanged.
+    paused_on_step = raw.get("paused_on_step")
+    if paused_on_step:
+        summary["paused_on_step"] = paused_on_step
+    return summary
+
+
+def get_execution(execution_id: str) -> dict[str, Any]:
+    """Return details for one automation execution."""
+    config = load_env_config()
+    with KizenClient(config) as client:
+        raw = auto_api.get_execution(client, execution_id)
+    return _summarize_execution(config.name, raw)
+
+
+def wait_for_execution(
+    execution_id: str,
+    *,
+    timeout: float = 900.0,
+    poll_interval: float = 5.0,
+    on_poll: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
+    """Poll one execution until it reaches a terminal status.
+
+    Modeled on `tools/smart_connectors/authoring/sample.py`'s
+    `generate_output_sample`: one `KizenClient` held open for the whole loop
+    (not re-opened per poll — that would also re-run `load_env_config()` on
+    every poll), `deadline = time.monotonic() + timeout`, `time.sleep
+    (poll_interval)` between polls. Returns `timed_out: bool` rather than
+    raising on timeout — the CLI layer decides the exit code.
+
+    `timeout=0` means no deadline (poll until terminal); a negative value is
+    a usage error, as is a non-positive `poll_interval` (zero would spin a
+    real hot loop against the API).
+
+    Terminal detection is an **allowlist** — `_TERMINAL_EXECUTION_STATUSES`,
+    drawn from the live `ReadEntityAutomationExecutionStatusEnum` schema —
+    not a blocklist of statuses this repo happens to have seen. An
+    unrecognized status keeps polling rather than being treated as done or
+    stuck: on a real 9-step chain, queue latency between steps measured ~60s
+    to over 10 minutes, and a naive wait that ended on any unfamiliar status
+    wrongly declared two runs "stalled" that later completed fine. Reproducing
+    that bug here — by only stopping on values already known-terminal — is
+    exactly what this loop is for.
+
+    A poll that raises `KizenAPIError` for a transient reason (a network
+    error, or a 5xx) is retried rather than aborting the wait outright — up
+    to `MAX_CONSECUTIVE_POLL_ERRORS` in a row — so a single dropped
+    connection over up to ~180 polls doesn't read as "the run failed" one
+    layer below the bug this item exists to fix. A 4xx (e.g. the execution_id
+    is wrong) is not transient and is raised immediately.
+
+    `on_poll`, if given, is called once per successful poll (including the
+    first, before the loop even starts waiting) with the same summary shape
+    `get_execution()` returns, plus `polls` — the running poll count. This is
+    the one hook BCLI-021 needed to stream step status and logs while a wait
+    is in progress; it does not change the deadline math, the terminal-status
+    allowlist, or the return shape above. Default `None` is a no-op, so an
+    existing caller (`runs view --wait`) that never passes it is unaffected.
+    An `on_poll` that raises is not caught here — a raising callback aborts
+    the wait, the same as a non-transient error from this loop's own poll
+    would. `_RunStream` (`cli/automations.py`), the one real caller today,
+    is the one responsible for tolerating its own transient failures before
+    they ever reach this point, using the same retry shape as the poll above.
+    """
+    if timeout < 0:
+        raise ValueError(f"timeout must be >= 0 (0 = no deadline), got {timeout!r}")
+    if poll_interval <= 0:
+        raise ValueError(f"poll_interval must be > 0, got {poll_interval!r}")
+
+    config = load_env_config()
+    with KizenClient(config) as client:
+        raw = auto_api.get_execution(client, execution_id)
+        deadline = None if timeout == 0 else time.monotonic() + timeout
+        polls = 1
+        consecutive_errors = 0
+        if on_poll is not None:
+            on_poll({**_summarize_execution(config.name, raw), "polls": polls})
+        while raw.get("status") not in _TERMINAL_EXECUTION_STATUSES:
+            if deadline is not None and time.monotonic() >= deadline:
+                break
+            time.sleep(poll_interval)
+            try:
+                raw = auto_api.get_execution(client, execution_id)
+            except KizenAPIError as exc:
+                if exc.status_code and exc.status_code < 500:
+                    raise
+                consecutive_errors += 1
+                if consecutive_errors > MAX_CONSECUTIVE_POLL_ERRORS:
+                    raise
+                continue
+            consecutive_errors = 0
+            polls += 1
+            if on_poll is not None:
+                on_poll({**_summarize_execution(config.name, raw), "polls": polls})
+
+    summary = _summarize_execution(config.name, raw)
+    summary["timed_out"] = raw.get("status") not in _TERMINAL_EXECUTION_STATUSES
+    summary["polls"] = polls
+    return summary
+
+
+def start_and_wait(
+    api_name: str,
+    record_id: str | None = None,
+    *,
+    client_id: str | None = None,
+    variables: dict[str, Any] | None = None,
+    wait: bool = True,
+    timeout: float = 900.0,
+    poll_interval: float = 5.0,
+    on_poll: Callable[[dict[str, Any]], None] | None = None,
+) -> dict[str, Any]:
+    """Trigger an automation and, unless ``wait=False``, block until its
+    execution reaches a terminal status — `start_automation()` and
+    `wait_for_execution()` composed, not a third poll loop.
+
+    ``wait=False`` returns exactly `start_automation()`'s dict, unchanged
+    (the no-`--wait` byte-for-byte requirement `cli/automations.py` relies
+    on). ``wait=True`` adds `status`, `timed_out`, and `polls` from
+    `wait_for_execution()`'s summary on top of `start_automation()`'s own
+    keys (`execution_id`, `record_id`, `client_id`, `variable_overrides`,
+    `raw`) — `raw` stays the `/start` response, not overwritten by the
+    execution GET's `raw`, so callers keep both without a naming collision.
+    """
+    result = start_automation(
+        api_name, record_id, client_id=client_id, variables=variables
+    )
+    if not wait:
+        return result
+
+    execution_id = result.get("execution_id")
+    if not execution_id:
+        # Started, but the response carried no execution id (see
+        # start_automation's own "no execution ID in response" fallback) —
+        # nothing to wait on.
+        return result
+
+    summary = wait_for_execution(
+        execution_id,
+        timeout=timeout,
+        poll_interval=poll_interval,
+        on_poll=on_poll,
+    )
+    return {
+        **result,
+        "status": summary.get("status"),
+        "timed_out": summary.get("timed_out"),
+        "polls": summary.get("polls"),
     }
 
 
@@ -646,6 +824,11 @@ def get_execution_history(execution_id: str) -> list[dict[str, Any]]:
         source = trigger if trigger else step
         out.append(
             {
+                # The history row's own id — needed to call `runs debug-step
+                # --history` on it. Previously dropped, so that flag's own
+                # help text ("from `runs view`") pointed at a value `runs
+                # view` had no way to actually surface.
+                "id": e.get("id"),
                 "kind": "trigger" if trigger else "step",
                 "type": source.get("type"),
                 "description": source.get("description"),

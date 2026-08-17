@@ -1,0 +1,9 @@
+{
+  "api_name": "service_ticket",
+  "name": "Service Tickets",
+  "entity_name": "Service Ticket",
+  "description": "A field-service work order. The worked example's primary object.",
+  "categories": [
+    { "api_name": "ticket_details", "name": "Ticket Details" }
+  ]
+}

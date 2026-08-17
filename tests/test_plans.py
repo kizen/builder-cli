@@ -5,6 +5,7 @@ from __future__ import annotations
 import httpx
 import respx
 
+from kizen_builder.cli._mutations import _enrich_known_choice_failures
 from kizen_builder.tools import plans as plan_tools
 from kizen_builder.tools.plans import Plan, PlanOperation
 from tests.conftest import FAKE_BASE_URL
@@ -18,6 +19,18 @@ def _field_op(**overrides) -> PlanOperation:
         "preview": {"env": "testenv", "api_name": "total"},
         "payload": {"name": "total", "display_name": "Total", "field_type": "money"},
         "parent_object_uuid": "11111111-1111-4111-8111-111111111111",
+    }
+    base.update(overrides)
+    return PlanOperation(**base)
+
+
+def _automation_op(**overrides) -> PlanOperation:
+    base = {
+        "action": "create",
+        "kind": "automation",
+        "key": "onboarding_flow",
+        "preview": {"env": "testenv"},
+        "payload": {"name": "onboarding flow"},
     }
     base.update(overrides)
     return PlanOperation(**base)
@@ -65,6 +78,93 @@ def test_apply_failure_is_recorded_not_raised():
     assert r.status == "failed"
     assert "nope" in (r.message or "")
     assert not result.all_ok
+
+
+@respx.mock
+def test_known_enum_choices_enrich_a_matching_failure():
+    """BCLI-015: a real 400 whose message matches DRF's "not a valid choice"
+    shape, for a field this repo has recorded knowledge of, gets that
+    knowledge appended once `_enrich_known_choice_failures` (the exact call
+    `cli/_mutations.py::_run_mutation` makes on every failed automation op)
+    runs over the result."""
+    body = {
+        "step_assign_owner": {
+            "action_create_related_entity": {
+                "new_entity_owner_type": ['"bogus" is not a valid choice.'],
+            },
+        },
+    }
+    respx.post(f"{FAKE_BASE_URL}/api/automation2/automations").mock(
+        return_value=httpx.Response(400, json=body)
+    )
+    plan = Plan.build(env="testenv", summary="test", operations=[_automation_op()])
+
+    result = plan_tools.apply_plan(plan)
+    _enrich_known_choice_failures(result)
+
+    (r,) = result.results
+    assert r.status == "failed"
+    assert "assign_from_context_record" in (r.message or "")
+    assert "newly_assigned_owner" in (r.message or "")
+
+
+@respx.mock
+def test_known_enum_choices_enrich_every_match_in_a_multi_field_failure():
+    """A single 400 can reject several fields at once (seen live: a create's
+    body failed on `new_entity_name`, `new_entity_name_html`, and
+    `new_entity_owner_type` together). If more than one rejected field has a
+    registry entry, every match must be appended, not just the first found."""
+    body = {
+        "step_assign_owner": {
+            "action_create_related_entity": {
+                "new_entity_owner_type": ['"bogus" is not a valid choice.'],
+            },
+        },
+        "step_notify": {
+            "action_notify_member_via_text": {
+                "team_member": {"type": ['"manager" is not a valid choice.']},
+            },
+        },
+    }
+    respx.post(f"{FAKE_BASE_URL}/api/automation2/automations").mock(
+        return_value=httpx.Response(400, json=body)
+    )
+    plan = Plan.build(env="testenv", summary="test", operations=[_automation_op()])
+
+    result = plan_tools.apply_plan(plan)
+    _enrich_known_choice_failures(result)
+
+    (r,) = result.results
+    assert "assign_from_context_record" in (r.message or "")
+    assert "newly_assigned_owner" in (r.message or "")
+    assert "employee" in (r.message or "")
+
+
+@respx.mock
+def test_known_enum_choices_leaves_an_unregistered_field_unchanged():
+    """A 400 for a field with no registry entry passes through completely
+    unchanged — the failure mode for "we don't know this one" is silence,
+    not a crash or a misleading guess."""
+    body = {
+        "step_send_message": {
+            "action_send_email": {
+                "subject": ["This field is required."],
+            },
+        },
+    }
+    respx.post(f"{FAKE_BASE_URL}/api/automation2/automations").mock(
+        return_value=httpx.Response(400, json=body)
+    )
+    plan = Plan.build(env="testenv", summary="test", operations=[_automation_op()])
+
+    result = plan_tools.apply_plan(plan)
+    original_message = result.results[0].message
+
+    _enrich_known_choice_failures(result)  # must not raise
+
+    (r,) = result.results
+    assert r.status == "failed"
+    assert r.message == original_message
 
 
 @respx.mock

@@ -3,10 +3,16 @@
 from __future__ import annotations
 
 import json
+import time
 
+import httpx
+import pytest
+import respx
+from rich.console import Console
 from typer.testing import CliRunner
 
 import kizen_builder.cli as cli
+from kizen_builder.cli import objects as objects_cli
 from kizen_builder.tools import automations as auto_tools
 from kizen_builder.tools import forms as form_tools
 from kizen_builder.tools import objects as obj_tools
@@ -17,7 +23,8 @@ from kizen_builder.tools.planners import automations as auto_planners
 from kizen_builder.tools.planners import fields as field_planners
 from kizen_builder.tools.planners import forms as form_planners
 from kizen_builder.tools.planners import objects as object_planners
-from tests.conftest import load_fixture
+from kizen_builder.tools.planners import records as record_planners
+from tests.conftest import FAKE_BASE_URL, load_fixture
 
 runner = CliRunner()
 
@@ -57,6 +64,265 @@ def test_objects_list_table(monkeypatch):
     assert result.exit_code == 0
     assert "invoice" in result.stdout
     assert "Invoices" in result.stdout
+
+
+def _fake_object_with_options():
+    # Real object/category/field/option ids and labels from the `encounters`
+    # object in the pinned `cli-testing` sandbox (see Verification) — two
+    # dropdown fields with 11 options each, plus a long-api_name text field
+    # and a relationship field with a long target, so the table's natural
+    # width meaningfully exceeds the console's fixed 220 columns and this
+    # test actually exercises the width-pressure column-collapse regression,
+    # not just "does an options column exist."
+    return {
+        "env": "testenv",
+        "id": "98649f6d-b809-4c9a-980d-8ee54708a8a6",
+        "api_name": "encounters",
+        "display_name": "Encounters",
+        "entity_name": "Encounter",
+        "object_type": "standard",
+        "stages": None,
+        "categories": [
+            {"id": "180d7be3-e952-4d98-8efe-871004cdf350", "name": "Reason for Visit"},
+            {
+                "id": "1213bae3-8e98-4783-b484-7b4b03688b84",
+                "name": "Encounter Type & Class",
+            },
+            {"id": "a97b03d9-3e9f-43bd-9efc-4fe998f941df", "name": "Hospitalization"},
+            {"id": "e5f7548b-516d-44ab-a1bc-67e2b11273b0", "name": "Diagnosis Links"},
+        ],
+        "fields": [
+            {
+                "id": "9bb801d2-8a40-4934-8e29-1d33a8000fa0",
+                "api_name": "clinical_notes",
+                "display_name": "Clinical Notes",
+                "field_type": "longtext",
+                "category_id": "180d7be3-e952-4d98-8efe-871004cdf350",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": None,
+            },
+            {
+                "id": "c1919144-ad35-45d2-87b5-b8b6b941a41b",
+                "api_name": "service_type",
+                "display_name": "Service Type",
+                "field_type": "dropdown",
+                "category_id": "1213bae3-8e98-4783-b484-7b4b03688b84",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": [
+                    {
+                        "id": "6c424e05-c021-4267-a1aa-21e1bb9d9780",
+                        "name": "Primary Care",
+                        "code": "",
+                    },
+                    {
+                        "id": "185ce7d1-88d6-40d2-9d49-0c86af1ce99f",
+                        "name": "Cardiology",
+                        "code": "",
+                    },
+                    {
+                        "id": "09ee0582-c904-47b8-ac43-edf7f29d224a",
+                        "name": "Orthopedics",
+                        "code": "",
+                    },
+                    {
+                        "id": "7e8f5020-d35b-487a-b2e8-77ffbfa91823",
+                        "name": "Neurology",
+                        "code": "",
+                    },
+                    {
+                        "id": "ce58a00b-7fd4-4863-b1e0-7e446bbff332",
+                        "name": "Oncology",
+                        "code": "",
+                    },
+                    {
+                        "id": "b0c63ec2-7b46-4d9f-be9a-e0e25dac1072",
+                        "name": "Behavioral Health",
+                        "code": "",
+                    },
+                    {
+                        "id": "b1cf9d6a-db75-462f-9ced-247277ee9aae",
+                        "name": "OB/GYN",
+                        "code": "",
+                    },
+                    {
+                        "id": "f29ed578-3e2b-40ce-abf4-015a12af71b8",
+                        "name": "Pediatrics",
+                        "code": "",
+                    },
+                    {
+                        "id": "a0f239a9-3bf0-4ce4-ae22-7505e7ee3d18",
+                        "name": "Radiology",
+                        "code": "",
+                    },
+                    {
+                        "id": "a7fab285-15b7-4882-b20c-3d708d9b3c0e",
+                        "name": "Laboratory",
+                        "code": "",
+                    },
+                    {
+                        "id": "5d92c5db-f75a-4979-a1c4-359b2219c9ad",
+                        "name": "Other",
+                        "code": "",
+                    },
+                ],
+            },
+            {
+                "id": "c7df5b14-7bfb-4976-90ae-ef6f1486a8f6",
+                "api_name": "discharge_disposition",
+                "display_name": "Discharge Disposition",
+                "field_type": "dropdown",
+                "category_id": "a97b03d9-3e9f-43bd-9efc-4fe998f941df",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": [
+                    {
+                        "id": "d1e158c6-cec3-4ce1-b149-151b792b816c",
+                        "name": "Home / Self Care",
+                        "code": "",
+                    },
+                    {
+                        "id": "2e4e5cf8-5825-4ac6-bb75-c5b89336302c",
+                        "name": "Home with Home Health",
+                        "code": "",
+                    },
+                    {
+                        "id": "f9be7a9a-e1a8-4f5b-b879-8d7048867c72",
+                        "name": "Skilled Nursing Facility",
+                        "code": "",
+                    },
+                    {
+                        "id": "58314125-fcbf-41c4-ab16-56d762a0e382",
+                        "name": "Inpatient Rehab",
+                        "code": "",
+                    },
+                    {
+                        "id": "37049eb5-d99f-4264-9603-e558f88f3ebb",
+                        "name": "Long-Term Care",
+                        "code": "",
+                    },
+                    {
+                        "id": "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7",
+                        "name": "Transferred to Another Hospital",
+                        "code": "",
+                    },
+                    {
+                        "id": "06474da6-5c75-4c0e-8368-62d42bdc9c32",
+                        "name": "Hospice - Home",
+                        "code": "",
+                    },
+                    {
+                        "id": "19d35c5f-83cf-4eb4-a19c-06d017b0ec02",
+                        "name": "Hospice - Facility",
+                        "code": "",
+                    },
+                    {
+                        "id": "d522ecd7-d1d9-498d-9a3f-126be7ac0cd6",
+                        "name": "Left Against Medical Advice",
+                        "code": "",
+                    },
+                    {
+                        "id": "0e1271dd-169c-4b19-91fc-7126828ac2fc",
+                        "name": "Expired",
+                        "code": "",
+                    },
+                    {
+                        "id": "d24e5b5e-4e3e-4861-b64d-0d620ddd6b0e",
+                        "name": "Other",
+                        "code": "",
+                    },
+                ],
+            },
+            {
+                "id": "0a7fc18c-211f-4b48-9265-34b502b73070",
+                "api_name": "primary_diagnosis_description",
+                "display_name": "Primary Diagnosis Description",
+                "field_type": "text",
+                "category_id": "e5f7548b-516d-44ab-a1bc-67e2b11273b0",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": None,
+            },
+            {
+                "id": "ae78e103-ab10-47d5-9dbc-730c26ae4882",
+                "api_name": "conditions",
+                "display_name": "Conditions",
+                "field_type": "relationship",
+                "category_id": "1213bae3-8e98-4783-b484-7b4b03688b84",
+                "is_required": False,
+                "deleted": False,
+                "relation": "many_to_many",
+                "relation_target": "conditions",
+                "relation_cardinality": "many_to_many",
+                "options": None,
+            },
+        ],
+    }
+
+
+def test_objects_get_table_shows_full_option_uuids(monkeypatch):
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    result = runner.invoke(cli.app, ["objects", "get", "encounters"])
+    assert result.exit_code == 0
+    assert "6c424e05-c021-4267-a1aa-21e1bb9d9780" in result.stdout
+    assert "185ce7d1-88d6-40d2-9d49-0c86af1ce99f" in result.stdout
+    assert "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7" in result.stdout
+    assert "Primary Care" in result.stdout
+    assert "Transferred to Another Hospital" in result.stdout
+    assert "…" not in result.stdout
+
+
+def test_objects_get_csv_shows_full_option_uuids(monkeypatch):
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    result = runner.invoke(cli.app, ["objects", "get", "encounters", "--output", "csv"])
+    assert result.exit_code == 0
+    assert "6c424e05-c021-4267-a1aa-21e1bb9d9780" in result.stdout
+    assert "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7" in result.stdout
+    assert "Primary Care" in result.stdout
+
+
+def test_objects_get_json_options_unchanged(monkeypatch):
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    result = runner.invoke(cli.app, ["objects", "get", "encounters", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["fields"][1]["options"] == fake["fields"][1]["options"]
+    assert data["fields"][2]["options"] == fake["fields"][2]["options"]
+
+
+def test_objects_get_table_survives_narrower_console(monkeypatch):
+    # The shared console is fixed at width=220 in production, but Rich's
+    # column-collapse algorithm only stops shrinking a column once it's
+    # *narrower* than the console — a table that just barely fits at 220
+    # gives no evidence the no_wrap protection is doing anything. Forcing a
+    # narrower console is how you tell "protected" apart from "happened not
+    # to need it": at width=150 the naive rendering this item replaced
+    # (no `no_wrap`, no `crop=False`) ellipsis-truncates every UUID in this
+    # fixture, while the current rendering does not.
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    monkeypatch.setattr(objects_cli, "console", Console(width=150, color_system=None))
+    result = runner.invoke(cli.app, ["objects", "get", "encounters"])
+    assert result.exit_code == 0
+    assert "6c424e05-c021-4267-a1aa-21e1bb9d9780" in result.stdout
+    assert "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7" in result.stdout
+    assert "…" not in result.stdout
 
 
 def test_records_list_forwards_search_and_limit(monkeypatch):
@@ -107,6 +373,93 @@ def test_json_flag_and_output_json_are_equivalent(monkeypatch):
     b = runner.invoke(cli.app, ["records", "list", "tax_lot", "-o", "json"])
     assert a.exit_code == b.exit_code == 0
     assert json.loads(a.stdout) == json.loads(b.stdout) == records
+
+
+def test_records_list_forwards_fields(monkeypatch):
+    seen = {}
+
+    def fake_search(
+        object_api_name, filters=None, search=None, limit=100, field_names=None
+    ):
+        seen.update(field_names=field_names)
+        return []
+
+    monkeypatch.setattr(record_tools, "search_records", fake_search)
+    result = runner.invoke(
+        cli.app,
+        ["records", "list", "tax_lot", "--fields", "ticker_symbol,purchase_price"],
+    )
+    assert result.exit_code == 0
+    assert seen["field_names"] == ["ticker_symbol", "purchase_price"]
+
+
+def test_records_list_table_shows_requested_field_columns(monkeypatch):
+    records = load_fixture("records/list_tax_lot.json")
+    monkeypatch.setattr(record_tools, "search_records", lambda *a, **k: records)
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "ticker_symbol"]
+    )
+    assert result.exit_code == 0
+    assert "ticker_symbol" in result.stdout
+    assert "VTI" in result.stdout  # the fixture's ticker_symbol value
+
+
+def test_records_list_unknown_field_rejected_before_table(monkeypatch):
+    def fake_search(
+        object_api_name, filters=None, search=None, limit=100, field_names=None
+    ):
+        raise LookupError(
+            f"field 'bogus_field' not found on '{object_api_name}'. "
+            "Available: ['name', 'ticker_symbol']"
+        )
+
+    monkeypatch.setattr(record_tools, "search_records", fake_search)
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "bogus_field"]
+    )
+    assert result.exit_code == 1
+    assert "bogus_field" in result.stderr
+    assert "Available" in result.stderr
+    assert "record(s)" not in result.stdout  # no table rendered on validation failure
+
+
+# Shaped like the tools layer's own output once field_names has narrowed the
+# server's response: only the requested field plus the auto-added `name`,
+# never the object's other fields.
+_FIELD_SCOPED_RECORDS = [
+    {
+        "id": "r1",
+        "fields": {
+            "u1": {"name": "ticker_symbol", "value": "VTI"},
+            "u2": {"name": "name", "value": "Lot A"},
+        },
+    }
+]
+
+
+def test_records_list_csv_shows_id_name_and_requested_fields(monkeypatch):
+    monkeypatch.setattr(
+        record_tools, "search_records", lambda *a, **k: _FIELD_SCOPED_RECORDS
+    )
+    result = runner.invoke(
+        cli.app,
+        ["records", "list", "tax_lot", "--fields", "ticker_symbol", "-o", "csv"],
+    )
+    assert result.exit_code == 0
+    header = result.stdout.strip().splitlines()[0].split(",")
+    assert header == ["id", "ticker_symbol", "name"]
+
+
+def test_records_list_json_shows_id_name_and_requested_fields(monkeypatch):
+    monkeypatch.setattr(
+        record_tools, "search_records", lambda *a, **k: _FIELD_SCOPED_RECORDS
+    )
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "ticker_symbol", "--json"]
+    )
+    assert result.exit_code == 0
+    field_names = {f["name"] for f in json.loads(result.stdout)[0]["fields"].values()}
+    assert field_names == {"ticker_symbol", "name"}
 
 
 def test_invalid_output_format_is_usage_error(monkeypatch):
@@ -181,6 +534,440 @@ def test_start_rejects_malformed_var(monkeypatch):
     assert result.exit_code != 0
 
 
+# ---------------------------------------------------------------------------
+# `start --wait [--show-logs]` (BCLI-021) — composes BCLI-012's
+# wait_for_execution()/get_execution_history(); tests mock the tool layer
+# (test_start_var_flags_reach_the_tool's own pattern) for the composition
+# itself, and respx + a fake clock (test_runs.py's wait_for_execution
+# pattern) for the streaming behaviour that only shows up across real polls.
+# ---------------------------------------------------------------------------
+
+_START_RESULT = {
+    "execution_id": "e0000000-0000-4000-8000-000000000099",
+    "record_id": "rec-1",
+    "client_id": None,
+    "variable_overrides": [],
+    "raw": {},
+}
+
+
+def _wait_raw(execution_id, status):
+    """A minimal raw GET .../automation-execution/{id} response."""
+    return {
+        "id": execution_id,
+        "status": status,
+        "automation": {"api_name": "flow"},
+        "record": {"id": "rec-1"},
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+    }
+
+
+def test_start_wait_composes_start_and_wait_in_order(monkeypatch):
+    """`start --wait` calls start_automation() then wait_for_execution(),
+    in that order, with the first call's execution_id flowing into the
+    second — the tool-composition contract, not the HTTP wire."""
+    calls = []
+
+    def fake_start(api_name, record_id, *, client_id=None, variables=None):
+        calls.append(("start", api_name, record_id))
+        return dict(_START_RESULT)
+
+    def fake_wait(execution_id, *, timeout, poll_interval, on_poll=None):
+        calls.append(("wait", execution_id))
+        return {
+            "execution_id": execution_id,
+            "status": "completed",
+            "timed_out": False,
+            "polls": 1,
+        }
+
+    monkeypatch.setattr(auto_tools, "start_automation", fake_start)
+    monkeypatch.setattr(auto_tools, "wait_for_execution", fake_wait)
+
+    result = runner.invoke(
+        cli.app, ["automations", "start", "flow", "-r", "rec-1", "--wait"]
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        ("start", "flow", "rec-1"),
+        ("wait", _START_RESULT["execution_id"]),
+    ]
+
+
+def test_start_without_wait_never_calls_wait_for_execution(monkeypatch):
+    """Without --wait, exactly one call to start_automation() and none to
+    wait_for_execution() — the byte-for-byte-unchanged requirement."""
+    calls = []
+    monkeypatch.setattr(
+        auto_tools,
+        "start_automation",
+        lambda *a, **k: calls.append(1) or dict(_START_RESULT),
+    )
+
+    def boom(*a, **k):
+        raise AssertionError("wait_for_execution must not run without --wait")
+
+    monkeypatch.setattr(auto_tools, "wait_for_execution", boom)
+
+    result = runner.invoke(cli.app, ["automations", "start", "flow", "-r", "rec-1"])
+
+    assert result.exit_code == 0
+    assert len(calls) == 1
+
+
+@respx.mock
+def test_start_wait_streams_new_history_rows_once(monkeypatch):
+    """A history row prints exactly once, the poll it first appears on — not
+    once per poll, and not again on a later poll that re-fetches it."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        side_effect=[
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "completed")),
+        ]
+    )
+    trigger_row = {
+        "id": "row-1",
+        "trigger": {"type": "manual", "description": "Manual", "deleted": False},
+        "step": None,
+        "status": "completed",
+        "execution_time_ms": 5,
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+        "error": None,
+        "error_description": None,
+        "detailed_log": None,
+    }
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        side_effect=[
+            httpx.Response(200, json=[]),
+            httpx.Response(200, json=[trigger_row]),
+            httpx.Response(200, json=[trigger_row]),
+        ]
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout.count("Manual") == 1
+
+
+@respx.mock
+def test_start_wait_heartbeats_during_a_gap_with_no_new_rows(monkeypatch):
+    """No new history row across several polls, but the fixed heartbeat
+    interval has elapsed: a heartbeat line prints (not a step line)."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        side_effect=[
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "completed")),
+        ]
+    )
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    # A fake clock that advances 20s on every read. _RunStream reads
+    # time.monotonic() once (no new rows) or more (a heartbeat fires) per
+    # poll; wait_for_execution itself never reads it here (--timeout 0
+    # disables the deadline check that would otherwise call it too).
+    clock = {"t": 0.0}
+
+    def fake_monotonic():
+        clock["t"] += 20.0
+        return clock["t"]
+
+    monkeypatch.setattr(time, "monotonic", fake_monotonic)
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--timeout",
+            "0",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "still active" in result.stdout
+    assert "poll 2" in result.stdout
+
+
+@respx.mock
+def test_start_wait_without_show_logs_never_prints_detailed_log(monkeypatch):
+    """--wait without --show-logs streams the step-status line but never a
+    detailed_log body, even when a row carries one."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        return_value=httpx.Response(200, json=_wait_raw(exec_id, "completed"))
+    )
+    log_row = {
+        "id": "row-2",
+        "trigger": None,
+        "step": {"type": "code_step", "description": "Run script", "deleted": False},
+        "status": "completed",
+        "execution_time_ms": 10,
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+        "error": None,
+        "error_description": None,
+        "detailed_log": {"stdout": "SENTINEL_LOG_BODY", "traceback": None},
+    }
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        return_value=httpx.Response(200, json=[log_row])
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Run script" in result.stdout
+    assert "SENTINEL_LOG_BODY" not in result.stdout
+
+
+@respx.mock
+def test_start_wait_survives_a_transient_history_fetch_error(monkeypatch):
+    """A dropped connection or a 5xx on `_RunStream`'s own
+    get_execution_history() call must not abort the wait — that's the same
+    bug BCLI-012 fixed for the status poll, one endpoint over. The run still
+    reaches its correct terminal status and exit code; only that one poll's
+    render is skipped."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        side_effect=[
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "completed")),
+        ]
+    )
+    trigger_row = {
+        "id": "row-1",
+        "trigger": {"type": "manual", "description": "Manual", "deleted": False},
+        "step": None,
+        "status": "completed",
+        "execution_time_ms": 5,
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+        "error": None,
+        "error_description": None,
+        "detailed_log": None,
+    }
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        side_effect=[
+            httpx.Response(200, json=[]),
+            httpx.Response(503, json={"detail": "temporarily unavailable"}),
+            httpx.Response(200, json=[trigger_row]),
+        ]
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout.count("Manual") == 1
+
+
+@respx.mock
+def test_start_wait_history_4xx_surfaces_immediately(monkeypatch):
+    """A 4xx from get_execution_history() (e.g. a malformed request) is not
+    transient — it must surface right away as a command error, not be
+    retried until the wait's own --timeout is reached."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    status_route = respx.get(f"{exec_base}/{exec_id}").mock(
+        return_value=httpx.Response(200, json=_wait_raw(exec_id, "active"))
+    )
+    history_route = respx.get(f"{exec_base}/{exec_id}/history").mock(
+        return_value=httpx.Response(400, json={"detail": "bad request"})
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert status_route.call_count == 1
+    assert history_route.call_count == 1
+
+
+def test_start_wait_json_output_is_valid_json_only(monkeypatch):
+    """--json --wait: stdout is exactly one JSON blob — no interleaved
+    streaming text — carrying status/timed_out/polls alongside start's
+    existing keys."""
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": _START_RESULT["execution_id"],
+            "status": "completed",
+            "timed_out": False,
+            "polls": 2,
+        },
+    )
+
+    result = runner.invoke(
+        cli.app, ["automations", "start", "flow", "-r", "rec-1", "--wait", "--json"]
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["execution_id"] == _START_RESULT["execution_id"]
+    assert payload["record_id"] == _START_RESULT["record_id"]
+    assert payload["raw"] == _START_RESULT["raw"]
+    assert payload["status"] == "completed"
+    assert payload["timed_out"] is False
+    assert payload["polls"] == 2
+
+
+def test_start_show_logs_implies_wait_and_adds_steps_to_json(monkeypatch):
+    """--show-logs alone (no --wait) still waits, and --json --show-logs
+    adds the full step history under "steps"."""
+    history = [
+        {
+            "id": "row-1",
+            "kind": "trigger",
+            "type": "manual",
+            "description": "Manual",
+            "status": "completed",
+            "duration_ms": 5,
+            "started_at": None,
+            "finished_at": None,
+            "error": None,
+            "detailed_log": None,
+        }
+    ]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": _START_RESULT["execution_id"],
+            "status": "completed",
+            "timed_out": False,
+            "polls": 1,
+        },
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: history)
+
+    result = runner.invoke(
+        cli.app,
+        ["automations", "start", "flow", "-r", "rec-1", "--show-logs", "--json"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "completed"  # proves --show-logs implied --wait
+    assert payload["steps"] == history
+
+
+def test_start_wait_exit_code_reuses_runs_view_wait_mapping(monkeypatch):
+    """`start --wait`'s exit code comes from the same completed/failed/
+    cancelled/timeout/paused mapping `runs view --wait` uses — a failed run
+    exits 1, matching that shared logic rather than a second copy of it."""
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": _START_RESULT["execution_id"],
+            "status": "failed",
+            "timed_out": False,
+            "polls": 3,
+        },
+    )
+
+    result = runner.invoke(
+        cli.app, ["automations", "start", "flow", "-r", "rec-1", "--wait"]
+    )
+
+    assert result.exit_code == 1
+
+
 def test_runs_view_rejects_non_uuid(monkeypatch):
     """An api_name (or truncated id) must fail with a pointer to a real id,
     not a bare 404 from the API — and must not even call the tool."""
@@ -220,6 +1007,214 @@ def test_runs_view_no_steps_skips_history(monkeypatch):
     assert len(hist_calls) == 1  # unchanged: history not fetched again
 
 
+def test_runs_view_without_wait_makes_exactly_one_status_call(monkeypatch):
+    """Without --wait, behaviour is unchanged: one get_execution call, no
+    wait_for_execution call at all, exit 0 whatever the status."""
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    calls = []
+    monkeypatch.setattr(
+        auto_tools,
+        "get_execution",
+        lambda *a, **k: calls.append(1) or {"execution_id": uuid, "status": "active"},
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: [])
+
+    def boom(*a, **k):
+        raise AssertionError("wait_for_execution must not run without --wait")
+
+    monkeypatch.setattr(auto_tools, "wait_for_execution", boom)
+
+    result = runner.invoke(cli.app, ["automations", "runs", "view", uuid])
+    assert result.exit_code == 0
+    assert len(calls) == 1
+
+
+def test_runs_view_wait_rejects_negative_timeout(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    result = runner.invoke(
+        cli.app,
+        ["automations", "runs", "view", uuid, "--wait", "--timeout", "-1"],
+    )
+    assert result.exit_code == 2
+
+
+@pytest.mark.parametrize("poll_interval", ["-1", "0"])
+def test_runs_view_wait_rejects_non_positive_poll_interval(monkeypatch, poll_interval):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "runs",
+            "view",
+            uuid,
+            "--wait",
+            "--poll-interval",
+            poll_interval,
+        ],
+    )
+    assert result.exit_code == 2
+
+
+@pytest.mark.parametrize(
+    "status,timed_out,expected_exit",
+    [
+        ("completed", False, 0),
+        ("failed", False, 1),
+        ("cancelled", False, 1),
+        ("paused", False, 3),
+        ("paused_by_automation", False, 3),
+        ("paused_by_failure", False, 3),
+        ("active", True, 3),
+    ],
+)
+def test_runs_view_wait_exit_codes(monkeypatch, status, timed_out, expected_exit):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": status,
+            "timed_out": timed_out,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == expected_exit
+
+
+def test_runs_view_wait_timeout_message_avoids_failure_language(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "active",
+            "timed_out": True,
+            "polls": 42,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == 3
+    out = result.stdout.lower()
+    assert "failed" not in out
+    assert "stalled" not in out
+    assert "stuck" not in out
+    assert "may still complete" in out
+    assert f"kizen automations runs view {uuid}" in out
+    assert "--timeout" in out
+
+
+def test_runs_view_wait_paused_names_resume(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "paused",
+            "timed_out": False,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == 3
+    assert f"kizen automations runs resume {uuid}" in result.stdout
+
+
+def test_runs_view_wait_paused_by_failure_says_needs_a_human(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "paused_by_failure",
+            "timed_out": False,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == 3
+    assert "may still complete" not in result.stdout.lower()
+    assert f"kizen automations runs resume {uuid}" in result.stdout
+
+
+def test_runs_view_wait_success_renders_summary_and_json_still_works(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "completed",
+            "timed_out": False,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": "2026-08-13T00:00:00Z",
+            "finished_at": "2026-08-13T00:05:00Z",
+        },
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: [])
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--json"]
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "completed"
+
+
+def test_runs_view_surfaces_paused_on_step(monkeypatch):
+    """paused_on_step is surfaced whenever the execution GET carries it, with
+    or without --wait — it names the exact step and whether it branches."""
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "get_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "paused_by_failure",
+            "paused_on_step": {
+                "id": "52ced4b6-0000-4000-8000-000000000009",
+                "type": "create_related_entity",
+                "branching_step": False,
+                "label": "Action: Create Related Entity",
+            },
+        },
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: [])
+    result = runner.invoke(cli.app, ["automations", "runs", "view", uuid, "--no-steps"])
+    assert result.exit_code == 0
+    assert "Action: Create Related Entity" in result.stdout
+
+
 def test_runs_list_table_shows_full_execution_id(monkeypatch):
     execs = load_fixture("executions/list_record_test.json")
     monkeypatch.setattr(auto_tools, "list_executions", lambda *a, **k: execs)
@@ -227,6 +1222,135 @@ def test_runs_list_table_shows_full_execution_id(monkeypatch):
     assert result.exit_code == 0
     # Full id present and not the truncated "…" form the old table used.
     assert execs[0]["execution_id"] in result.stdout
+
+
+def test_runs_logs_rejects_non_uuid(monkeypatch):
+    called = []
+    monkeypatch.setattr(
+        auto_tools, "get_execution_history", lambda *a, **k: called.append(1) or []
+    )
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", "llm_comparison"])
+    assert result.exit_code == 1
+    assert "not an execution UUID" in result.stderr
+    assert not called
+
+
+def test_runs_logs_renders_known_detailed_log_shapes(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "code_step",
+            "description": "Run Python 3.13 Code",
+            "status": "failed",
+            "detailed_log": {"stdout": "", "traceback": "NameError: name 'foo'"},
+        },
+        {
+            "id": "e2",
+            "kind": "step",
+            "type": "code_step",
+            "description": "Send welcome email",
+            "status": "completed",
+            "detailed_log": {"logs": ["starting", "sent"]},
+        },
+        {
+            "id": "e3",
+            "kind": "step",
+            "type": "initialize_variable",
+            "description": "org_match = 'No'",
+            "status": "completed",
+            "detailed_log": None,
+        },
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid])
+    assert result.exit_code == 0
+    assert "NameError: name 'foo'" in result.stdout
+    assert "starting" in result.stdout
+    assert "sent" in result.stdout
+    # The row with no detailed_log isn't rendered at all.
+    assert "initialize_variable" not in result.stdout
+
+
+def test_runs_logs_code_step_full_audit_shape_is_not_dropped(monkeypatch):
+    """A real code_step's detailed_log carries logs alongside inputs/values/
+    http_requests/duration — the narrow `"logs" in log` check must not
+    intercept it and silently drop the rest (the shape §4 of the item's
+    Context calls the most diagnostically valuable)."""
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "code_step",
+            "description": "Call sender API",
+            "status": "completed",
+            "detailed_log": {
+                "logs": ["hello"],
+                "inputs": {"x": 1},
+                "values": {"y": 2},
+                "duration": 2.246,
+                "http_requests": {"count": 1, "requests": [{"url": "https://x"}]},
+            },
+        },
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid])
+    assert result.exit_code == 0
+    assert "http_requests" in result.stdout
+    assert "inputs" in result.stdout
+    assert "values" in result.stdout
+    assert "duration" in result.stdout
+    assert "hello" in result.stdout
+
+
+def test_runs_logs_no_logs_exits_0_with_pointer(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "initialize_variable",
+            "description": "x",
+            "status": "completed",
+            "detailed_log": None,
+        }
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid])
+    assert result.exit_code == 0
+    assert "outputs.log" in result.stdout
+    assert "code-steps" in result.stdout
+
+
+def test_runs_logs_json_emits_raw_blobs(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "code_step",
+            "description": "d",
+            "status": "completed",
+            "detailed_log": {"logs": ["hi"]},
+        },
+        {
+            "id": "e2",
+            "kind": "step",
+            "type": "initialize_variable",
+            "description": "d2",
+            "status": "completed",
+            "detailed_log": None,
+        },
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid, "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert len(payload) == 1
+    assert payload[0]["index"] == 1
+    assert payload[0]["detailed_log"] == {"logs": ["hi"]}
 
 
 def test_config_error_exits_nonzero(monkeypatch):
@@ -288,6 +1412,65 @@ def test_apply_reads_plan_from_stdin_with_yes(monkeypatch):
     assert applied["plan_id"] == plan.id
     out = json.loads(result.stdout)
     assert out["results"][0]["status"] == "ok"
+
+
+def test_apply_enriches_known_enum_choice_failures(monkeypatch):
+    """BCLI-015: `kizen apply` is the documented second half of plan/apply
+    (the dry-run message tells users to feed --dry-run --json output to it),
+    so a failed automation op must get the same known-choices enrichment
+    `_run_mutation` gives a direct --yes create."""
+    from kizen_builder.tools.plans import ApplyResult, OperationResult
+
+    def fake_apply(plan):
+        return ApplyResult(
+            plan_id=plan.id,
+            env=plan.env,
+            results=[
+                OperationResult(
+                    key=op.key,
+                    kind=op.kind,
+                    action=op.action,
+                    status="failed",
+                    message='HTTP 400: "bogus" is not a valid choice.',
+                    raw={
+                        "step_assign_owner": {
+                            "action_create_related_entity": {
+                                "new_entity_owner_type": [
+                                    '"bogus" is not a valid choice.'
+                                ],
+                            },
+                        },
+                    },
+                )
+                for op in plan.operations
+            ],
+        )
+
+    monkeypatch.setattr(plan_tools, "apply_plan", fake_apply)
+
+    from kizen_builder.tools.plans import Plan, PlanOperation, plan_to_json
+
+    plan = Plan.build(
+        env="testenv",
+        summary="test",
+        operations=[
+            PlanOperation(
+                action="create",
+                kind="automation",
+                key="onboarding_flow",
+                preview={},
+                payload={"name": "onboarding flow"},
+            )
+        ],
+    )
+    result = runner.invoke(
+        cli.app, ["apply", "--yes", "--json"], input=plan_to_json(plan)
+    )
+    assert result.exit_code == 1, result.output
+    out = json.loads(result.stdout)
+    message = out["results"][0]["message"]
+    assert "assign_from_context_record" in message
+    assert "newly_assigned_owner" in message
 
 
 def test_apply_rejects_garbage_plan():
@@ -722,6 +1905,48 @@ def test_records_list_filter_invalid_spec_exits_2(kizen):
     assert "filter error" in result.stderr
 
 
+def test_records_archive_dry_run_forwards_ids(monkeypatch):
+    def fake_plan_archive(object_api_name, record_ids):
+        assert object_api_name == "patients"
+        assert record_ids == ["rec-1", "rec-2"]
+        return plan_tools.Plan.build(
+            env="testenv", summary="Archive 2 record(s)", operations=[]
+        )
+
+    monkeypatch.setattr(record_planners, "plan_archive_records", fake_plan_archive)
+    result = runner.invoke(
+        cli.app, ["records", "archive", "patients", "rec-1", "rec-2", "--dry-run"]
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_records_archive_requires_at_least_one_id():
+    result = runner.invoke(cli.app, ["records", "archive", "patients"])
+    assert result.exit_code == 2
+    assert "pass at least one record UUID" in result.stderr
+
+
+def test_records_unarchive_dry_run_forwards_ids(monkeypatch):
+    def fake_plan_unarchive(object_api_name, record_ids):
+        assert object_api_name == "patients"
+        assert record_ids == ["rec-1"]
+        return plan_tools.Plan.build(
+            env="testenv", summary="Unarchive 1 record(s)", operations=[]
+        )
+
+    monkeypatch.setattr(record_planners, "plan_unarchive_records", fake_plan_unarchive)
+    result = runner.invoke(
+        cli.app, ["records", "unarchive", "patients", "rec-1", "--dry-run"]
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_records_unarchive_requires_at_least_one_id():
+    result = runner.invoke(cli.app, ["records", "unarchive", "patients"])
+    assert result.exit_code == 2
+    assert "pass at least one record UUID" in result.stderr
+
+
 # ---------------------------------------------------------------------------
 # profiles: init, envs list, checksum refusal surfaced through a command
 # ---------------------------------------------------------------------------
@@ -732,15 +1957,17 @@ def test_init_stores_profile_and_pins_directory(monkeypatch, tmp_path):
 
     config.set_profile_override(None)
     monkeypatch.chdir(tmp_path)  # pin is written to cwd
+    # Fourth prompt is now "Environment" (a curated name), not a free-typed URL.
     result = runner.invoke(
         cli.app,
         ["init", "--profile", "alpha", "--skip-validation"],
-        input="apikey\nAAAA\nuser1\nhttps://app.go.kizen.com\n",
+        input="apikey\nAAAA\nuser1\ngo\n",
     )
     assert result.exit_code == 0, result.output
 
     stored = profiles.get_profile("alpha")
     assert stored is not None and stored.business_id == "AAAA"
+    assert stored.base_url == "https://app.go.kizen.com"
 
     # Read the pin file directly (autouse fixture stubs find_pin to None).
     import tomllib
@@ -749,6 +1976,98 @@ def test_init_stores_profile_and_pins_directory(monkeypatch, tmp_path):
     assert pin_file.is_file()
     data = tomllib.loads(pin_file.read_text())
     assert data == {"profile": "alpha", "business_id": "AAAA"}
+
+
+def test_init_environment_picker_resolves_named_host(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "beta", "--skip-validation"],
+        input="apikey\nBBBB\nuser1\nfmo\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("beta")
+    assert stored is not None and stored.base_url == "https://app.fmo.kizen.com"
+
+
+def test_init_environment_picker_rejects_bare_enter(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "zeta", "--skip-validation"],
+        input="apikey\nZZZZ\nuser1\n\nintegration\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("zeta")
+    assert stored is not None and stored.base_url == "https://integration.kizen.dev"
+
+
+def test_init_environment_picker_free_text_url(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "gamma", "--skip-validation"],
+        input="apikey\nCCCC\nuser1\nurl\nhttps://self-hosted.example.com\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("gamma")
+    assert stored is not None and stored.base_url == "https://self-hosted.example.com"
+
+
+def test_init_base_url_flag_accepts_named_host(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        [
+            "init",
+            "--profile",
+            "delta",
+            "--skip-validation",
+            "--base-url",
+            "staging",
+        ],
+        input="apikey\nDDDD\nuser1\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("delta")
+    assert stored is not None and stored.base_url == "https://staging.kizen.com"
+
+
+def test_init_base_url_flag_rejects_unknown_name(monkeypatch, tmp_path):
+    from kizen_builder import config
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        [
+            "init",
+            "--profile",
+            "epsilon",
+            "--skip-validation",
+            "--base-url",
+            "not-a-real-env",
+        ],
+        input="apikey\nEEEE\nuser1\n",
+    )
+    assert result.exit_code == 2, result.output
+    assert "unknown environment" in result.stderr
 
 
 def test_envs_list_json_marks_pinned_profile(monkeypatch):

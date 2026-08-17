@@ -456,8 +456,9 @@
 │                       graph, and PUTs atomically. Step keys come from `kizen automations show`.  │
 │ runs                  Inspect automation runs (executions). `list` shows recent runs for an      │
 │                       automation; `view <id>` shows one run — its summary plus the step-by-step  │
-│                       trace (`--no-steps` for summary only). Mirrors `gh run list` / `gh run     │
-│                       view`.                                                                     │
+│                       trace (`--no-steps` for summary only, `--wait` to block until it           │
+│                       finishes); `logs <id>` prints each step's `detailed_log`. Mirrors `gh run  │
+│                       list` / `gh run view`.                                                     │
 │ folders               Automation folders, for organization.                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
@@ -716,8 +717,9 @@
  Usage: automations runs [OPTIONS] COMMAND [ARGS]...                                                
                                                                                                     
  Inspect automation runs (executions). `list` shows recent runs for an automation; `view <id>`      
- shows one run — its summary plus the step-by-step trace (`--no-steps` for summary only). Mirrors   
- `gh run list` / `gh run view`.                                                                     
+ shows one run — its summary plus the step-by-step trace (`--no-steps` for summary only, `--wait`   
+ to block until it finishes); `logs <id>` prints each step's `detailed_log`. Mirrors `gh run list`  
+ / `gh run view`.                                                                                   
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                      │
@@ -725,8 +727,16 @@
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
 │ view             Show one automation run: its summary (status, record, start/finish) and,        │
 │                  unless `--no-steps`, the step-by-step trace with per-step durations.            │
-│                  Mirrors `gh run view`.                                                          │
+│                  `--wait` blocks until the run finishes — a timeout or a `paused*` status        │
+│                  is reported as "not done yet", never as a failure (`--timeout 900` by           │
+│                  default: long enough that one worst-case gap between steps, measured at         │
+│                  up to 10+ minutes on a real chain, doesn't trip it; `--timeout 0` waits         │
+│                  indefinitely). Mirrors `gh run view`.                                           │
 │ list             List recent runs (executions) for an automation.                                │
+│ logs             Print each step's `detailed_log` — the code_step stdout/traceback (and          │
+│                  other per-step diagnostic detail `runs view`'s Steps table has no column        │
+│                  for). No new API call: reads the same step history `runs view` already          │
+│                  fetches.                                                                        │
 │ pause            Pause a running execution.                                                      │
 │ resume           Resume a paused execution.                                                      │
 │ cancel           Cancel an execution. Irreversible.                                              │
@@ -816,6 +826,24 @@
 │ --help                   Show this message and exit.                                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
+ Usage: automations runs logs [OPTIONS] {execution_id}                                              
+                                                                                                    
+ Print each step's `detailed_log` — the code_step stdout/traceback (and other per-step diagnostic   
+ detail `runs view`'s Steps table has no column for). No new API call: reads the same step history  
+ `runs view` already fetches.                                                                       
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    execution_id      <str>  Run (execution) UUID. [required]                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --json          Emit the raw per-step detailed_log blobs.                                        │
+│ --help          Show this message and exit.                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Wire notes (execution statuses, per-step detailed_log shapes): see `kizen docs show                
+ automation-runtime`.                                                                               
+                                                                                                    
+                                                                                                    
  Usage: automations runs pause [OPTIONS] {execution_id}                                             
                                                                                                     
  Pause a running execution.                                                                         
@@ -854,18 +882,29 @@
  Usage: automations runs view [OPTIONS] {execution_id}                                              
                                                                                                     
  Show one automation run: its summary (status, record, start/finish) and, unless `--no-steps`, the  
- step-by-step trace with per-step durations. Mirrors `gh run view`.                                 
+ step-by-step trace with per-step durations. `--wait` blocks until the run finishes — a timeout or  
+ a `paused*` status is reported as "not done yet", never as a failure (`--timeout 900` by default:  
+ long enough that one worst-case gap between steps, measured at up to 10+ minutes on a real chain,  
+ doesn't trip it; `--timeout 0` waits indefinitely). Mirrors `gh run view`.                         
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    execution_id      <str>  Run (execution) UUID. [required]                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --steps       --no-steps           Include the step-by-step trace below the summary (default:    │
-│                                    on).                                                          │
-│                                    [default: steps]                                              │
-│ --output  -o                <str>  Output format: table (default), json, or csv.                 │
-│ --json                             Alias for --output json (includes step output/error blobs).   │
-│ --help                             Show this message and exit.                                   │
+│ --steps              --no-steps             Include the step-by-step trace below the summary     │
+│                                             (default: on).                                       │
+│                                             [default: steps]                                     │
+│ --wait               --no-wait              Block until the run reaches a terminal status before │
+│                                             rendering.                                           │
+│                                             [default: no-wait]                                   │
+│ --timeout                          <float>  With --wait: seconds to wait before giving up (0 =   │
+│                                             no deadline).                                        │
+│                                             [default: 900.0]                                     │
+│ --poll-interval                    <float>  With --wait: seconds between polls. [default: 5.0]   │
+│ --output         -o                <str>    Output format: table (default), json, or csv.        │
+│ --json                                      Alias for --output json (includes step output/error  │
+│                                             blobs).                                              │
+│ --help                                      Show this message and exit.                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: automations show [OPTIONS] {api_name}                                                       
@@ -901,18 +940,42 @@
  plan/preview/confirm gate that guards create/update. That is a standing                            
  decision, not an oversight.                                                                        
                                                                                                     
+ `--wait` blocks until the run finishes, printing each new step's status                            
+ the moment it appears (a dim heartbeat during a real gap between steps —                           
+ see `kizen docs show automation-runtime`'s "Watching a run" for the                                
+ timeout/status vocabulary this shares with `runs view --wait`).                                    
+ `--show-logs` additionally prints each step's `detailed_log` once that                             
+ step finishes (a `code_step`'s log is released only on completion, not                             
+ incrementally) and implies `--wait`. `--timeout`/`--poll-interval` mirror                          
+ `runs view --wait`'s flags of the same name. Exit code mirrors `runs view                          
+ --wait`: `completed` → 0, `failed`/`cancelled` → 1, a timeout or any                               
+ `paused*` status → 3 (the wait ended without the run finishing, not                                
+ necessarily a failure).                                                                            
+                                                                                                    
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    api_name      <str>  Automation api_name. [required]                                        │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --record     -r      <str>  Record/contact UUID to run on. Omit for global (record-less)         │
-│                             automations.                                                         │
-│ --var                <str>  Seed a variable for this run: --var name=value (repeatable). Value   │
-│                             is sent as a string; the server coerces it by the variable's type.   │
-│ --vars-json          <str>  Seed variables from a JSON object, e.g. '{"org_match": true}'.       │
-│                             Merged with --var (--var wins on conflict).                          │
-│ --json                      Emit JSON.                                                           │
-│ --help                      Show this message and exit.                                          │
+│ --record         -r               <str>    Record/contact UUID to run on. Omit for global        │
+│                                            (record-less) automations.                            │
+│ --var                             <str>    Seed a variable for this run: --var name=value        │
+│                                            (repeatable). Value is sent as a string; the server   │
+│                                            coerces it by the variable's type.                    │
+│ --vars-json                       <str>    Seed variables from a JSON object, e.g.               │
+│                                            '{"org_match": true}'. Merged with --var (--var wins  │
+│                                            on conflict).                                         │
+│ --wait               --no-wait             Block until the run reaches a terminal status,        │
+│                                            streaming step status as it arrives.                  │
+│                                            [default: no-wait]                                    │
+│ --timeout                         <float>  With --wait: seconds to wait before giving up (0 = no │
+│                                            deadline).                                            │
+│                                            [default: 900.0]                                      │
+│ --poll-interval                   <float>  With --wait: seconds between polls. [default: 5.0]    │
+│ --show-logs                                Print each new step's detailed_log once that step     │
+│                                            finishes — a code_step's log is only available then,  │
+│                                            not while it's still running. Implies --wait.         │
+│ --json                                     Emit JSON.                                            │
+│ --help                                     Show this message and exit.                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: automations steps [OPTIONS] COMMAND [ARGS]...                                               
@@ -2084,7 +2147,9 @@
 │ --api-key                     <str>  API key (else prompts). [env var: KIZEN_API_KEY]            │
 │ --business-id                 <str>  Business id (else prompts). [env var: KIZEN_BUSINESS_ID]    │
 │ --user-id                     <str>  User id (else prompts). [env var: KIZEN_USER_ID]            │
-│ --base-url                    <str>  Kizen base URL. [default: https://app.go.kizen.com]         │
+│ --base-url                    <str>  Kizen environment: a name (go, fmo, staging, integration)   │
+│                                      or a full URL for self-hosted/one-off setups. Prompts if    │
+│                                      omitted.                                                    │
 │ --no-pin                             Store credentials only; don't pin this directory.           │
 │ --skip-validation                    Don't verify credentials with a live call.                  │
 │ --refresh-stubs                      Overwrite existing CLAUDE.md / AGENTS.md with the current   │
@@ -2638,9 +2703,29 @@
 │ create        Create one record (via --field) or many (via CSV/JSON spec).                       │
 │ update        Update one record (UUID + --field) or many (CSV/JSON spec with 'id').              │
 │ upsert        Create-or-update one record (lookup_value + --field) or many (CSV/JSON spec).      │
-│ delete        Delete one or more records by UUID. Deletion removes the record's data.            │
+│ delete        Delete one or more records by UUID.                                                │
+│ archive       Archive one or more records by UUID.                                               │
+│ unarchive     Unarchive one or more records by UUID.                                             │
 │ set-field     Set one field to one value across many records in a single API call.               │
 │ move          Move a pipeline record to a different stage.                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: records archive [OPTIONS] {object_api_name} [record_id]...                                  
+                                                                                                    
+ Archive one or more records by UUID.                                                               
+                                                                                                    
+ This is the operation the UI's Archive button performs. Data is                                    
+ retained; restore with `records unarchive`.                                                        
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    object_api_name      <str>  Object api_name. [required]                                     │
+│      record_id            <str>  One or more record UUIDs to archive.                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --dry-run            Show the plan without applying.                                             │
+│ --yes      -y        Skip the y/N confirmation prompt.                                           │
+│ --json               Emit JSON (plan with --dry-run, results otherwise).                         │
+│ --help               Show this message and exit.                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: records create [OPTIONS] {object_api_name}                                                  
@@ -2670,7 +2755,13 @@
                                                                                                     
  Usage: records delete [OPTIONS] {object_api_name} [record_id]...                                   
                                                                                                     
- Delete one or more records by UUID. Deletion removes the record's data.                            
+ Delete one or more records by UUID.                                                                
+                                                                                                    
+ Despite the name, this archives the record rather than erasing its data —                          
+ confirmed live 2026-08-13: a deleted record 404s on a direct read and                              
+ drops out of search, but comes back via `records unarchive` or                                     
+ `records upsert --oncreate-unarchive unarchive`. `records archive` is the                          
+ same operation under the name that says what it does.                                              
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    object_api_name      <str>  Object api_name. [required]                                     │
@@ -2724,12 +2815,12 @@
                                                                                                     
  List records from a custom object (up to --limit).                                                 
                                                                                                     
- The table shows id and name for each record; `--output json` returns                               
- full field data, and `--output csv` flattens each record's fields into                             
- columns (one column per field, unioned across the result set) — the                                
- workhorse format for pulling records into a spreadsheet. Use --search                              
- for text matching, --filter for structured field conditions, or                                    
- `records get` to inspect a single record.                                                          
+ The table shows id and name for each record, plus one column per                                   
+ `--fields` entry if given; `--output json` and `--output csv` show the                             
+ same set (id, name, and the requested fields — full field data if                                  
+ `--fields` is omitted). Use --search for text matching, --filter for                               
+ structured field conditions, or `records get` to inspect a single                                  
+ record.                                                                                            
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    object_api_name      <str>  Object api_name (e.g. client_client). [required]                │
@@ -2742,6 +2833,10 @@
 │                               groups ({"query": [...]}) passed through as-is. Run `kizen filters │
 │                               ops ` to see which ops a field's type supports.                    │
 │ --filter-file          <str>  Path to a JSON filter (same format as --filter).                   │
+│ --fields               <str>  Comma-separated field api_names to fetch and show as table columns │
+│                               (e.g. --fields ticker_symbol,purchase_price). Must be api_names,   │
+│                               not display labels or field UUIDs; an unrecognized name is         │
+│                               rejected before any request is sent.                               │
 │ --limit        -n      <int>  Max records to return. [default: 100]                              │
 │ --output       -o      <str>  Output format: table (default), json, or csv.                      │
 │ --json                        Alias for --output json.                                           │
@@ -2807,6 +2902,24 @@
 │    --yes         -y             Skip the y/N confirmation prompt.                                │
 │    --json                       Emit JSON (plan with --dry-run, results otherwise).              │
 │    --help                       Show this message and exit.                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: records unarchive [OPTIONS] {object_api_name} [record_id]...                                
+                                                                                                    
+ Unarchive one or more records by UUID.                                                             
+                                                                                                    
+ The reverse of `records archive` (also reachable via `records upsert                               
+ --oncreate-unarchive unarchive`).                                                                  
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    object_api_name      <str>  Object api_name. [required]                                     │
+│      record_id            <str>  One or more record UUIDs to unarchive.                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --dry-run            Show the plan without applying.                                             │
+│ --yes      -y        Skip the y/N confirmation prompt.                                           │
+│ --json               Emit JSON (plan with --dry-run, results otherwise).                         │
+│ --help               Show this message and exit.                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: records update [OPTIONS] {object_api_name} [record_id]                                      
@@ -3925,6 +4038,9 @@
 ===== automations runs list =====
 
 
+===== automations runs logs =====
+
+
 ===== automations runs pause =====
 
 
@@ -4240,6 +4356,9 @@
 ===== records =====
 
 
+===== records archive =====
+
+
 ===== records create =====
 
 
@@ -4262,6 +4381,9 @@
 
 
 ===== records set-field =====
+
+
+===== records unarchive =====
 
 
 ===== records update =====

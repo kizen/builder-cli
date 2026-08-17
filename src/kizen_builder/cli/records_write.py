@@ -317,7 +317,14 @@ def records_delete(
         False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
     ),
 ) -> None:
-    """Delete one or more records by UUID. Deletion removes the record's data."""
+    """Delete one or more records by UUID.
+
+    Despite the name, this archives the record rather than erasing its data —
+    confirmed live 2026-08-13: a deleted record 404s on a direct read and
+    drops out of search, but comes back via `records unarchive` or
+    `records upsert --oncreate-unarchive unarchive`. `records archive` is the
+    same operation under the name that says what it does.
+    """
     ids = list(record_id or [])
     if not ids:
         err_console.print("[red]error:[/red] pass at least one record UUID to delete.")
@@ -325,6 +332,76 @@ def records_delete(
 
     _run_mutation(
         lambda: record_planners.plan_delete_records(object_api_name, ids),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+    )
+
+
+@records_app.command("archive")
+def records_archive(
+    object_api_name: str = typer.Argument(..., help="Object api_name."),
+    record_id: list[str] = typer.Argument(
+        None, help="One or more record UUIDs to archive."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Archive one or more records by UUID.
+
+    This is the operation the UI's Archive button performs. Data is
+    retained; restore with `records unarchive`.
+    """
+    ids = list(record_id or [])
+    if not ids:
+        err_console.print("[red]error:[/red] pass at least one record UUID to archive.")
+        raise typer.Exit(code=2)
+
+    _run_mutation(
+        lambda: record_planners.plan_archive_records(object_api_name, ids),
+        dry_run=dry_run,
+        yes=yes,
+        json_out=json_out,
+    )
+
+
+@records_app.command("unarchive")
+def records_unarchive(
+    object_api_name: str = typer.Argument(..., help="Object api_name."),
+    record_id: list[str] = typer.Argument(
+        None, help="One or more record UUIDs to unarchive."
+    ),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Show the plan without applying."
+    ),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the y/N confirmation prompt."
+    ),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit JSON (plan with --dry-run, results otherwise)."
+    ),
+) -> None:
+    """Unarchive one or more records by UUID.
+
+    The reverse of `records archive` (also reachable via `records upsert
+    --oncreate-unarchive unarchive`).
+    """
+    ids = list(record_id or [])
+    if not ids:
+        err_console.print(
+            "[red]error:[/red] pass at least one record UUID to unarchive."
+        )
+        raise typer.Exit(code=2)
+
+    _run_mutation(
+        lambda: record_planners.plan_unarchive_records(object_api_name, ids),
         dry_run=dry_run,
         yes=yes,
         json_out=json_out,

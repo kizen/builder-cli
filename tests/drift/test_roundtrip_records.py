@@ -456,3 +456,121 @@ def test_delete_record_then_refetch_404s(drift_client, scratch, records_object):
     with pytest.raises(KizenAPIError) as excinfo:
         records_api.get_record(drift_client, object_api_name, record_id)
     assert excinfo.value.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Archive / unarchive
+# ---------------------------------------------------------------------------
+
+
+def _poll_search_membership(
+    drift_client,
+    object_api_name: str,
+    record_id: str,
+    search: str,
+    *,
+    present: bool,
+    attempts: int = 6,
+    delay: float = 1.5,
+):
+    """Poll ``search_records`` until ``record_id``'s membership matches
+    ``present``.
+
+    ``bulk-archive-entity-record`` answers ``{"async": true}`` — a 200 does
+    not mean the record is out of search yet. Retries the same way
+    ``_poll_field_value`` does rather than asserting on the first read.
+    """
+    import time
+
+    from kizen_builder.api import records as records_api
+
+    ids: set[str] = set()
+    for _ in range(attempts):
+        ids = {
+            r["id"]
+            for r in records_api.search_records(
+                drift_client, object_api_name, search=search
+            )
+        }
+        if (record_id in ids) == present:
+            return ids
+        time.sleep(delay)
+    raise AssertionError(
+        f"record {record_id} membership in search never reached present={present}; "
+        f"last seen ids={ids}"
+    )
+
+
+def test_archive_record_leaves_search_then_unarchive_restores_it(
+    drift_client, scratch, records_object
+):
+    """``plan_archive_records`` wraps
+    ``POST /api/custom-objects/{id}/bulk-archive-entity-record`` — the
+    operation the UI's Archive button performs. A 200 there proves nothing
+    by itself (that's this repo's whole complaint about the unrelated
+    ``archived`` PATCH key that's silently ignored) — this proves the record
+    actually disappears from search, then comes back via
+    ``plan_unarchive_records``.
+
+    Also confirmed live 2026-08-13, exercised manually outside this suite:
+    ``DELETE /api/records/{o}/{id}`` (``records delete``) reaches the exact
+    same externally-observable state — 404 on a direct GET, absent from
+    search, and restorable through this same unarchive endpoint. See
+    ``docs/specs/records.md`` Gotchas and ``records delete``'s docstring.
+    This test still exercises the dedicated archive endpoint, since that's
+    what ``records archive`` calls rather than aliasing to delete.
+    """
+    from kizen_builder.api import records as records_api
+    from kizen_builder.api.client import KizenAPIError
+    from kizen_builder.tools.planners.records import (
+        plan_archive_records,
+        plan_create_records,
+        plan_unarchive_records,
+    )
+
+    object_api_name = records_object["api_name"]
+    name = debris_name("record archive")
+    create_plan = plan_create_records(object_api_name, [{"name": name}])
+    (create_op,) = create_plan.operations
+    created = records_api.create_record(
+        drift_client, object_api_name, create_op.payload["fields"]
+    )
+    record_id = created["id"]
+
+    def _delete_if_still_present() -> None:
+        try:
+            records_api.delete_record(drift_client, object_api_name, record_id)
+        except KizenAPIError as exc:
+            if exc.status_code != 404:
+                raise
+
+    scratch.track("record", record_id, _delete_if_still_present)
+
+    archive_plan = plan_archive_records(object_api_name, [record_id])
+    (archive_op,) = archive_plan.operations
+    assert archive_op.action == "update" and archive_op.kind == "record_archive"
+    assert archive_op.existing_uuid == record_id
+    assert archive_op.parent_object_uuid == records_object["uuid"]
+
+    records_api.archive_record(drift_client, archive_op.parent_object_uuid, record_id)
+
+    _poll_search_membership(
+        drift_client, object_api_name, record_id, name, present=False
+    )
+
+    with pytest.raises(KizenAPIError) as excinfo:
+        records_api.get_record(drift_client, object_api_name, record_id)
+    assert excinfo.value.status_code == 404
+
+    unarchive_plan = plan_unarchive_records(object_api_name, [record_id])
+    (unarchive_op,) = unarchive_plan.operations
+    assert unarchive_op.action == "update" and unarchive_op.kind == "record_unarchive"
+    assert unarchive_op.existing_uuid == record_id
+    assert unarchive_op.parent_object_uuid == object_api_name
+
+    records_api.unarchive_record(drift_client, object_api_name, record_id)
+
+    ids_after = _poll_search_membership(
+        drift_client, object_api_name, record_id, name, present=True
+    )
+    assert record_id in ids_after
