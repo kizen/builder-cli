@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 
 import pytest
+from rich.console import Console
 from typer.testing import CliRunner
 
 import kizen_builder.cli as cli
+from kizen_builder.cli import objects as objects_cli
 from kizen_builder.tools import automations as auto_tools
 from kizen_builder.tools import forms as form_tools
 from kizen_builder.tools import objects as obj_tools
@@ -58,6 +60,265 @@ def test_objects_list_table(monkeypatch):
     assert result.exit_code == 0
     assert "invoice" in result.stdout
     assert "Invoices" in result.stdout
+
+
+def _fake_object_with_options():
+    # Real object/category/field/option ids and labels from the `encounters`
+    # object in the pinned `cli-testing` sandbox (see Verification) — two
+    # dropdown fields with 11 options each, plus a long-api_name text field
+    # and a relationship field with a long target, so the table's natural
+    # width meaningfully exceeds the console's fixed 220 columns and this
+    # test actually exercises the width-pressure column-collapse regression,
+    # not just "does an options column exist."
+    return {
+        "env": "testenv",
+        "id": "98649f6d-b809-4c9a-980d-8ee54708a8a6",
+        "api_name": "encounters",
+        "display_name": "Encounters",
+        "entity_name": "Encounter",
+        "object_type": "standard",
+        "stages": None,
+        "categories": [
+            {"id": "180d7be3-e952-4d98-8efe-871004cdf350", "name": "Reason for Visit"},
+            {
+                "id": "1213bae3-8e98-4783-b484-7b4b03688b84",
+                "name": "Encounter Type & Class",
+            },
+            {"id": "a97b03d9-3e9f-43bd-9efc-4fe998f941df", "name": "Hospitalization"},
+            {"id": "e5f7548b-516d-44ab-a1bc-67e2b11273b0", "name": "Diagnosis Links"},
+        ],
+        "fields": [
+            {
+                "id": "9bb801d2-8a40-4934-8e29-1d33a8000fa0",
+                "api_name": "clinical_notes",
+                "display_name": "Clinical Notes",
+                "field_type": "longtext",
+                "category_id": "180d7be3-e952-4d98-8efe-871004cdf350",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": None,
+            },
+            {
+                "id": "c1919144-ad35-45d2-87b5-b8b6b941a41b",
+                "api_name": "service_type",
+                "display_name": "Service Type",
+                "field_type": "dropdown",
+                "category_id": "1213bae3-8e98-4783-b484-7b4b03688b84",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": [
+                    {
+                        "id": "6c424e05-c021-4267-a1aa-21e1bb9d9780",
+                        "name": "Primary Care",
+                        "code": "",
+                    },
+                    {
+                        "id": "185ce7d1-88d6-40d2-9d49-0c86af1ce99f",
+                        "name": "Cardiology",
+                        "code": "",
+                    },
+                    {
+                        "id": "09ee0582-c904-47b8-ac43-edf7f29d224a",
+                        "name": "Orthopedics",
+                        "code": "",
+                    },
+                    {
+                        "id": "7e8f5020-d35b-487a-b2e8-77ffbfa91823",
+                        "name": "Neurology",
+                        "code": "",
+                    },
+                    {
+                        "id": "ce58a00b-7fd4-4863-b1e0-7e446bbff332",
+                        "name": "Oncology",
+                        "code": "",
+                    },
+                    {
+                        "id": "b0c63ec2-7b46-4d9f-be9a-e0e25dac1072",
+                        "name": "Behavioral Health",
+                        "code": "",
+                    },
+                    {
+                        "id": "b1cf9d6a-db75-462f-9ced-247277ee9aae",
+                        "name": "OB/GYN",
+                        "code": "",
+                    },
+                    {
+                        "id": "f29ed578-3e2b-40ce-abf4-015a12af71b8",
+                        "name": "Pediatrics",
+                        "code": "",
+                    },
+                    {
+                        "id": "a0f239a9-3bf0-4ce4-ae22-7505e7ee3d18",
+                        "name": "Radiology",
+                        "code": "",
+                    },
+                    {
+                        "id": "a7fab285-15b7-4882-b20c-3d708d9b3c0e",
+                        "name": "Laboratory",
+                        "code": "",
+                    },
+                    {
+                        "id": "5d92c5db-f75a-4979-a1c4-359b2219c9ad",
+                        "name": "Other",
+                        "code": "",
+                    },
+                ],
+            },
+            {
+                "id": "c7df5b14-7bfb-4976-90ae-ef6f1486a8f6",
+                "api_name": "discharge_disposition",
+                "display_name": "Discharge Disposition",
+                "field_type": "dropdown",
+                "category_id": "a97b03d9-3e9f-43bd-9efc-4fe998f941df",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": [
+                    {
+                        "id": "d1e158c6-cec3-4ce1-b149-151b792b816c",
+                        "name": "Home / Self Care",
+                        "code": "",
+                    },
+                    {
+                        "id": "2e4e5cf8-5825-4ac6-bb75-c5b89336302c",
+                        "name": "Home with Home Health",
+                        "code": "",
+                    },
+                    {
+                        "id": "f9be7a9a-e1a8-4f5b-b879-8d7048867c72",
+                        "name": "Skilled Nursing Facility",
+                        "code": "",
+                    },
+                    {
+                        "id": "58314125-fcbf-41c4-ab16-56d762a0e382",
+                        "name": "Inpatient Rehab",
+                        "code": "",
+                    },
+                    {
+                        "id": "37049eb5-d99f-4264-9603-e558f88f3ebb",
+                        "name": "Long-Term Care",
+                        "code": "",
+                    },
+                    {
+                        "id": "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7",
+                        "name": "Transferred to Another Hospital",
+                        "code": "",
+                    },
+                    {
+                        "id": "06474da6-5c75-4c0e-8368-62d42bdc9c32",
+                        "name": "Hospice - Home",
+                        "code": "",
+                    },
+                    {
+                        "id": "19d35c5f-83cf-4eb4-a19c-06d017b0ec02",
+                        "name": "Hospice - Facility",
+                        "code": "",
+                    },
+                    {
+                        "id": "d522ecd7-d1d9-498d-9a3f-126be7ac0cd6",
+                        "name": "Left Against Medical Advice",
+                        "code": "",
+                    },
+                    {
+                        "id": "0e1271dd-169c-4b19-91fc-7126828ac2fc",
+                        "name": "Expired",
+                        "code": "",
+                    },
+                    {
+                        "id": "d24e5b5e-4e3e-4861-b64d-0d620ddd6b0e",
+                        "name": "Other",
+                        "code": "",
+                    },
+                ],
+            },
+            {
+                "id": "0a7fc18c-211f-4b48-9265-34b502b73070",
+                "api_name": "primary_diagnosis_description",
+                "display_name": "Primary Diagnosis Description",
+                "field_type": "text",
+                "category_id": "e5f7548b-516d-44ab-a1bc-67e2b11273b0",
+                "is_required": False,
+                "deleted": False,
+                "relation": None,
+                "relation_target": None,
+                "relation_cardinality": None,
+                "options": None,
+            },
+            {
+                "id": "ae78e103-ab10-47d5-9dbc-730c26ae4882",
+                "api_name": "conditions",
+                "display_name": "Conditions",
+                "field_type": "relationship",
+                "category_id": "1213bae3-8e98-4783-b484-7b4b03688b84",
+                "is_required": False,
+                "deleted": False,
+                "relation": "many_to_many",
+                "relation_target": "conditions",
+                "relation_cardinality": "many_to_many",
+                "options": None,
+            },
+        ],
+    }
+
+
+def test_objects_get_table_shows_full_option_uuids(monkeypatch):
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    result = runner.invoke(cli.app, ["objects", "get", "encounters"])
+    assert result.exit_code == 0
+    assert "6c424e05-c021-4267-a1aa-21e1bb9d9780" in result.stdout
+    assert "185ce7d1-88d6-40d2-9d49-0c86af1ce99f" in result.stdout
+    assert "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7" in result.stdout
+    assert "Primary Care" in result.stdout
+    assert "Transferred to Another Hospital" in result.stdout
+    assert "…" not in result.stdout
+
+
+def test_objects_get_csv_shows_full_option_uuids(monkeypatch):
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    result = runner.invoke(cli.app, ["objects", "get", "encounters", "--output", "csv"])
+    assert result.exit_code == 0
+    assert "6c424e05-c021-4267-a1aa-21e1bb9d9780" in result.stdout
+    assert "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7" in result.stdout
+    assert "Primary Care" in result.stdout
+
+
+def test_objects_get_json_options_unchanged(monkeypatch):
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    result = runner.invoke(cli.app, ["objects", "get", "encounters", "--json"])
+    assert result.exit_code == 0
+    data = json.loads(result.stdout)
+    assert data["fields"][1]["options"] == fake["fields"][1]["options"]
+    assert data["fields"][2]["options"] == fake["fields"][2]["options"]
+
+
+def test_objects_get_table_survives_narrower_console(monkeypatch):
+    # The shared console is fixed at width=220 in production, but Rich's
+    # column-collapse algorithm only stops shrinking a column once it's
+    # *narrower* than the console — a table that just barely fits at 220
+    # gives no evidence the no_wrap protection is doing anything. Forcing a
+    # narrower console is how you tell "protected" apart from "happened not
+    # to need it": at width=150 the naive rendering this item replaced
+    # (no `no_wrap`, no `crop=False`) ellipsis-truncates every UUID in this
+    # fixture, while the current rendering does not.
+    fake = _fake_object_with_options()
+    monkeypatch.setattr(obj_tools, "get_object", lambda api_name: fake)
+    monkeypatch.setattr(objects_cli, "console", Console(width=150, color_system=None))
+    result = runner.invoke(cli.app, ["objects", "get", "encounters"])
+    assert result.exit_code == 0
+    assert "6c424e05-c021-4267-a1aa-21e1bb9d9780" in result.stdout
+    assert "4ffe7165-9cea-4412-90dc-a7b3abb6c5f7" in result.stdout
+    assert "…" not in result.stdout
 
 
 def test_records_list_forwards_search_and_limit(monkeypatch):
