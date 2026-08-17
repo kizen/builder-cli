@@ -113,6 +113,15 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Changed
 
+- **`kizen docs show operating` now states the CLI-plus-browser workflow as a
+  rule, not left implicit.** A new numbered rule says to build and re-apply
+  through the CLI and confirm rendered output — dashboards, dashlets, email
+  bodies, condition labels — in the browser, treating both as one workflow.
+  A new "Verifying rendered output" section lists the concrete categories the
+  CLI cannot render, calls out the automation builder UI's condition-label
+  display bug as product-side rather than a CLI defect, and names the record
+  Timeline as the best single artifact for confirming an automation's
+  provenance.
 - **`kizen init` no longer silently defaults `--base-url` to `go`.** A
   non-interactive invocation that used to omit `--base-url` and succeed
   against `https://app.go.kizen.com` by default now exits 2 unless
