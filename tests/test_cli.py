@@ -1413,6 +1413,65 @@ def test_apply_reads_plan_from_stdin_with_yes(monkeypatch):
     assert out["results"][0]["status"] == "ok"
 
 
+def test_apply_enriches_known_enum_choice_failures(monkeypatch):
+    """BCLI-015: `kizen apply` is the documented second half of plan/apply
+    (the dry-run message tells users to feed --dry-run --json output to it),
+    so a failed automation op must get the same known-choices enrichment
+    `_run_mutation` gives a direct --yes create."""
+    from kizen_builder.tools.plans import ApplyResult, OperationResult
+
+    def fake_apply(plan):
+        return ApplyResult(
+            plan_id=plan.id,
+            env=plan.env,
+            results=[
+                OperationResult(
+                    key=op.key,
+                    kind=op.kind,
+                    action=op.action,
+                    status="failed",
+                    message='HTTP 400: "bogus" is not a valid choice.',
+                    raw={
+                        "step_assign_owner": {
+                            "action_create_related_entity": {
+                                "new_entity_owner_type": [
+                                    '"bogus" is not a valid choice.'
+                                ],
+                            },
+                        },
+                    },
+                )
+                for op in plan.operations
+            ],
+        )
+
+    monkeypatch.setattr(plan_tools, "apply_plan", fake_apply)
+
+    from kizen_builder.tools.plans import Plan, PlanOperation, plan_to_json
+
+    plan = Plan.build(
+        env="testenv",
+        summary="test",
+        operations=[
+            PlanOperation(
+                action="create",
+                kind="automation",
+                key="onboarding_flow",
+                preview={},
+                payload={"name": "onboarding flow"},
+            )
+        ],
+    )
+    result = runner.invoke(
+        cli.app, ["apply", "--yes", "--json"], input=plan_to_json(plan)
+    )
+    assert result.exit_code == 1, result.output
+    out = json.loads(result.stdout)
+    message = out["results"][0]["message"]
+    assert "assign_from_context_record" in message
+    assert "newly_assigned_owner" in message
+
+
 def test_apply_rejects_garbage_plan():
     result = runner.invoke(cli.app, ["apply", "--yes"], input="{not json")
     assert result.exit_code == 2

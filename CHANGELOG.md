@@ -86,6 +86,14 @@ called out explicitly under **Changed** or **Removed**.
 - **The package declares its license.** `kizen-builder` is MIT-licensed, and the
   built wheel and sdist now carry `License-Expression: MIT` along with a copy of
   `LICENSE`.
+- **Some enum rejections on automation writes now name the CLI's known valid
+  values.** A 400 shaped like `"<value>" is not a valid choice` for
+  `create_related_entity.new_entity_owner_type`,
+  `notify_member_via_text.team_member.type`, or `on_or_around_date.date_offset`
+  now carries whatever this repo has already confirmed about that field,
+  instead of leaving you to guess and retry against a live environment. See
+  `tools/planners/automations.py::KNOWN_ENUM_CHOICES` for what's known and
+  where it came from.
 - **`kizen init` asks which Kizen environment you're on instead of asking for a
   URL.** Pick `go`, `fmo`, `staging`, or `integration` and the right API host
   is resolved for you; a mistyped or misaddressed host (e.g. the SPA host

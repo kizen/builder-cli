@@ -711,8 +711,13 @@ pattern — there is no join node.
 ### A 400 from plan-apply
 
 The error is nested: `{step_key: {action_block_name: {field_name: [message]}}}`.
-Work inside-out — which step, which config block, which wire field. Common
-causes:
+Work inside-out — which step, which config block, which wire field. A
+"not a valid choice" rejection for `create_related_entity`,
+`notify_member_via_text`, or `on_or_around_date` now carries the CLI's known
+valid values inline, sourced from
+`tools/planners/automations.py::KNOWN_ENUM_CHOICES` /
+`KNOWN_ENUM_CHOICES_TRIGGERS` — check the registry for what else this repo
+knows about a field before retrying blind. Common causes:
 
 - `null` for a non-nullable field (often a model default leaking through).
 - `action_on_failure: notify_continue` on a condition step — use `notify_pause`.
