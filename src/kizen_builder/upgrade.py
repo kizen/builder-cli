@@ -90,6 +90,12 @@ class Install:
     path: Path | None = None
     #: The requested spec, for ``VCS`` (e.g. ``git+https://…@main``).
     url: str | None = None
+    #: The bare git URL (no ``vcs+`` prefix, no pinned rev), when one is known
+    #: for a non-``CHECKOUT`` install (``UV_TOOL``, ``PIPX``, ``VCS``). Lets
+    #: :func:`check_latest` ask the remote about release tags even though
+    #: there's no local checkout to walk. ``None`` when no VCS source is known
+    #: (a plain index install, or a tool manager that isn't wired for one).
+    repo_url: str | None = None
     #: One line naming the evidence, so ``--dry-run`` can show its work.
     detail: str = ""
 
@@ -203,6 +209,7 @@ def detect_install() -> Install:
         return Install(
             method=managed,
             version=version,
+            repo_url=url if vcs_info else None,
             detail=f"{managed} manages the venv at {sys.prefix}",
         )
 
@@ -214,6 +221,7 @@ def detect_install() -> Install:
             method=VCS,
             version=version,
             url=spec,
+            repo_url=url,
             detail=f"installed from {spec} (PEP 610)",
         )
 
@@ -821,11 +829,32 @@ def _check_checkout(current: str, cwd: Path) -> CheckResult:
     return CheckResult(current=current, reason=reason)
 
 
+def _check_remote_tags(current: str, url: str) -> CheckResult:
+    """Compare against release tags on a known git URL.
+
+    For ``UV_TOOL``/``PIPX``/``VCS`` installs there's no local checkout to walk,
+    so unlike :func:`_check_checkout` this can't fall back to a commit count —
+    there's no local history to diff it against, only the URL the tool was
+    installed from. Once a ``vX.Y.Z`` tag exists, that's enough; until then this
+    is the same "can't tell" as no distribution channel at all, just with a more
+    specific reason.
+    """
+    reached, tag = _latest_tag(Path.cwd(), url, NETWORK_TIMEOUT)
+    if not reached:
+        return CheckResult(current=current, reason="couldn't reach the git remote")
+    if tag:
+        return CheckResult(current=current, latest=tag, source="tags")
+    return CheckResult(current=current, reason="the remote has no release tags yet")
+
+
 def _check_uncached(install: Install) -> CheckResult:
     current = install.version
 
     if install.is_checkout and install.path and (install.path / ".git").exists():
         return _check_checkout(current, install.path)
+
+    if install.repo_url:
+        return _check_remote_tags(current, install.repo_url)
 
     latest = _latest_from_index()
     if latest:

@@ -1,0 +1,12 @@
+{
+  "name": "Site Visit",
+  "association_mode": "selected_objects_associated",
+  "selected_object_ids": ["<service_tickets_object_uuid>"],
+  "fields": [
+    { "name": "Work Performed", "field_type": "longtext", "order": 0 },
+    { "name": "Outcome", "field_type": "dropdown", "order": 1,
+      "options": ["Resolved", "Follow-up Needed", "Cancelled"] },
+    { "name": "Priority Snapshot", "field_type": "activity_custom_field",
+      "order": 2, "custom_object_field": "<service_tickets.priority_field_uuid>" }
+  ]
+}

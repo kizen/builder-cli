@@ -14,7 +14,8 @@ kizen fields create <object> --spec-file fields.json         # kizen docs show f
 `kizen objects get <object>` returns categories, every field with its **UUID
 inline**, and every choice/status/yesnomaybe field's `options` array as
 `{id, name, code}`. **There is no separate call needed for option UUIDs** — this
-is the answer to "how do I find the option UUID for X".
+is the answer to "how do I find the option UUID for X". **Confirmed live
+2026-08-13: true in every output mode**, with the full UUID, not shortened.
 
 It also resolves each relationship field's target to a readable api_name plus
 cardinality, so you never hand-resolve a `related_object` UUID.

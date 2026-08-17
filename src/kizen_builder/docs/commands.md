@@ -25,6 +25,8 @@ kizen automations llm-models                 # live model_name + business_plugin
 kizen automations runs list <api_name>       # recent runs for an automation
 kizen automations runs view <exec_uuid>      # one run: summary + step-by-step trace (per-step status/duration)
 kizen automations runs view <exec_uuid> --no-steps   # summary only (status + record + start/finish)
+kizen automations runs view <exec_uuid> --wait       # block until the run finishes (see kizen docs show automation-runtime)
+kizen automations runs logs <exec_uuid>              # each step's detailed_log (code_step stdout/traceback, etc.)
 kizen automations modification-history <api_name>    # who changed this automation, when, what changed
 kizen automations failures <api_name>                # recent step-failure history
 kizen dashboards list                        # list dashboards + homepages (mine)
@@ -33,10 +35,11 @@ kizen layouts list <object_api_name>         # record layouts on a custom object
 kizen layouts get <object_api_name> [--name] # one layout's block/column structure
 kizen records get <object> <uuid>            # one record with all field values
 kizen records get <object> --name "<name>"   # look up one record by its name field (exact, errors if ambiguous)
-kizen records list <object>                  # list records (id + name); use client_client for contacts
+kizen records list <object>                  # list records; table shows id + name, --json/-o csv show every field
 kizen records list <object> --search <text>  # filter records by text
 kizen records list <object> --filter '<json>'  # structured filter; {"all"|"any": [{"field","op","value"}]}
                                                # or raw {"query": [...]} groups; --filter-file for a path
+kizen records list <object> --fields a,b,c   # fetch id, name, and those field api_names; shown as table columns too
 kizen records related <uuid>                 # a record's related pipeline records (any object, no object arg)
 kizen records field-values <uuid> <field>    # all values from a summarized relationship field
                                                # <field> is a UUID or "object_api_name.field_api_name"
@@ -89,6 +92,7 @@ kizen automations start <api_name> --record <uuid> \
     --var org_match=true --var llm_notes="known input"          # seed variables for the run
 kizen automations start <api_name> --record <uuid> \
     --vars-json '{"org_match": true}'                           # same, from a JSON object
+kizen automations start <api_name> --record <uuid> --wait --show-logs  # fire, block, and stream step status + each step's log once it finishes
 
 kizen code test --script s.py \
     --input n=21:number --input who=world:string \

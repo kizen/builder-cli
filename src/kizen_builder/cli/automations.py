@@ -5,12 +5,14 @@ modification/failure diagnostics. Mutations live in `automations_write`.
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import typer
 from rich.table import Table
 
 from kizen_builder import output as out
+from kizen_builder.api.client import KizenAPIError
 from kizen_builder.cli._shared import (
     JSON_OPTION,
     OUTPUT_OPTION,
@@ -378,6 +380,126 @@ def _parse_start_variables(var: list[str], vars_json: str | None) -> dict[str, A
     return variables
 
 
+def _print_start_result(result: dict[str, Any]) -> None:
+    """The human-readable rendering of a `start_automation()`-shaped result —
+    unchanged from before `--wait` existed. Factored out so both the
+    no-`--wait` path and the end of a `--wait` run print identically."""
+    exec_id = result.get("execution_id")
+    overrides = result.get("variable_overrides") or []
+    if exec_id:
+        console.print(f"[green]started[/green]  execution_id={exec_id}")
+        entity = result.get("client_id") or result.get("record_id")
+        if entity:
+            target = "client_id" if result.get("client_id") else "record_id"
+            console.print(f"[dim]on:[/dim] {target}={entity}")
+        else:
+            console.print("[dim]on:[/dim] (global — no record)")
+        if overrides:
+            seeded = ", ".join(f"{o['variable_name']}={o['value']}" for o in overrides)
+            console.print(f"[dim]seeded:[/dim] {seeded}")
+        console.print(f"[dim]View it with:[/dim] kizen automations runs view {exec_id}")
+    else:
+        console.print("[yellow]started — no execution ID in response[/yellow]")
+        console.print(json.dumps(result.get("raw"), indent=2))
+
+
+# Fixed, not a flag: the queue-latency data (§0's runtime table) shows gaps up
+# to 10+ minutes between steps on a real chain. At the default 5s poll
+# interval that's ~120 polls of dead air — a heartbeat keeps that from
+# reading as a hang without growing the flag surface for a value the timing
+# data already justifies picking once.
+_HEARTBEAT_INTERVAL_S = 30.0
+
+
+class _RunStream:
+    """The `on_poll` callback for `start --wait`: fetches step history once
+    per poll (a second GET beyond the status poll `wait_for_execution()`
+    already makes — see this item's notes on that trade-off) and prints only
+    what's new since the last poll, deduped by the history row's `id`
+    (BCLI-012's addition to `get_execution_history()`), falling back to the
+    row's position if `id` is ever absent. Prints a throttled heartbeat
+    instead of nothing during a real gap between steps.
+
+    Lives here, not in `tools/automations.py` — no `rich`/`console` import
+    exists under `tools/`, and this keeps it that way.
+    """
+
+    def __init__(self, *, show_logs: bool) -> None:
+        self.show_logs = show_logs
+        self._seen: set[Any] = set()
+        self._start = time.monotonic()
+        self._last_line = self._start
+        self._consecutive_history_errors = 0
+
+    def __call__(self, poll_summary: dict[str, Any]) -> None:
+        # Imported here, not at module scope: cli/runs.py imports `autos_app`
+        # from this module, so a top-level import back the other way would be
+        # circular. By call time both modules are fully loaded.
+        from kizen_builder.cli.runs import _print_step_log, history_duration
+
+        execution_id = poll_summary.get("execution_id")
+        if not execution_id:
+            return
+        try:
+            history = auto_tools.get_execution_history(execution_id)
+        except KizenAPIError as exc:
+            # Same tolerance wait_for_execution's own status poll gives
+            # itself (tools/automations.py): a network blip or 5xx here is
+            # transient — skip this poll's render rather than raise on_poll
+            # out of wait_for_execution and abort a run that is otherwise
+            # healthy. A 4xx, or a run of failures past the same budget the
+            # status poll uses, is not transient and is allowed to propagate
+            # — deliberately: a persistently broken history endpoint should
+            # surface as a real error, not degrade into silence for the rest
+            # of a long wait.
+            if exc.status_code and exc.status_code < 500:
+                raise
+            self._consecutive_history_errors += 1
+            if (
+                self._consecutive_history_errors
+                > auto_tools.MAX_CONSECUTIVE_POLL_ERRORS
+            ):
+                raise
+            return
+        self._consecutive_history_errors = 0
+        new_rows = []
+        for i, row in enumerate(history, 1):
+            key = row.get("id")
+            if key is None:
+                key = i
+            if key in self._seen:
+                continue
+            self._seen.add(key)
+            new_rows.append((i, row))
+
+        if new_rows:
+            for i, row in new_rows:
+                line = (
+                    f"[dim]#{i}[/dim] {row.get('kind') or ''} "
+                    f"{row.get('type') or ''} — {row.get('description') or ''} "
+                    f"[{row.get('status') or ''}]"
+                )
+                duration = history_duration(row)
+                if duration:
+                    line += f" ({duration})"
+                console.print(line)
+                if self.show_logs and row.get("detailed_log") is not None:
+                    # BCLI-012's own per-row renderer — the same {"stdout",
+                    # "traceback"}/logs-key/JSON-fallback formatting `runs
+                    # logs` uses, called rather than duplicated.
+                    _print_step_log(i, row)
+            self._last_line = time.monotonic()
+            return
+
+        if time.monotonic() - self._last_line >= _HEARTBEAT_INTERVAL_S:
+            elapsed = time.monotonic() - self._start
+            console.print(
+                f"[dim]…still {poll_summary.get('status') or 'unknown'} — "
+                f"{elapsed:.0f}s elapsed, poll {poll_summary.get('polls')}[/dim]"
+            )
+            self._last_line = time.monotonic()
+
+
 @autos_app.command("start")
 def autos_start(
     api_name: str = typer.Argument(..., help="Automation api_name."),
@@ -399,6 +521,29 @@ def autos_start(
         help="Seed variables from a JSON object, e.g. '{\"org_match\": true}'. "
         "Merged with --var (--var wins on conflict).",
     ),
+    wait: bool = typer.Option(
+        False,
+        "--wait/--no-wait",
+        help="Block until the run reaches a terminal status, streaming step "
+        "status as it arrives.",
+    ),
+    timeout: float = typer.Option(
+        900.0,
+        "--timeout",
+        help="With --wait: seconds to wait before giving up (0 = no deadline).",
+    ),
+    poll_interval: float = typer.Option(
+        5.0,
+        "--poll-interval",
+        help="With --wait: seconds between polls.",
+    ),
+    show_logs: bool = typer.Option(
+        False,
+        "--show-logs",
+        help="Print each new step's detailed_log once that step finishes — a "
+        "code_step's log is only available then, not while it's still "
+        "running. Implies --wait.",
+    ),
     json_out: bool = typer.Option(False, "--json", help="Emit JSON."),
 ) -> None:
     """Trigger an automation, optionally on a record and seeding variables.
@@ -415,34 +560,74 @@ def autos_start(
     automation on a record), not a schema mutation, so it sits outside the
     plan/preview/confirm gate that guards create/update. That is a standing
     decision, not an oversight.
+
+    `--wait` blocks until the run finishes, printing each new step's status
+    the moment it appears (a dim heartbeat during a real gap between steps —
+    see `kizen docs show automation-runtime`'s "Watching a run" for the
+    timeout/status vocabulary this shares with `runs view --wait`).
+    `--show-logs` additionally prints each step's `detailed_log` once that
+    step finishes (a `code_step`'s log is released only on completion, not
+    incrementally) and implies `--wait`. `--timeout`/`--poll-interval` mirror
+    `runs view --wait`'s flags of the same name. Exit code mirrors `runs view
+    --wait`: `completed` → 0, `failed`/`cancelled` → 1, a timeout or any
+    `paused*` status → 3 (the wait ended without the run finishing, not
+    necessarily a failure).
     """
+    effective_wait = wait or show_logs
+    if effective_wait and timeout < 0:
+        raise typer.BadParameter("--timeout must be >= 0 (0 = no deadline).")
+    if effective_wait and poll_interval <= 0:
+        raise typer.BadParameter("--poll-interval must be > 0.")
+
     variables = _parse_start_variables(var, vars_json)
+
+    if not effective_wait:
+        # Byte-for-byte identical to `start` before `--wait` existed: exactly
+        # one call to start_automation(), same output, exit 0 always.
+        with cli_errors(LookupError):
+            result = auto_tools.start_automation(
+                api_name, record_id, variables=variables or None
+            )
+        if json_out:
+            typer.echo(json.dumps(result, indent=2))
+            return
+        _print_start_result(result)
+        return
+
+    on_poll = None if json_out else _RunStream(show_logs=show_logs)
     with cli_errors(LookupError):
-        result = auto_tools.start_automation(
-            api_name, record_id, variables=variables or None
+        result = auto_tools.start_and_wait(
+            api_name,
+            record_id,
+            variables=variables or None,
+            wait=True,
+            timeout=timeout,
+            poll_interval=poll_interval,
+            on_poll=on_poll,
         )
+
+    execution_id = result.get("execution_id")
+    if show_logs and json_out and execution_id:
+        result = {**result, "steps": auto_tools.get_execution_history(execution_id)}
 
     if json_out:
         typer.echo(json.dumps(result, indent=2))
-        return
-
-    exec_id = result.get("execution_id")
-    overrides = result.get("variable_overrides") or []
-    if exec_id:
-        console.print(f"[green]started[/green]  execution_id={exec_id}")
-        entity = result.get("client_id") or result.get("record_id")
-        if entity:
-            target = "client_id" if result.get("client_id") else "record_id"
-            console.print(f"[dim]on:[/dim] {target}={entity}")
-        else:
-            console.print("[dim]on:[/dim] (global — no record)")
-        if overrides:
-            seeded = ", ".join(f"{o['variable_name']}={o['value']}" for o in overrides)
-            console.print(f"[dim]seeded:[/dim] {seeded}")
-        console.print(f"[dim]View it with:[/dim] kizen automations runs view {exec_id}")
     else:
-        console.print("[yellow]started — no execution ID in response[/yellow]")
-        console.print(json.dumps(result.get("raw"), indent=2))
+        _print_start_result(result)
+        if execution_id:
+            # Same "avoid failure language" outcome message runs view --wait
+            # prints — reused, not a second copy.
+            from kizen_builder.cli.runs import print_wait_outcome
+
+            print_wait_outcome(execution_id, result, timeout)
+
+    # BCLI-012's completed/failed/cancelled/timeout/paused -> exit-code
+    # mapping, reused as-is — no second copy of it here.
+    from kizen_builder.cli.runs import wait_exit_code
+
+    exit_code = wait_exit_code(result)
+    if exit_code:
+        raise typer.Exit(code=exit_code)
 
 
 # ---------------------------------------------------------------------------

@@ -212,6 +212,41 @@ def test_get_object_non_relationship_field_has_no_target():
 
 
 @respx.mock
+def test_get_object_options_round_trip_unchanged():
+    """A choice field's options survive `get_object()` as `{id, name, code}`
+    per option — the shape the CLI layer's table/CSV rendering builds on."""
+    respx.get(f"{FAKE_BASE_URL}/api/custom-objects").mock(
+        return_value=httpx.Response(200, json=OBJECT_LIST)
+    )
+    respx.get(f"{FAKE_BASE_URL}/api/custom-objects/{OBJ_ID}/categories").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    respx.get(f"{FAKE_BASE_URL}/api/custom-objects/{OBJ_ID}/fields").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {
+                    "id": "f1",
+                    "name": "status",
+                    "field_type": "dropdown",
+                    "options": [
+                        {"id": "opt-1", "name": "Open", "code": "OPEN"},
+                        {"id": "opt-2", "name": "Closed", "code": "CLOSED"},
+                    ],
+                }
+            ],
+        )
+    )
+
+    obj = get_object("policies_policy")
+    (field,) = obj["fields"]
+    assert field["options"] == [
+        {"id": "opt-1", "name": "Open", "code": "OPEN"},
+        {"id": "opt-2", "name": "Closed", "code": "CLOSED"},
+    ]
+
+
+@respx.mock
 def test_get_object_unknown_identifier_falls_back_to_literal_string():
     """A truly unknown identifier (404 on direct fetch too) still falls back
     to the literal string, matching prior behavior for edge cases."""

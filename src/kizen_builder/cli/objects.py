@@ -66,6 +66,78 @@ def objects_list(
     )
 
 
+def _option_label(option: dict[str, Any]) -> str:
+    """``name (id)`` — the UUID is payload here, not a label, so it is
+    never truncated."""
+    return f"{option.get('name') or ''} ({option['id']})"
+
+
+def _options_cell(field: dict[str, Any]) -> str:
+    """Table cell for one field's options, one per line."""
+    return "\n".join(_option_label(o) for o in (field.get("options") or []))
+
+
+def _options_csv(field: dict[str, Any]) -> str:
+    """CSV cell for one field's options, joined with ``"; "``."""
+    return "; ".join(_option_label(o) for o in (field.get("options") or []))
+
+
+_FLD_COLUMNS = (
+    "api_name",
+    "display_name",
+    "type",
+    "target",
+    "category",
+    "options",
+    "id",
+)
+
+
+def _print_fields_table(result: dict[str, Any], cat_by_id: dict[str, str]) -> None:
+    """Print the Fields table. Option and field UUIDs are payload, not a
+    label, so the `options`/`id` columns are `no_wrap` and never get
+    ellipsis-truncated or squeezed by Rich's column-collapse."""
+    rows: list[list[str]] = []
+    for f in result["fields"]:
+        target = f.get("relation_target") or ""
+        card = f.get("relation_cardinality") or ""
+        target_cell = f"{target} ({card})" if target and card else target
+        rows.append(
+            [
+                f["api_name"] or "",
+                f["display_name"] or "",
+                f["field_type"] or "",
+                target_cell,
+                cat_by_id.get(f["category_id"], "") or "",
+                _options_cell(f),
+                f["id"] or "",
+            ]
+        )
+
+    fld_table = Table(title="Fields")
+    for i, header in enumerate(_FLD_COLUMNS):
+        width = len(header)
+        for row in rows:
+            width = max(width, *(len(line) for line in row[i].split("\n")))
+        fld_table.add_column(
+            header,
+            style="dim" if header in ("target", "options") else None,
+            no_wrap=header in ("options", "id"),
+            min_width=width,
+        )
+    for row in rows:
+        fld_table.add_row(*row)
+
+    # `no_wrap` on the options/id columns is what stops Rich's column-collapse
+    # algorithm from shrinking a UUID to an ellipsis when the table's natural
+    # width exceeds the console's fixed width; `crop=False` stops the
+    # rendered buffer from being cropped back down to that width afterward.
+    # An explicit `width=` on print() would not help here: Console.print()
+    # clamps it to min(width, console.width), so it can never render wider
+    # than the console's own fixed width regardless of what's passed.
+    console.print(fld_table, crop=False)
+
+
 @objects_app.command("get")
 def objects_get(
     api_name: str = typer.Argument(..., help="Object api_name."),
@@ -95,26 +167,7 @@ def objects_get(
             cat_table.add_row(c["name"] or "", (c["id"] or ""))
         console.print(cat_table)
 
-        fld_table = Table(title="Fields")
-        fld_table.add_column("api_name")
-        fld_table.add_column("display_name")
-        fld_table.add_column("type")
-        fld_table.add_column("target", style="dim")
-        fld_table.add_column("category")
-        fld_table.add_column("id")
-        for f in result["fields"]:
-            target = f.get("relation_target") or ""
-            card = f.get("relation_cardinality") or ""
-            target_cell = f"{target} ({card})" if target and card else target
-            fld_table.add_row(
-                f["api_name"] or "",
-                f["display_name"] or "",
-                f["field_type"] or "",
-                target_cell,
-                cat_by_id.get(f["category_id"], "") or "",
-                (f["id"] or ""),
-            )
-        console.print(fld_table)
+        _print_fields_table(result, cat_by_id)
 
         if result.get("stages") is not None:
             stg_table = Table(title="Stages")
@@ -146,6 +199,7 @@ def objects_get(
             out.Column("relation_target", "relation_target"),
             out.Column("relation_cardinality", "relation_cardinality"),
             out.Column("category", lambda f: cat_by_id.get(f.get("category_id"), "")),
+            out.Column("options", _options_csv),
             out.Column("id", "id"),
         ],
     )

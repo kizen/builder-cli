@@ -39,6 +39,27 @@ POST /api/automation2/automations/<automation-identifier>/start
   `{"execution": null}` if a UUID was passed as the identifier instead of the
   api_name.
 
+### `--wait` / `--show-logs` — start and follow a run in one command
+
+```bash
+kizen automations start <api_name> --record <uuid> --wait
+kizen automations start <api_name> --record <uuid> --wait --show-logs
+```
+
+Composes this section's `start` with "Watching a run" below's
+`wait_for_execution()` and step history — no second poll loop, no second
+`detailed_log` renderer. `--wait` blocks until the run reaches a terminal
+status, printing each new step's status line the moment it appears (plus a
+throttled heartbeat during a real gap between steps); `--show-logs` also
+prints each step's `detailed_log` once that step finishes and implies
+`--wait` — a `code_step`'s log is released on completion, not while it's
+still running (see "Watching a run" below). `--timeout` /
+`--poll-interval` are the same flags, same defaults, as `runs view --wait`
+below, and the exit-code mapping (`completed` → 0, `failed`/`cancelled` → 1,
+timeout or `paused*` → 3) is the same logic, reused rather than duplicated.
+`--json --wait` never interleaves streaming text with the JSON blob; with
+`--show-logs` its payload also carries the full step history under `steps`.
+
 ## Watching a run
 
 ```
@@ -48,11 +69,15 @@ GET /api/automation2/automation-execution/<execution-id>/history
 ```
 
 `size` maxes at 100. CLI: `kizen automations runs list <api_name>`, and
-`runs view <exec_uuid>` (`--no-steps` for the summary half only).
+`runs view <exec_uuid>` (`--no-steps` for the summary half only, `--wait` to
+block until the run finishes). `runs logs <exec_uuid>` prints each step's
+`detailed_log` — see below.
 
 - Detail response has `status`, `record`, `automation`, `debug_mode`, `created`
   (≈ started) and `updated` (≈ finished). There is **no** `started_at` /
-  `finished_at`.
+  `finished_at`. On a halted execution it also carries `paused_on_step`
+  (`{id, type, branching_step, label}`) — `runs view` surfaces this whenever
+  the GET carries it.
 - **No trailing slash** — `…/<execution-id>/` 404s with an HTML page; the
   router only registers the slashless path.
 - In `/history`, each row is one step or trigger firing. Type and human
@@ -60,6 +85,44 @@ GET /api/automation2/automation-execution/<execution-id>/history
   description}`), **not** at the row top level. Timing is `execution_time_ms`
   (null for async steps like `code_step` / `call_llm`) plus `created` /
   `updated`.
+- `detailed_log` on a history row is where a `code_step`'s output lands —
+  **only** `outputs.log("…")` populates it; plain `print()` does not.
+  `runs logs <exec_uuid>` renders it. **Confirmed live 2026-08-13**, its shape
+  varies by step type, and none of them is a plain `{stdout, traceback}`:
+  a code step carries `{logs, inputs, values, duration, http_requests}` (a
+  full outbound HTTP trace); an action-step failure carries `{reasons}`; a
+  debug advance carries `{debug_action}`. `runs logs` renders the shapes it
+  can name and falls back to pretty-printed JSON for the rest. **Owner-
+  confirmed 2026-08-13**: a `code_step`'s log is released only once the step
+  finishes — it does not fill in incrementally while the step runs — so
+  anything that watches for it (`start --wait --show-logs` included) is
+  printing a completed log, not tailing a running one.
+
+### Execution status — drive terminal detection off the schema, not off what's been seen
+
+`ReadEntityAutomationExecutionStatusEnum`, confirmed live 2026-08-13:
+
+```
+active, paused, completed, cancelled, paused_by_automation, paused_by_failure, failed
+```
+
+`completed`, `failed`, `cancelled`, and the three `paused*` values are
+terminal; `active` and anything the enum doesn't list are not.
+`paused_by_failure` is a **distinct value from `paused`** — confirmed live on
+an execution halted with a `paused_on_step` naming the failing step; it means
+halted and needs a human, not "still running."
+
+Per-step rows use a different, 12-value enum (`AutomationHistoryStatusEnum`),
+including `debug_waiting`, `waiting_for_branches`, `pending_retry`,
+`pending_throttled`.
+
+**Queue latency between steps in the same chain is not the same as step
+execution time.** On a real 9-step chain, individual step execution measured
+sub-500ms every time, but the queue latency *between* steps on that same
+chain ranged from ~60s to over 10 minutes. A wait that times out quickly, or
+that treats an unfamiliar status as done or stuck, is not evidence the run
+failed — `runs view --wait` defaults `--timeout` to 900s for exactly this
+reason (`--timeout 0` waits indefinitely).
 
 ## Controlling a run
 
@@ -79,8 +142,9 @@ POST /api/automation2/automation-execution/<id>/debug-step       # skip or execu
 
 **Confirmed live 2026-07-22** for pause/play/cancel against a real delayed
 execution — status flipped `active` → `paused` → `active` → `cancelled` on the
-following GET each time. The `debug-*` verbs are wired from the schema shapes
-only, not live-exercised.
+following GET each time. `debug-step` **confirmed live 2026-08-13**: it
+started an execution with `debug_mode: "active"`, which parks at each step in
+status `debug_waiting` until advanced.
 
 ### The oddly-heavy shared request body
 
@@ -104,8 +168,11 @@ Per-verb bodies:
 - **`debug-step`** — `DebugStepRequest`: `{action: "execute"|"skip"|"debug",
   history_id, continue_with_branch?}`.
 
-All of these returned an empty/`null` body in testing, which is why the CLI
-re-`GET`s the execution afterward to report the before/after status.
+**Correction, confirmed live 2026-08-13**: only `debug-sendit` returns an
+empty/`null` body. `debug-step` returns a full `LightAutomationHistory`, and
+the schema `$ref`s the same shape for `debug-rerun`/`debug-restart`. The CLI
+still re-`GET`s the execution afterward to report the before/after status —
+`debug-step`'s response is the *step's* new history row, not the execution.
 
 ## Diagnostics
 

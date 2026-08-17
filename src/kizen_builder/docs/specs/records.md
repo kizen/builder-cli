@@ -136,6 +136,16 @@ list in a JSON spec to bypass that entirely.
 records. The `query` structure is the shared filter wire format —
 `kizen docs show filters`.
 
+`confirmed live 2026-08-13`: omitting `field_names` entirely returns **every**
+field on the object (17/17 field keys observed on a test object) — the
+server's own default is "everything," not "id + name." Matching is on field
+**api_name only**; a display label or a field UUID in `field_names` matches
+nothing (an all-bad list returns `"fields": {}`). An unrecognized api_name is
+**silently dropped, not rejected** — the request still returns `200` with
+that name simply absent from `fields`, so client-side validation before
+sending the request is the only way to catch a typo (`kizen records list
+--fields` does this).
+
 ## Bulk change field value (`records set-field`)
 
 `POST /api/custom-objects/{object_pk}/bulk-change-field-value` sets **one field
