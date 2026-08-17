@@ -2123,7 +2123,9 @@
 │ --api-key                     <str>  API key (else prompts). [env var: KIZEN_API_KEY]            │
 │ --business-id                 <str>  Business id (else prompts). [env var: KIZEN_BUSINESS_ID]    │
 │ --user-id                     <str>  User id (else prompts). [env var: KIZEN_USER_ID]            │
-│ --base-url                    <str>  Kizen base URL. [default: https://app.go.kizen.com]         │
+│ --base-url                    <str>  Kizen environment: a name (go, fmo, staging, integration)   │
+│                                      or a full URL for self-hosted/one-off setups. Prompts if    │
+│                                      omitted.                                                    │
 │ --no-pin                             Store credentials only; don't pin this directory.           │
 │ --skip-validation                    Don't verify credentials with a live call.                  │
 │ --refresh-stubs                      Overwrite existing CLAUDE.md / AGENTS.md with the current   │
@@ -2763,12 +2765,12 @@
                                                                                                     
  List records from a custom object (up to --limit).                                                 
                                                                                                     
- The table shows id and name for each record; `--output json` returns                               
- full field data, and `--output csv` flattens each record's fields into                             
- columns (one column per field, unioned across the result set) — the                                
- workhorse format for pulling records into a spreadsheet. Use --search                              
- for text matching, --filter for structured field conditions, or                                    
- `records get` to inspect a single record.                                                          
+ The table shows id and name for each record, plus one column per                                   
+ `--fields` entry if given; `--output json` and `--output csv` show the                             
+ same set (id, name, and the requested fields — full field data if                                  
+ `--fields` is omitted). Use --search for text matching, --filter for                               
+ structured field conditions, or `records get` to inspect a single                                  
+ record.                                                                                            
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    object_api_name      <str>  Object api_name (e.g. client_client). [required]                │
@@ -2781,6 +2783,10 @@
 │                               groups ({"query": [...]}) passed through as-is. Run `kizen filters │
 │                               ops ` to see which ops a field's type supports.                    │
 │ --filter-file          <str>  Path to a JSON filter (same format as --filter).                   │
+│ --fields               <str>  Comma-separated field api_names to fetch and show as table columns │
+│                               (e.g. --fields ticker_symbol,purchase_price). Must be api_names,   │
+│                               not display labels or field UUIDs; an unrecognized name is         │
+│                               rejected before any request is sent.                               │
 │ --limit        -n      <int>  Max records to return. [default: 100]                              │
 │ --output       -o      <str>  Output format: table (default), json, or csv.                      │
 │ --json                        Alias for --output json.                                           │

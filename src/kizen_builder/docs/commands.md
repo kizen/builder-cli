@@ -35,10 +35,11 @@ kizen layouts list <object_api_name>         # record layouts on a custom object
 kizen layouts get <object_api_name> [--name] # one layout's block/column structure
 kizen records get <object> <uuid>            # one record with all field values
 kizen records get <object> --name "<name>"   # look up one record by its name field (exact, errors if ambiguous)
-kizen records list <object>                  # list records (id + name); use client_client for contacts
+kizen records list <object>                  # list records; table shows id + name, --json/-o csv show every field
 kizen records list <object> --search <text>  # filter records by text
 kizen records list <object> --filter '<json>'  # structured filter; {"all"|"any": [{"field","op","value"}]}
                                                # or raw {"query": [...]} groups; --filter-file for a path
+kizen records list <object> --fields a,b,c   # fetch id, name, and those field api_names; shown as table columns too
 kizen records related <uuid>                 # a record's related pipeline records (any object, no object arg)
 kizen records field-values <uuid> <field>    # all values from a summarized relationship field
                                                # <field> is a UUID or "object_api_name.field_api_name"
