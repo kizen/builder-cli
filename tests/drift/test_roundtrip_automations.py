@@ -764,6 +764,45 @@ def drift_startable_automation(drift_client, scratch, drift_object) -> dict[str,
 
 
 @pytest.fixture(scope="session")
+def drift_code_step_automation(drift_client, scratch, drift_object) -> dict[str, Any]:
+    """An **active** automation with a `code_step` first (no `delay` ahead of
+    it), for `test_wait_for_execution_and_history_row_shapes_against_a_live_run`
+    to reach a real `code_step`'s `detailed_log` inside a short poll budget.
+
+    `drift_control_flow` also has a `code_step`, but it sits behind a 1-day
+    `delay` step and so can never complete inside any test's budget — a
+    run started against it would only ever observe `stop_execution`'s
+    `detailed_log` shape, not the one this item calls its central risk.
+    """
+    spec = _base_spec("codelog", drift_object)
+    spec["active"] = True
+    spec["steps"] = [
+        {
+            "key": "log",
+            "step_type": "code_step",
+            "order": 0,
+            "parent_key": None,
+            "action_code_step": {
+                "script": 'outputs.log("drift-wait-for-execution")',
+                "runtime": "python-3-13",
+            },
+        },
+        {
+            "key": "stop",
+            "step_type": "stop_execution",
+            "order": 1,
+            "parent_key": "log",
+            "action_stop_execution": {"action": "stop_and_complete"},
+        },
+    ]
+    record = _create_automation(drift_client, scratch, spec)
+    assert record["live"]["active"] is True, (
+        "the code_step target automation did not come back active"
+    )
+    return record
+
+
+@pytest.fixture(scope="session")
 def drift_control_flow(
     drift_client,
     scratch,
@@ -1644,6 +1683,189 @@ def test_schedule_activity_auto_adds_its_own_context_record_association(
     context = [c for c in configs if c["association_source"] == "context_record"]
     assert len(context) == 1, [c["association_source"] for c in configs]
     assert context[0]["custom_object"]["id"] == drift_object["uuid"]
+
+
+# ---------------------------------------------------------------------------
+# Watching a run — wait_for_execution + detailed_log wire shapes (BCLI-012)
+# ---------------------------------------------------------------------------
+
+
+def test_wait_for_execution_and_history_row_shapes_against_a_live_run(
+    drift_client, scratch, drift_object, drift_code_step_automation
+):
+    """Starts the `code_step`-first drift automation and waits on it with
+    ``wait_for_execution``, then records the live wire shapes this item's
+    design leans on: the status vocabulary actually returned, whether a
+    history row (and its nested step/trigger) carries its own ``id``, and —
+    the item's central open risk — a real `code_step`'s ``detailed_log`` key
+    shape.
+
+    The contract this test proves is the wire shape and the status
+    vocabulary, not an SLA, so a run that hasn't reached a terminal status
+    inside the budget below skips with an explicit message rather than
+    failing.
+    """
+    from kizen_builder.api import automations as auto_api
+    from kizen_builder.api import records as records_api
+    from kizen_builder.tools.automations import (
+        _TERMINAL_EXECUTION_STATUSES,
+        wait_for_execution,
+    )
+    from kizen_builder.tools.planners.records import plan_create_records
+
+    # Every other record-creation call site in this suite goes through
+    # plan_create_records because the live object requires `name`; a bare
+    # create_record(..., []) is rejected with "name: This field is required".
+    plan = plan_create_records(
+        drift_object["api_name"], [{"name": debris_name("wait-for-execution")}]
+    )
+    (op,) = plan.operations
+    record = records_api.create_record(
+        drift_client, drift_object["api_name"], op.payload["fields"]
+    )
+    scratch.track(
+        "record",
+        record["id"],
+        lambda: records_api.delete_record(
+            drift_client, drift_object["api_name"], record["id"]
+        ),
+    )
+
+    resp = auto_api.start_automation(
+        drift_client,
+        drift_code_step_automation["api_name"],
+        record_id=record["id"],
+    )
+    execution = resp.get("execution")
+    execution_id = execution.get("id") if isinstance(execution, dict) else execution
+    assert execution_id, f"start_automation returned no execution id: {resp!r}"
+
+    result = wait_for_execution(execution_id, timeout=30.0, poll_interval=2.0)
+    if result["timed_out"]:
+        pytest.skip(
+            f"execution {execution_id} had not reached a terminal status "
+            f"inside this test's 30s budget (last observed status: "
+            f"{result['status']!r}) — the wire shapes below are unverified "
+            "this run, not broken. Re-run to try again."
+        )
+    assert result["status"] in _TERMINAL_EXECUTION_STATUSES
+
+    history = auto_api.get_execution_history(drift_client, execution_id)
+    assert history, "expected at least one history row (the manual trigger)"
+    row = history[0]
+    # The finding this test exists to pin: does a raw row carry `id` (needed
+    # for `runs debug-step --history`)? Hard-asserted, not just type-checked,
+    # so a false guess fails loudly instead of passing vacuously.
+    assert "id" in row, f"history row has no top-level id: {sorted(row)}"
+    # The nested step/trigger object does NOT carry its own `id` — confirmed
+    # live 2026-08-13, exactly `{type, description, deleted}` on every row.
+    # (A separate raw `step_id` field does exist on the row but is not mapped
+    # through by get_execution_history(); out of scope here.) Asserting its
+    # absence, not its presence, is what actually matches the wire.
+    nested = row.get("step") or row.get("trigger") or {}
+    assert isinstance(nested, dict), f"unexpected step/trigger shape: {nested!r}"
+    assert "id" not in nested, (
+        f"nested step/trigger now carries an id: {sorted(nested)}"
+    )
+
+    code_row = next(
+        (r for r in history if (r.get("step") or {}).get("type") == "code_step"),
+        None,
+    )
+    assert code_row is not None, (
+        "no code_step history row found: "
+        f"{[(r.get('step') or {}).get('type') for r in history]}"
+    )
+    detailed_log = code_row.get("detailed_log")
+    # The item's central risk: a real code_step's detailed_log has at least
+    # `logs` (the script called outputs.log(...) above) and, per the field
+    # report, may also carry inputs/values/duration/http_requests — recorded
+    # via the message rather than hardcoded, since the full key set was never
+    # confirmed from this path.
+    assert isinstance(detailed_log, dict) and "logs" in detailed_log, (
+        f"unexpected code_step detailed_log shape: {detailed_log!r}"
+    )
+    assert {"status", "created", "updated"} <= set(row), sorted(row)
+
+
+# ---------------------------------------------------------------------------
+# Starting and following a run in one command (BCLI-021) — composes the
+# wait_for_execution() proven above, plus start_automation() and the CLI's
+# streaming callback. Reuses drift_code_step_automation (not a second live
+# fixture) so this test — unlike an earlier version of it that pointed at
+# drift_startable_automation's manual-trigger/stop_execution chain — actually
+# streams a real code_step's detailed_log, not just an empty trigger row.
+# ---------------------------------------------------------------------------
+
+
+def test_start_and_wait_streams_a_live_run_without_crashing(
+    drift_client, scratch, drift_object, drift_code_step_automation
+):
+    """Starts `drift_code_step_automation` via the new `start_and_wait()`, and
+    drives the real `cli.automations._RunStream` callback (`show_logs=True`)
+    against whatever history-row shape the live API actually returns —
+    including the `code_step` row's real `detailed_log`, which
+    `test_wait_for_execution_and_history_row_shapes_against_a_live_run` above
+    already pins the shape of (`{"logs": ...}`).
+
+    This is the composition's own live proof, not a second copy of that
+    wire-shape assertion: it checks that BCLI-021's added code —
+    `start_and_wait()`'s merge and `_RunStream`'s dedupe/render loop —
+    doesn't raise when pointed at a real run, and that streaming reaches a
+    real `code_step`'s log content, not just a trigger's empty one. The
+    contract is the composition wiring, not an SLA, so a run still active at
+    the end of this test's short budget skips rather than fails, matching
+    BCLI-012's own skip rule.
+
+    Owner-confirmed 2026-08-13: a `code_step`'s `detailed_log` is populated
+    only once the step finishes (the underlying runner releases it on
+    completion, not incrementally) — so "streaming" a code_step's log means
+    printing it the moment its row is first seen already-complete, not
+    watching it grow mid-run. This test's assertion matches that: it checks
+    the log printed once the row appears, not partial output during
+    execution.
+    """
+    from kizen_builder.api import records as records_api
+    from kizen_builder.cli.automations import _RunStream
+    from kizen_builder.tools.automations import (
+        _TERMINAL_EXECUTION_STATUSES,
+        start_and_wait,
+    )
+    from kizen_builder.tools.planners.records import plan_create_records
+
+    plan = plan_create_records(
+        drift_object["api_name"], [{"name": debris_name("start-and-wait")}]
+    )
+    (op,) = plan.operations
+    record = records_api.create_record(
+        drift_client, drift_object["api_name"], op.payload["fields"]
+    )
+    scratch.track(
+        "record",
+        record["id"],
+        lambda: records_api.delete_record(
+            drift_client, drift_object["api_name"], record["id"]
+        ),
+    )
+
+    stream = _RunStream(show_logs=True)
+    result = start_and_wait(
+        drift_code_step_automation["api_name"],
+        record["id"],
+        timeout=30.0,
+        poll_interval=2.0,
+        on_poll=stream,
+    )
+
+    assert result.get("execution_id"), f"start_and_wait returned no id: {result!r}"
+    if result.get("timed_out"):
+        pytest.skip(
+            f"execution {result['execution_id']} had not reached a terminal "
+            f"status inside this test's 30s budget (last observed status: "
+            f"{result.get('status')!r}) — the composition wiring is "
+            "unverified this run, not broken. Re-run to try again."
+        )
+    assert result["status"] in _TERMINAL_EXECUTION_STATUSES
 
 
 # ---------------------------------------------------------------------------

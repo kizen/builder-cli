@@ -30,6 +30,7 @@ def search_records(
     object_identifier: str,
     filters: list[dict[str, Any]] | None = None,
     search: str | None = None,
+    field_names: list[str] | None = None,
     page_size: int = 100,
     limit: int | None = None,
 ) -> list[dict[str, Any]]:
@@ -41,10 +42,15 @@ def search_records(
 
     Pass ``None`` (default) or an empty list to return all records.
     ``search`` is an optional text string passed as a ``?search=`` query param.
-    ``limit`` stops pagination once that many records have been fetched
-    (the last page may overshoot; callers truncate). ``None`` fetches all.
+    ``field_names`` limits which field api_names come back per record
+    (confirmed live 2026-08-13 — see docs/specs/records.md); omit it (default)
+    to get every field, which is the server's own default. ``limit`` stops
+    pagination once that many records have been fetched (the last page may
+    overshoot; callers truncate). ``None`` fetches all.
     """
     body: dict[str, Any] = {"query": filters or [], "and": True}
+    if field_names is not None:
+        body["field_names"] = field_names
     extra_params: dict[str, Any] = {}
     if search:
         extra_params["search"] = search

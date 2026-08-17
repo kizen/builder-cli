@@ -130,18 +130,28 @@ def records_list(
     filter_file: str = typer.Option(
         "", "--filter-file", help="Path to a JSON filter (same format as --filter)."
     ),
+    fields: str = typer.Option(
+        "",
+        "--fields",
+        help=(
+            "Comma-separated field api_names to fetch and show as table "
+            "columns (e.g. --fields ticker_symbol,purchase_price). Must be "
+            "api_names, not display labels or field UUIDs; an unrecognized "
+            "name is rejected before any request is sent."
+        ),
+    ),
     limit: int = typer.Option(100, "--limit", "-n", help="Max records to return."),
     output: str = OUTPUT_OPTION,
     json_out: bool = JSON_OPTION,
 ) -> None:
     """List records from a custom object (up to --limit).
 
-    The table shows id and name for each record; `--output json` returns
-    full field data, and `--output csv` flattens each record's fields into
-    columns (one column per field, unioned across the result set) — the
-    workhorse format for pulling records into a spreadsheet. Use --search
-    for text matching, --filter for structured field conditions, or
-    `records get` to inspect a single record.
+    The table shows id and name for each record, plus one column per
+    `--fields` entry if given; `--output json` and `--output csv` show the
+    same set (id, name, and the requested fields — full field data if
+    `--fields` is omitted). Use --search for text matching, --filter for
+    structured field conditions, or `records get` to inspect a single
+    record.
     """
     fmt = out.resolve_format(output, json_out)
     if filter_json and filter_file:
@@ -167,9 +177,15 @@ def records_list(
                 err_console.print(f"[red]filter error:[/red] {e}")
                 raise typer.Exit(code=2) from e
 
+    field_names = [f.strip() for f in fields.split(",") if f.strip()] or None
+
     with cli_errors(LookupError):
         records = record_tools.search_records(
-            object_api_name, filters=filters, search=search or None, limit=limit
+            object_api_name,
+            filters=filters,
+            search=search or None,
+            limit=limit,
+            **({"field_names": field_names} if field_names else {}),
         )
 
     def _record_name(r: dict[str, Any]) -> str:
@@ -181,6 +197,16 @@ def records_list(
                     break
         return name
 
+    # The always-present id/name columns, plus one column per --fields entry
+    # (in the order given, deduped against id/name and against itself).
+    extra_columns: list[str] = []
+    seen_extra: set[str] = set()
+    for name in field_names or []:
+        if name in ("id", "name") or name in seen_extra:
+            continue
+        seen_extra.add(name)
+        extra_columns.append(name)
+
     def table() -> None:
         console.print(
             f"[bold]{object_api_name}[/bold]  [dim]({len(records)} record(s))[/dim]"
@@ -188,8 +214,14 @@ def records_list(
         t = Table()
         t.add_column("id", style="dim")
         t.add_column("name")
+        for col in extra_columns:
+            t.add_column(col)
         for r in records:
-            t.add_row((r.get("id") or ""), _record_name(r))
+            row = [(r.get("id") or ""), _record_name(r)]
+            if extra_columns:
+                field_map = out.record_field_map(r)
+                row.extend(out.cell_str(field_map.get(col)) for col in extra_columns)
+            t.add_row(*row)
         console.print(t)
 
     out.render(

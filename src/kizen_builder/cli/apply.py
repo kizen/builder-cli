@@ -8,7 +8,7 @@ from pathlib import Path
 import typer
 from rich.prompt import Confirm
 
-from kizen_builder.cli._mutations import _render_result
+from kizen_builder.cli._mutations import _enrich_known_choice_failures, _render_result
 from kizen_builder.cli._shared import app, cli_errors, console, err_console
 from kizen_builder.tools import plans as plan_tools
 
@@ -58,6 +58,8 @@ def apply_cmd(
 
     with cli_errors():
         result = plan_tools.apply_plan(plan)
+
+    _enrich_known_choice_failures(result)
 
     if json_out:
         typer.echo(plan_tools.result_to_json(result))

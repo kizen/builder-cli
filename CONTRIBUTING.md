@@ -278,6 +278,12 @@ uv run python scripts/dump_cli_tree.py | diff scripts/cli-tree-baseline.txt -
    `_TRIGGER_BUILDERS` for a trigger. These registries are the authoritative
    gate for what's wired.
 5. Update the wired list in `src/kizen_builder/docs/specs/automation.md`.
+6. If the type has an enum-typed field whose valid values you've confirmed
+   (live, in a fixture, or via the drift snapshot once it captures enum
+   values), add them to `KNOWN_ENUM_CHOICES` / `KNOWN_ENUM_CHOICES_TRIGGERS`
+   in `tools/planners/automations.py` rather than only writing them into
+   `automation.md` prose — that's what turns a future rejection of the same
+   value into a message naming the alternatives instead of a guessing game.
 
 Wiring a new type also widens the drift suite's scope, which will fail until
 someone covers it.

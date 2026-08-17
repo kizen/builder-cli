@@ -1,0 +1,32 @@
+{
+  "category": "Ticket Details",
+  "fields": [
+    {
+      "name": "Priority",
+      "api_name": "priority",
+      "field_type": "dropdown",
+      "options": ["Low", "Medium", "High"]
+    },
+    {
+      "name": "Status",
+      "api_name": "ticket_status",
+      "field_type": "dropdown",
+      "options": ["Open", "In Progress", "Resolved"]
+    },
+    {
+      "name": "Scheduled Date",
+      "api_name": "scheduled_date",
+      "field_type": "date"
+    },
+    {
+      "name": "Escalation Ticket",
+      "api_name": "escalation_ticket",
+      "field_type": "relationship",
+      "relation": {
+        "target_object": "service_tickets",
+        "relation_type": "one_to_one",
+        "related_name": "Original Ticket"
+      }
+    }
+  ]
+}
