@@ -28,8 +28,9 @@ runs_app = typer.Typer(
     help=(
         "Inspect automation runs (executions). `list` shows recent runs for "
         "an automation; `view <id>` shows one run — its summary plus the "
-        "step-by-step trace (`--no-steps` for summary only). Mirrors "
-        "`gh run list` / `gh run view`."
+        "step-by-step trace (`--no-steps` for summary only, `--wait` to "
+        "block until it finishes); `logs <id>` prints each step's "
+        "`detailed_log`. Mirrors `gh run list` / `gh run view`."
     ),
     no_args_is_help=True,
 )
@@ -67,6 +68,46 @@ def _history_duration(e: dict[str, Any]) -> str:
     return f"{ms / 1000:.2f}s" if ms >= 1000 else f"{ms}ms"
 
 
+def _wait_exit_code(summary: dict[str, Any]) -> int:
+    """completed -> 0; failed/cancelled -> 1; timeout or any paused* -> 3 —
+    the wait ended without the run finishing, which a script has to be able
+    to tell apart from an actual failure."""
+    status = summary.get("status")
+    if summary.get("timed_out") or status in auto_tools.PAUSED_EXECUTION_STATUSES:
+        return 3
+    if status in ("failed", "cancelled"):
+        return 1
+    return 0
+
+
+def _print_wait_outcome(
+    execution_id: str, summary: dict[str, Any], timeout: float
+) -> None:
+    """The human-readable line printed after `--wait` ends without the run
+    reaching `completed`/`failed`/`cancelled`. Deliberately avoids "failed",
+    "stalled", "stuck" — a timeout or a plain `paused` is not evidence the
+    run is broken (see wait_for_execution's docstring)."""
+    status = summary.get("status")
+    if summary.get("timed_out"):
+        console.print(
+            f"[yellow]still {status or 'unknown'}[/yellow] after {timeout:g}s — "
+            "the run may still complete; this is not a failure. Re-check with "
+            f"`kizen automations runs view {execution_id}`, or raise --timeout "
+            f"(currently {timeout:g}s)."
+        )
+    elif status == "paused_by_failure":
+        console.print(
+            "[yellow]paused_by_failure[/yellow] — halted on a step failure and "
+            f"needs a human. Resume with `kizen automations runs resume "
+            f"{execution_id}` once it's addressed."
+        )
+    elif status in auto_tools.PAUSED_EXECUTION_STATUSES:
+        console.print(
+            f"[yellow]{status}[/yellow] — resume with `kizen automations runs "
+            f"resume {execution_id}`."
+        )
+
+
 @runs_app.command("view")
 def runs_view(
     execution_id: str = typer.Argument(..., help="Run (execution) UUID."),
@@ -74,6 +115,21 @@ def runs_view(
         True,
         "--steps/--no-steps",
         help="Include the step-by-step trace below the summary (default: on).",
+    ),
+    wait: bool = typer.Option(
+        False,
+        "--wait/--no-wait",
+        help="Block until the run reaches a terminal status before rendering.",
+    ),
+    timeout: float = typer.Option(
+        900.0,
+        "--timeout",
+        help=("With --wait: seconds to wait before giving up (0 = no deadline)."),
+    ),
+    poll_interval: float = typer.Option(
+        5.0,
+        "--poll-interval",
+        help="With --wait: seconds between polls.",
     ),
     output: str = OUTPUT_OPTION,
     json_out: bool = typer.Option(
@@ -84,11 +140,24 @@ def runs_view(
 ) -> None:
     """Show one automation run: its summary (status, record, start/finish) and,
     unless `--no-steps`, the step-by-step trace with per-step durations.
-    Mirrors `gh run view`."""
+    `--wait` blocks until the run finishes — a timeout or a `paused*` status
+    is reported as "not done yet", never as a failure (`--timeout 900` by
+    default: long enough that one worst-case gap between steps, measured at
+    up to 10+ minutes on a real chain, doesn't trip it; `--timeout 0` waits
+    indefinitely). Mirrors `gh run view`."""
     _require_run_uuid(execution_id)
+    if wait and timeout < 0:
+        raise typer.BadParameter("--timeout must be >= 0 (0 = no deadline).")
+    if wait and poll_interval <= 0:
+        raise typer.BadParameter("--poll-interval must be > 0.")
     fmt = out.resolve_format(output, json_out)
     with cli_errors():
-        summary = auto_tools.get_execution(execution_id)
+        if wait:
+            summary = auto_tools.wait_for_execution(
+                execution_id, timeout=timeout, poll_interval=poll_interval
+            )
+        else:
+            summary = auto_tools.get_execution(execution_id)
         entries = auto_tools.get_execution_history(execution_id) if steps else []
 
     keys = (
@@ -108,6 +177,14 @@ def runs_view(
             val = summary.get(key)
             t.add_row(key, str(val) if val is not None else "[dim]—[/dim]")
         console.print(t)
+        paused_on_step = summary.get("paused_on_step")
+        if paused_on_step:
+            console.print(
+                "[yellow]paused on:[/yellow] "
+                f"{paused_on_step.get('label') or paused_on_step.get('type')} "
+                f"(id={paused_on_step.get('id')}, "
+                f"branching={paused_on_step.get('branching_step')})"
+            )
         if not steps:
             return
         st = Table(title="Steps")
@@ -149,6 +226,9 @@ def runs_view(
             out.Column("started_at", "started_at"),
             out.Column("finished_at", "finished_at"),
             out.Column("error", _history_error_str),
+            # Appended, not inserted — a positional CSV consumer reading the
+            # pre-existing columns must not have them shift.
+            out.Column("id", "id"),
         ]
     else:
         json_data = summary_json
@@ -162,6 +242,13 @@ def runs_view(
         csv_rows=csv_rows,
         csv_columns=csv_columns,
     )
+
+    if wait:
+        if fmt is out.OutputFormat.TABLE:
+            _print_wait_outcome(execution_id, summary, timeout)
+        exit_code = _wait_exit_code(summary)
+        if exit_code:
+            raise typer.Exit(code=exit_code)
 
 
 @runs_app.command("list")
@@ -218,6 +305,107 @@ def runs_list(
             out.Column("debug_mode", "debug_mode"),
         ],
     )
+
+
+def _print_step_log(index: int, entry: dict[str, Any]) -> None:
+    """Render one history row's `detailed_log`. At least five shapes are seen
+    live: this repo's fixture `{stdout, traceback}`, a bare `logs` list (the
+    shape a code_step's `outputs.log(...)` calls produce on their own),
+    `{reasons: "..."}` on an action-step failure, `{debug_action: "..."}` on
+    a debug advance, and a code step's full `{logs, inputs, values,
+    http_requests, duration}` audit. Only a *bare* `logs` dict gets the terse
+    rendering below; a `logs` dict with sibling keys (the full audit) falls
+    through to the JSON dump so `inputs`/`values`/`http_requests`/`duration`
+    aren't silently dropped."""
+    kind = entry.get("kind") or "step"
+    step_type = entry.get("type") or ""
+    desc = entry.get("description") or ""
+    label = f"#{index} {kind}"
+    if step_type:
+        label += f" ({step_type})"
+    if desc:
+        label += f" — {desc}"
+    console.print(f"[bold]{label}[/bold]")
+
+    log = entry.get("detailed_log")
+    if isinstance(log, dict) and ("stdout" in log or "traceback" in log):
+        stdout = log.get("stdout") or ""
+        if stdout:
+            console.print(f"  stdout: {stdout}")
+        traceback = log.get("traceback")
+        if traceback:
+            console.print(f"  [red]{traceback}[/red]")
+        if not stdout and not traceback:
+            console.print("  [dim](empty)[/dim]")
+    elif isinstance(log, dict) and set(log) == {"logs"}:
+        # Mirrors cli/code.py's `_render_coderunner_result` logs section —
+        # same "always show, explicit (none)" idiom, not shared code.
+        lines = log.get("logs") or []
+        if lines:
+            console.print(f"  [bold]logs[/bold] ({len(lines)})")
+            for line in lines:
+                console.print(f"    {line}")
+        else:
+            console.print(
+                '  [dim]logs: (none — use outputs.log("…") to emit; plain '
+                "print() is not captured)[/dim]"
+            )
+    else:
+        dumped = json.dumps(log, indent=2, default=str)
+        console.print("  " + dumped.replace("\n", "\n  "))
+    console.print()
+
+
+def render_execution_logs(
+    entries: list[dict[str, Any]], *, json_out: bool = False
+) -> None:
+    """Render every history row's `detailed_log` — the rendering half of
+    `runs logs`, kept separate from the command so BCLI-021's
+    `--show-logs` can call it too instead of duplicating it.
+
+    ``entries`` is `auto_tools.get_execution_history()`'s own return value,
+    unchanged — this adds no new API call.
+    """
+    numbered = list(enumerate(entries, 1))
+    logged = [(i, e) for i, e in numbered if e.get("detailed_log") is not None]
+
+    if json_out:
+        out.emit_json([{"index": i, **e} for i, e in logged])
+        return
+
+    if not logged:
+        console.print(
+            "[dim](no step logs)[/dim] — only a code_step's "
+            'outputs.log("…") populates this (plain print() is not '
+            "captured). See `kizen docs show code-steps`."
+        )
+        return
+
+    for i, e in logged:
+        _print_step_log(i, e)
+
+
+@runs_app.command(
+    "logs",
+    epilog=(
+        "Wire notes (execution statuses, per-step detailed_log shapes): see "
+        "`kizen docs show automation-runtime`."
+    ),
+)
+def runs_logs(
+    execution_id: str = typer.Argument(..., help="Run (execution) UUID."),
+    json_out: bool = typer.Option(
+        False, "--json", help="Emit the raw per-step detailed_log blobs."
+    ),
+) -> None:
+    """Print each step's `detailed_log` — the code_step stdout/traceback (and
+    other per-step diagnostic detail `runs view`'s Steps table has no column
+    for). No new API call: reads the same step history `runs view` already
+    fetches."""
+    _require_run_uuid(execution_id)
+    with cli_errors():
+        entries = auto_tools.get_execution_history(execution_id)
+    render_execution_logs(entries, json_out=json_out)
 
 
 # ---------------------------------------------------------------------------

@@ -25,6 +25,8 @@ kizen automations llm-models                 # live model_name + business_plugin
 kizen automations runs list <api_name>       # recent runs for an automation
 kizen automations runs view <exec_uuid>      # one run: summary + step-by-step trace (per-step status/duration)
 kizen automations runs view <exec_uuid> --no-steps   # summary only (status + record + start/finish)
+kizen automations runs view <exec_uuid> --wait       # block until the run finishes (see kizen docs show automation-runtime)
+kizen automations runs logs <exec_uuid>              # each step's detailed_log (code_step stdout/traceback, etc.)
 kizen automations modification-history <api_name>    # who changed this automation, when, what changed
 kizen automations failures <api_name>                # recent step-failure history
 kizen dashboards list                        # list dashboards + homepages (mine)

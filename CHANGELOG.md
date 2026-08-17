@@ -43,6 +43,17 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Added
 
+- **`kizen automations runs view --wait` blocks until a run finishes**, instead
+  of leaving you to hand-roll polling (a real timing bug: chains where the gap
+  between steps ran 60s to 10+ minutes were previously misread as "stalled" by
+  a short-timeout wait). Defaults to 900s (`--timeout 0` waits indefinitely);
+  a timeout or a `paused*` status is reported as "not done yet" and exits 3,
+  never as a failure — `completed` exits 0, `failed`/`cancelled` exit 1. A
+  halted execution's `paused_on_step` (which step it stopped on, and whether
+  it branches) is now shown whenever the API sends it.
+- **`kizen automations runs logs <exec>`** prints each step's `detailed_log` —
+  a `code_step`'s stdout/traceback and other per-step diagnostic detail that
+  previously only surfaced via `runs view --json` → `steps[].detailed_log`.
 - **`kizen records list <object> --fields a,b,c`** fetches `id`, `name`, and
   those field api_names in the same search call already used today, and
   shows them all as table columns — previously the table only ever showed
