@@ -1,0 +1,51 @@
+{
+  "name": "Escalate High-Priority Tickets",
+  "api_name": "escalate_high_priority_tickets",
+  "type": "record_based",
+  "target_object": "service_tickets",
+  "active": false,
+  "triggers": [
+    { "trigger_type": "new_entity_created", "order": 0,
+      "trigger_new_entity_created": { "action": "create_only" } }
+  ],
+  "steps": [
+    { "key": "check_priority", "parent_key": null, "step_type": "condition", "order": 0,
+      "step_condition": {
+        "type": "custom_filter",
+        "filter_config": { "all": [
+          { "field": "priority", "op": "is_any_of", "value": ["High"] }
+        ] }
+      } },
+    { "key": "create_followup", "parent_key": "check_priority", "parent_branch": "yes",
+      "step_type": "create_related_entity", "order": 1,
+      "action_create_related_entity": {
+        "target_object": "service_tickets",
+        "target_custom_object": "service_tickets",
+        "new_entity_name": "Escalation for {{ entity_record.name }}",
+        "new_entity_name_html": "<p>Escalation for {{ entity_record.name }}</p>",
+        "new_entity_owner_type": "assign_from_context_record",
+        "context_entity_field": "<service_tickets.escalation_ticket_field_uuid>"
+      } },
+    { "key": "log_escalation", "parent_key": "create_followup",
+      "step_type": "code_step", "order": 2,
+      "action_code_step": {
+        "inputs": [ { "name": "ticket_priority", "field_ref": "service_tickets.priority" } ],
+        "outputs": [],
+        "script": "outputs.log(f\"Escalation follow-up created for a {inputs.ticket_priority} priority ticket\")"
+      } },
+    { "key": "finish", "parent_key": "log_escalation",
+      "step_type": "stop_execution", "order": 3,
+      "action_stop_execution": { "action": "stop_and_complete" } },
+    { "key": "schedule_site_visit", "parent_key": "check_priority", "parent_branch": "no",
+      "step_type": "schedule_activity", "order": 4,
+      "action_schedule_activity": {
+        "activity_type_id": "<site_visit_activity_type_uuid>",
+        "schedule": { "type": "immediately" },
+        "assigned_to": { "assignment_type": "owner" },
+        "note": "Follow-up Site Visit for a non-urgent ticket."
+      } },
+    { "key": "continue_after_schedule", "parent_key": "schedule_site_visit",
+      "step_type": "go_to_automation_step", "order": 5,
+      "action_go_to_automation_step": { "step_key": "finish" } }
+  ]
+}
