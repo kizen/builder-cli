@@ -29,7 +29,42 @@ from pathlib import Path
 
 import tomli_w
 
-DEFAULT_BASE_URL = "https://app.go.kizen.com"
+# Curated by hand, not derived from a rule: three different URL shapes span
+# these four hosts (`app.<name>.kizen.com` for go/fmo, `<name>.kizen.com` for
+# staging, `<name>.kizen.dev` for integration — a different TLD), so an
+# f-string built from any two of them produces a wrong host for the others.
+# Add a new named environment here, not by pattern-matching the existing rows.
+#
+# All four were checked on 2026-08-13 by an unauthenticated GET to
+# `/api/activities`: each resolves and answers `401 {"code":
+# "missing_business_context"}` as JSON, which is the API host responding, not
+# the SPA serving an HTML page — the failure this picker exists to prevent.
+# Re-run that check before adding or changing a row.
+ENVIRONMENT_HOSTS: dict[str, str] = {
+    "go": "https://app.go.kizen.com",
+    "fmo": "https://app.fmo.kizen.com",
+    "staging": "https://staging.kizen.com",
+    "integration": "https://integration.kizen.dev",
+}
+
+DEFAULT_BASE_URL = ENVIRONMENT_HOSTS["go"]
+
+
+def resolve_base_url(value: str) -> str:
+    """Resolve `--base-url`'s value as a full URL or a short name; raises
+    `ValueError` naming the valid choices if it's neither."""
+    value = value.strip()
+    if "://" in value:
+        return value.rstrip("/")
+    try:
+        return ENVIRONMENT_HOSTS[value]
+    except KeyError:
+        valid = ", ".join(sorted(ENVIRONMENT_HOSTS))
+        raise ValueError(
+            f"unknown environment {value!r}. Choose one of: {valid}, "
+            "or pass a full URL."
+        ) from None
+
 
 # The pin is the only thing the CLI keeps in an env folder's .kizen/.
 PIN_RELPATH = Path(".kizen") / "profile"

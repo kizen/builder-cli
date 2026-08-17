@@ -56,8 +56,21 @@ called out explicitly under **Changed** or **Removed**.
 - **The package declares its license.** `kizen-builder` is MIT-licensed, and the
   built wheel and sdist now carry `License-Expression: MIT` along with a copy of
   `LICENSE`.
+- **`kizen init` asks which Kizen environment you're on instead of asking for a
+  URL.** Pick `go`, `fmo`, `staging`, or `integration` and the right API host
+  is resolved for you; a mistyped or misaddressed host (e.g. the SPA host
+  instead of the API host) is no longer reachable through the normal setup
+  path. Free-text URL entry is still available (choose `url`) for
+  self-hosted or one-off setups. `--base-url` now also accepts these short
+  names (`--base-url staging`) in addition to a full URL, for scripted setup.
 
 ### Changed
+
+- **`kizen init` no longer silently defaults `--base-url` to `go`.** A
+  non-interactive invocation that used to omit `--base-url` and succeed
+  against `https://app.go.kizen.com` by default now exits 2 unless
+  `--base-url` is passed or an environment choice arrives on stdin. Scripted
+  callers relying on the implicit default need to add `--base-url <name>`.
 
 - **The docs are now one topic per Kizen surface.** `reference.md` was a
   2,164-line file covering every entity at once, so working on forms meant
