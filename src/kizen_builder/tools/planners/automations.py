@@ -217,6 +217,12 @@ def plan_create_automation(automation: dict[str, Any] | AutomationDef) -> Plan:
             f"(uuid {existing['id']}). Use plan_update_automation."
         )
 
+    # A create spec has no live state to preserve against, so an omitted
+    # `active` resolves to False — the documented "author inactive, then
+    # activate" default (docs/specs/automation.md).
+    if auto.active is None:
+        auto = auto.model_copy(update={"active": False})
+
     payload = _build_automation_payload(auto, ctx)
     return Plan.build(
         env=env,
@@ -257,8 +263,16 @@ def plan_update_automation(automation: dict[str, Any] | AutomationDef) -> Plan:
     # payload must carry server-managed state, and the revision must be known
     # at plan time so the previewed payload is exactly what apply sends.
     current = get_automation(auto.api_name)["raw"]
+
+    # An omitted `active` preserves whatever the live automation already is,
+    # rather than defaulting to False — the bug this item fixes. An explicit
+    # value in the spec still wins either direction.
+    live_active = bool(current.get("active", False))
+    resolved_active = auto.active if auto.active is not None else live_active
+    auto = auto.model_copy(update={"active": resolved_active})
+
     payload = _merge_server_state(_build_automation_payload(auto, ctx), current)
-    preview = _automation_preview(env, auto)
+    preview = _automation_preview(env, auto, live_active=live_active)
     preview["current_revision"] = current.get("revision")
     return Plan.build(
         env=env,
@@ -467,14 +481,34 @@ def plan_delete_folder(identifier: str) -> Plan:
     )
 
 
-def _automation_preview(env: str, auto: AutomationDef) -> dict[str, Any]:
+def _automation_preview(
+    env: str, auto: AutomationDef, *, live_active: bool | None = None
+) -> dict[str, Any]:
+    """Build the `--dry-run` preview cell for one automation.
+
+    ``live_active`` is the current live value, passed by
+    ``plan_update_automation`` once ``auto.active`` has been resolved to a
+    concrete bool. When the resolved value differs from live, the preview
+    names it as a transition (`True → False (DEACTIVATES a live
+    automation)`) instead of a bare bool, so a reviewer scanning
+    `--dry-run` output sees a change, not a value. ``plan_create_automation``
+    has no live state to compare against and omits ``live_active``.
+    """
+    active_display: Any = auto.active
+    if live_active is not None and live_active != auto.active:
+        direction = (
+            "DEACTIVATES a live automation"
+            if auto.active is False
+            else "ACTIVATES an inactive automation"
+        )
+        active_display = f"{live_active} → {auto.active} ({direction})"
     return {
         "env": env,
         "api_name": auto.api_name,
         "name": auto.name,
         "type": auto.type,
         "target_object": auto.target_object,
-        "active": auto.active,
+        "active": active_display,
         "trigger_count": len(auto.triggers),
         "step_count": len(auto.steps),
     }

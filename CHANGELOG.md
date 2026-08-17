@@ -117,6 +117,18 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Fixed
 
+- **`automations update` no longer deactivates a live automation just
+  because the spec doesn't mention `active`.** `AutomationDef.active` is now
+  tri-state (`bool | None`, default `None`): an update spec that omits
+  `active` preserves whatever the live automation already is, resolved from
+  the live state the planner already fetches — no extra API call. A create
+  spec that omits `active` still defaults to `False`, unchanged. An explicit
+  `true`/`false` in an update spec still wins either direction, but the
+  `--dry-run` preview now shows it as a transition (`True → False
+  (DEACTIVATES a live automation)`) instead of a bare value, so it's legible
+  before you approve it. `automations activate`/`deactivate` and
+  `set_active()` are unaffected — they were always the explicit path.
+
 - **Editing an automation no longer orphans its execution history.** Every
   automation-writing path (`automations steps add/edit/remove`, `roundtrip`,
   and `plan-update-automation`/`apply`) previously rebuilt every step and

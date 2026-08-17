@@ -60,7 +60,7 @@ kizen automations create --spec-file auto.json --dry-run
 | `api_name` | string | **Required.** `^[a-z][a-z0-9_]*$`. |
 | `type` | enum | `record_based` (default) or `global`. |
 | `target_object` | api_name | **Required for `record_based`.** Resolved to `custom_object_id`. |
-| `active` | bool | Default `false`. Prefer authoring inactive, then `automations activate`. |
+| `active` | bool \| null | On create, an omitted/`null` value resolves to `false` — prefer authoring inactive, then `automations activate`. On update, an omitted/`null` value **preserves whatever the live automation already is**; only an explicit `true`/`false` changes it. |
 | `triggers` | `AutomationTriggerDef[]` | See wired triggers below. |
 | `steps` | `AutomationStepDef[]` | The graph. See wiring rules below. |
 
@@ -503,6 +503,14 @@ like `link_url`/`created`/`estimated_close_date`.
   history against the old id (confirmed live 2026-08-10). Set `id` (copied
   from a live read, e.g. `kizen automations show`) on any step that isn't
   actually new, and it keeps the same id and history across the write.
+- **`active` is the one runtime-state field the full replace does not
+  clobber when the spec is silent.** An update PUT is a full replace, but
+  `automations update` resolves an omitted/`null` `active` to the live
+  automation's current value before building the payload — a spec that
+  doesn't mention `active` never turns a running automation off. An
+  explicit `true`/`false` still wins and is echoed in the `--dry-run`
+  preview as a transition (`True → False (DEACTIVATES a live automation)`)
+  rather than a bare value.
 - **`condition.filter_config`** uses the filtering DSL (`{"all"|"any": [...]}`,
   single conditions wrapped in `{"all": [...]}`) — same as `saved-views.md`.
   Fields are **bare api_names**; **ops are per field type** (e.g. dropdown uses
