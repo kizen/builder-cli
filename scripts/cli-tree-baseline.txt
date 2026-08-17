@@ -2084,7 +2084,9 @@
 │ --api-key                     <str>  API key (else prompts). [env var: KIZEN_API_KEY]            │
 │ --business-id                 <str>  Business id (else prompts). [env var: KIZEN_BUSINESS_ID]    │
 │ --user-id                     <str>  User id (else prompts). [env var: KIZEN_USER_ID]            │
-│ --base-url                    <str>  Kizen base URL. [default: https://app.go.kizen.com]         │
+│ --base-url                    <str>  Kizen environment: a name (go, fmo, staging, integration)   │
+│                                      or a full URL for self-hosted/one-off setups. Prompts if    │
+│                                      omitted.                                                    │
 │ --no-pin                             Store credentials only; don't pin this directory.           │
 │ --skip-validation                    Don't verify credentials with a live call.                  │
 │ --refresh-stubs                      Overwrite existing CLAUDE.md / AGENTS.md with the current   │
