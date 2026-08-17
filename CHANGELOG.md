@@ -16,6 +16,19 @@ called out explicitly under **Changed** or **Removed**.
 
 ### Fixed
 
+- **`kizen upgrade --check` can now find a release tag from a `uv tool
+  install`/`pipx`/direct-VCS install, not just an editable checkout.**
+  Previously any non-checkout install shape skipped straight to the
+  unimplemented package-index seam and always reported "no distribution
+  channel is configured for this install" — true or not, and regardless of
+  whether a release existed upstream. `Install` now carries the bare git URL
+  from `direct_url.json` (`repo_url`) when one is known for these shapes, and
+  the check runs the same `git ls-remote --tags` comparison a checkout uses.
+  There's still no local history to fall back to counting commits against for
+  these installs, so before a `vX.Y.Z` tag exists the answer stays
+  inconclusive — just honestly ("the remote has no release tags yet") instead
+  of implying no channel is configured at all.
+
 - **`kizen objects list` now includes built-in objects like Contacts
   (`client_client`), not just custom ones.** The server excludes built-ins by
   default; `list_objects()` called it without `custom_only=false` and then
@@ -51,11 +64,43 @@ called out explicitly under **Changed** or **Removed**.
   `start` + hand-rolled polling + a separate `runs logs` call with one command
   and one exit code. Builds directly on `runs view --wait` / `runs logs`
   above — no second poll loop, no second log renderer.
+- **`kizen records list <object> --fields a,b,c`** fetches `id`, `name`, and
+  those field api_names in the same search call already used today, and
+  shows them all as table columns — previously the table only ever showed
+  `id` and `name`, no matter what the object carried. `--output json`/
+  `--output csv` show the same `id` + `name` + requested set. An
+  unrecognized api_name (a typo, a display label, or a field
+  UUID) is rejected up front, listing the object's real field api_names,
+  instead of silently returning a result missing that field.
+
+- **`kizen docs show examples`: a complete, worked, end-to-end example.**
+  Every other topic covers one surface; this one walks a single object, an
+  activity type logged against it, an automation with a branching graph, and
+  a generated dashboard, wired together in the order you'd actually build
+  them — object → fields → activity → automation → dashboard, with every
+  cross-entity UUID reference named and every step confirmed against a real
+  environment. Backed by committed fixtures under
+  `tests/fixtures/examples/service_ticket/`, checked two ways: an offline
+  test that fails if the doc and the fixtures ever diverge, and an opt-in
+  drift test that applies the same fixtures live.
 - **The package declares its license.** `kizen-builder` is MIT-licensed, and the
   built wheel and sdist now carry `License-Expression: MIT` along with a copy of
   `LICENSE`.
+- **`kizen init` asks which Kizen environment you're on instead of asking for a
+  URL.** Pick `go`, `fmo`, `staging`, or `integration` and the right API host
+  is resolved for you; a mistyped or misaddressed host (e.g. the SPA host
+  instead of the API host) is no longer reachable through the normal setup
+  path. Free-text URL entry is still available (choose `url`) for
+  self-hosted or one-off setups. `--base-url` now also accepts these short
+  names (`--base-url staging`) in addition to a full URL, for scripted setup.
 
 ### Changed
+
+- **`kizen init` no longer silently defaults `--base-url` to `go`.** A
+  non-interactive invocation that used to omit `--base-url` and succeed
+  against `https://app.go.kizen.com` by default now exits 2 unless
+  `--base-url` is passed or an environment choice arrives on stdin. Scripted
+  callers relying on the implicit default need to add `--base-url <name>`.
 
 - **The docs are now one topic per Kizen surface.** `reference.md` was a
   2,164-line file covering every entity at once, so working on forms meant
@@ -81,6 +126,18 @@ called out explicitly under **Changed** or **Removed**.
   had already drifted two entries behind `automation.md`, which they duplicated.
 
 ### Fixed
+
+- **`automations update` no longer deactivates a live automation just
+  because the spec doesn't mention `active`.** `AutomationDef.active` is now
+  tri-state (`bool | None`, default `None`): an update spec that omits
+  `active` preserves whatever the live automation already is, resolved from
+  the live state the planner already fetches — no extra API call. A create
+  spec that omits `active` still defaults to `False`, unchanged. An explicit
+  `true`/`false` in an update spec still wins either direction, but the
+  `--dry-run` preview now shows it as a transition (`True → False
+  (DEACTIVATES a live automation)`) instead of a bare value, so it's legible
+  before you approve it. `automations activate`/`deactivate` and
+  `set_active()` are unaffected — they were always the explicit path.
 
 - **Editing an automation no longer orphans its execution history.** Every
   automation-writing path (`automations steps add/edit/remove`, `roundtrip`,
@@ -123,6 +180,11 @@ called out explicitly under **Changed** or **Removed**.
   script's generated seed table (`config_metadata.seed_tables[].columns_mapping`)
   — the same source `seeds list` already uses to show it, since it's the one
   place the restriction survives a read.
+
+- **`kizen objects get`'s table and CSV output now include field option
+  UUIDs** (previously JSON only). A choice/status/yesnomaybe field's options
+  render as `name (id)` — the full UUID, since it's pasted into a spec, not
+  just read.
 
 ### Added
 
