@@ -64,7 +64,32 @@ def test_tool_manager_detected(monkeypatch):
     monkeypatch.setattr(upgrade, "_direct_url", lambda: None)
     monkeypatch.setattr(upgrade, "_managed_by", lambda: upgrade.UV_TOOL)
 
-    assert upgrade.detect_install().method == upgrade.UV_TOOL
+    install = upgrade.detect_install()
+
+    assert install.method == upgrade.UV_TOOL
+    # No PEP 610 record at all (a plain index install of the tool), so there's
+    # no git URL to check tags against.
+    assert install.repo_url is None
+
+
+def test_tool_manager_from_a_git_source_keeps_the_url(monkeypatch):
+    """`uv tool install <git-url>` still writes a direct_url.json; a plain
+    index-installed tool manager shouldn't be confused with one that has a
+    remote worth checking tags on."""
+    monkeypatch.setattr(
+        upgrade,
+        "_direct_url",
+        lambda: {
+            "url": "https://example.test/kb.git",
+            "vcs_info": {"vcs": "git", "commit_id": "abc123"},
+        },
+    )
+    monkeypatch.setattr(upgrade, "_managed_by", lambda: upgrade.UV_TOOL)
+
+    install = upgrade.detect_install()
+
+    assert install.method == upgrade.UV_TOOL
+    assert install.repo_url == "https://example.test/kb.git"
 
 
 def test_vcs_install_preserves_the_requested_spec(monkeypatch):
@@ -82,6 +107,9 @@ def test_vcs_install_preserves_the_requested_spec(monkeypatch):
 
     assert install.method == upgrade.VCS
     assert install.url == "git+https://example.test/kb.git@main"
+    # The bare URL, not the `git+…@rev` spec, so it can be handed straight to
+    # `git ls-remote`.
+    assert install.repo_url == "https://example.test/kb.git"
 
 
 def test_falls_back_to_an_enclosing_checkout(monkeypatch, tmp_path):
@@ -494,6 +522,56 @@ def test_non_checkout_installs_have_no_channel_to_query(monkeypatch):
 
     assert result.conclusive is False
     assert "no distribution channel" in result.reason
+
+
+def test_non_checkout_git_install_checks_tags(monkeypatch):
+    """A uv-tool/pipx/VCS install has no local checkout, but does have a URL —
+    the same `git ls-remote --tags` path a checkout uses works from any
+    directory, no local repo required."""
+    fake = FakeGit({"ls-remote": "a\trefs/tags/v0.5.0\n"})
+    monkeypatch.setattr(upgrade, "_git", fake)
+    install = upgrade.Install(
+        method=upgrade.UV_TOOL,
+        version="0.1.0",
+        repo_url="https://github.test/acme/repo.git",
+    )
+
+    result = upgrade._check_uncached(install)
+
+    assert result.source == "tags"
+    assert result.latest == "0.5.0"
+    assert result.out_of_date is True
+
+
+def test_non_checkout_git_install_with_no_tags_says_so(monkeypatch):
+    """There's no local history to fall back to counting commits against, so
+    until a release tag exists this stays honestly inconclusive."""
+    fake = FakeGit({"ls-remote": ""})
+    monkeypatch.setattr(upgrade, "_git", fake)
+    install = upgrade.Install(
+        method=upgrade.VCS,
+        version="0.1.0",
+        repo_url="https://github.test/acme/repo.git",
+    )
+
+    result = upgrade._check_uncached(install)
+
+    assert result.conclusive is False
+    assert "no release tags yet" in result.reason
+
+
+def test_non_checkout_git_install_offline_is_inconclusive(monkeypatch):
+    monkeypatch.setattr(upgrade, "_git", FakeGit({}))
+    install = upgrade.Install(
+        method=upgrade.UV_TOOL,
+        version="0.1.0",
+        repo_url="https://github.test/acme/repo.git",
+    )
+
+    result = upgrade._check_uncached(install)
+
+    assert result.conclusive is False
+    assert "couldn't reach" in result.reason
 
 
 def test_index_seam_is_used_when_implemented(monkeypatch):

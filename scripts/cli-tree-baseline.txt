@@ -456,8 +456,9 @@
 │                       graph, and PUTs atomically. Step keys come from `kizen automations show`.  │
 │ runs                  Inspect automation runs (executions). `list` shows recent runs for an      │
 │                       automation; `view <id>` shows one run — its summary plus the step-by-step  │
-│                       trace (`--no-steps` for summary only). Mirrors `gh run list` / `gh run     │
-│                       view`.                                                                     │
+│                       trace (`--no-steps` for summary only, `--wait` to block until it           │
+│                       finishes); `logs <id>` prints each step's `detailed_log`. Mirrors `gh run  │
+│                       list` / `gh run view`.                                                     │
 │ folders               Automation folders, for organization.                                      │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
@@ -716,8 +717,9 @@
  Usage: automations runs [OPTIONS] COMMAND [ARGS]...                                                
                                                                                                     
  Inspect automation runs (executions). `list` shows recent runs for an automation; `view <id>`      
- shows one run — its summary plus the step-by-step trace (`--no-steps` for summary only). Mirrors   
- `gh run list` / `gh run view`.                                                                     
+ shows one run — its summary plus the step-by-step trace (`--no-steps` for summary only, `--wait`   
+ to block until it finishes); `logs <id>` prints each step's `detailed_log`. Mirrors `gh run list`  
+ / `gh run view`.                                                                                   
                                                                                                     
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
 │ --help          Show this message and exit.                                                      │
@@ -725,8 +727,16 @@
 ╭─ Commands ───────────────────────────────────────────────────────────────────────────────────────╮
 │ view             Show one automation run: its summary (status, record, start/finish) and,        │
 │                  unless `--no-steps`, the step-by-step trace with per-step durations.            │
-│                  Mirrors `gh run view`.                                                          │
+│                  `--wait` blocks until the run finishes — a timeout or a `paused*` status        │
+│                  is reported as "not done yet", never as a failure (`--timeout 900` by           │
+│                  default: long enough that one worst-case gap between steps, measured at         │
+│                  up to 10+ minutes on a real chain, doesn't trip it; `--timeout 0` waits         │
+│                  indefinitely). Mirrors `gh run view`.                                           │
 │ list             List recent runs (executions) for an automation.                                │
+│ logs             Print each step's `detailed_log` — the code_step stdout/traceback (and          │
+│                  other per-step diagnostic detail `runs view`'s Steps table has no column        │
+│                  for). No new API call: reads the same step history `runs view` already          │
+│                  fetches.                                                                        │
 │ pause            Pause a running execution.                                                      │
 │ resume           Resume a paused execution.                                                      │
 │ cancel           Cancel an execution. Irreversible.                                              │
@@ -816,6 +826,24 @@
 │ --help                   Show this message and exit.                                             │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
+ Usage: automations runs logs [OPTIONS] {execution_id}                                              
+                                                                                                    
+ Print each step's `detailed_log` — the code_step stdout/traceback (and other per-step diagnostic   
+ detail `runs view`'s Steps table has no column for). No new API call: reads the same step history  
+ `runs view` already fetches.                                                                       
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    execution_id      <str>  Run (execution) UUID. [required]                                   │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --json          Emit the raw per-step detailed_log blobs.                                        │
+│ --help          Show this message and exit.                                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Wire notes (execution statuses, per-step detailed_log shapes): see `kizen docs show                
+ automation-runtime`.                                                                               
+                                                                                                    
+                                                                                                    
  Usage: automations runs pause [OPTIONS] {execution_id}                                             
                                                                                                     
  Pause a running execution.                                                                         
@@ -854,18 +882,29 @@
  Usage: automations runs view [OPTIONS] {execution_id}                                              
                                                                                                     
  Show one automation run: its summary (status, record, start/finish) and, unless `--no-steps`, the  
- step-by-step trace with per-step durations. Mirrors `gh run view`.                                 
+ step-by-step trace with per-step durations. `--wait` blocks until the run finishes — a timeout or  
+ a `paused*` status is reported as "not done yet", never as a failure (`--timeout 900` by default:  
+ long enough that one worst-case gap between steps, measured at up to 10+ minutes on a real chain,  
+ doesn't trip it; `--timeout 0` waits indefinitely). Mirrors `gh run view`.                         
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    execution_id      <str>  Run (execution) UUID. [required]                                   │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
-│ --steps       --no-steps           Include the step-by-step trace below the summary (default:    │
-│                                    on).                                                          │
-│                                    [default: steps]                                              │
-│ --output  -o                <str>  Output format: table (default), json, or csv.                 │
-│ --json                             Alias for --output json (includes step output/error blobs).   │
-│ --help                             Show this message and exit.                                   │
+│ --steps              --no-steps             Include the step-by-step trace below the summary     │
+│                                             (default: on).                                       │
+│                                             [default: steps]                                     │
+│ --wait               --no-wait              Block until the run reaches a terminal status before │
+│                                             rendering.                                           │
+│                                             [default: no-wait]                                   │
+│ --timeout                          <float>  With --wait: seconds to wait before giving up (0 =   │
+│                                             no deadline).                                        │
+│                                             [default: 900.0]                                     │
+│ --poll-interval                    <float>  With --wait: seconds between polls. [default: 5.0]   │
+│ --output         -o                <str>    Output format: table (default), json, or csv.        │
+│ --json                                      Alias for --output json (includes step output/error  │
+│                                             blobs).                                              │
+│ --help                                      Show this message and exit.                          │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: automations show [OPTIONS] {api_name}                                                       
@@ -2084,7 +2123,9 @@
 │ --api-key                     <str>  API key (else prompts). [env var: KIZEN_API_KEY]            │
 │ --business-id                 <str>  Business id (else prompts). [env var: KIZEN_BUSINESS_ID]    │
 │ --user-id                     <str>  User id (else prompts). [env var: KIZEN_USER_ID]            │
-│ --base-url                    <str>  Kizen base URL. [default: https://app.go.kizen.com]         │
+│ --base-url                    <str>  Kizen environment: a name (go, fmo, staging, integration)   │
+│                                      or a full URL for self-hosted/one-off setups. Prompts if    │
+│                                      omitted.                                                    │
 │ --no-pin                             Store credentials only; don't pin this directory.           │
 │ --skip-validation                    Don't verify credentials with a live call.                  │
 │ --refresh-stubs                      Overwrite existing CLAUDE.md / AGENTS.md with the current   │
@@ -2724,12 +2765,12 @@
                                                                                                     
  List records from a custom object (up to --limit).                                                 
                                                                                                     
- The table shows id and name for each record; `--output json` returns                               
- full field data, and `--output csv` flattens each record's fields into                             
- columns (one column per field, unioned across the result set) — the                                
- workhorse format for pulling records into a spreadsheet. Use --search                              
- for text matching, --filter for structured field conditions, or                                    
- `records get` to inspect a single record.                                                          
+ The table shows id and name for each record, plus one column per                                   
+ `--fields` entry if given; `--output json` and `--output csv` show the                             
+ same set (id, name, and the requested fields — full field data if                                  
+ `--fields` is omitted). Use --search for text matching, --filter for                               
+ structured field conditions, or `records get` to inspect a single                                  
+ record.                                                                                            
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    object_api_name      <str>  Object api_name (e.g. client_client). [required]                │
@@ -2742,6 +2783,10 @@
 │                               groups ({"query": [...]}) passed through as-is. Run `kizen filters │
 │                               ops ` to see which ops a field's type supports.                    │
 │ --filter-file          <str>  Path to a JSON filter (same format as --filter).                   │
+│ --fields               <str>  Comma-separated field api_names to fetch and show as table columns │
+│                               (e.g. --fields ticker_symbol,purchase_price). Must be api_names,   │
+│                               not display labels or field UUIDs; an unrecognized name is         │
+│                               rejected before any request is sent.                               │
 │ --limit        -n      <int>  Max records to return. [default: 100]                              │
 │ --output       -o      <str>  Output format: table (default), json, or csv.                      │
 │ --json                        Alias for --output json.                                           │
@@ -3923,6 +3968,9 @@
 
 
 ===== automations runs list =====
+
+
+===== automations runs logs =====
 
 
 ===== automations runs pause =====

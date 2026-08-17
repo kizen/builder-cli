@@ -244,7 +244,7 @@ class AutomationDef(BaseModel):
             "Required for record_based automations. Resolved to custom_object_id UUID from state."
         ),
     )
-    active: bool = False
+    active: bool | None = None
     user_description: str | None = None
     error_notification_email: str | None = None
     skip_non_working_days: bool = False

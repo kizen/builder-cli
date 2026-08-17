@@ -27,6 +27,11 @@ pin. A second environment is a second folder with its own pin. Profile-name
 resolution order: `--profile`/`-p` > `$KIZEN_PROFILE` > `.kizen/profile` pin >
 `$KIZEN_ENV` (legacy label); the credentials for that name come from the
 central store. `kizen envs list` shows what the current directory resolves to.
+`kizen init` asks which Kizen environment you're on — `go`, `fmo`, `staging`,
+or `integration` — and resolves the name to its API host itself, so nothing
+gets pointed at the wrong host by hand; free-text URL entry is still there for
+self-hosted or one-off setups, reached with a deliberate `url` choice, not a
+default.
 
 **2. Pull live before reasoning.** Before planning any change, call the
 relevant read commands to fetch the current state of the env. Don't assume

@@ -65,13 +65,47 @@ def search_records(
     object_api_name: str,
     filters: list[dict[str, Any]] | None = None,
     search: str | None = None,
+    field_names: list[str] | None = None,
     limit: int = 100,
 ) -> list[dict[str, Any]]:
     """Search records in a custom object, returning up to ``limit`` results.
 
     ``search`` is an optional text string forwarded to the API's ``?search=``
     query param for fast keyword filtering without building filter groups.
+
+    ``field_names`` limits which field values come back (bandwidth, and lets
+    callers ask for exactly the columns they want). Every entry must be a
+    live, undeleted field's api_name on ``object_api_name`` — an unrecognized
+    name raises ``LookupError`` (same wording as the write-side validation in
+    `tools/planners/records.py`) *before* any search request is sent, since
+    the server itself accepts and silently drops an unknown name instead of
+    rejecting it. The contract for every caller, CLI or not, is ``id`` +
+    ``name`` + whatever was asked for: ``name`` is added to the wire request
+    if the caller's list omits it, so an explicit ``[]`` still returns
+    ``name`` and nothing else. Omit ``field_names`` (``None``, the default)
+    to get every field instead — the server's own default.
     """
+    wire_field_names = None
+    if field_names is not None:
+        from kizen_builder.tools.objects import get_object
+
+        obj = get_object(object_api_name)
+        index = {
+            f["api_name"]: f
+            for f in obj["fields"]
+            if f.get("api_name") and not f.get("deleted")
+        }
+        for name in field_names:
+            if name not in index:
+                available = sorted(index)
+                raise LookupError(
+                    f"field '{name}' not found on '{object_api_name}'. "
+                    f"Available: {available}"
+                )
+        wire_field_names = list(field_names)
+        if "name" not in wire_field_names:
+            wire_field_names.append("name")
+
     config = load_env_config()
     with KizenClient(config) as client:
         results = records_api.search_records(
@@ -79,6 +113,7 @@ def search_records(
             object_api_name,
             filters=filters,
             search=search,
+            field_names=wire_field_names,
             page_size=min(limit, 500),
             limit=limit,
         )

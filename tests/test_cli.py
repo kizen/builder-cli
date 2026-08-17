@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
@@ -370,6 +371,93 @@ def test_json_flag_and_output_json_are_equivalent(monkeypatch):
     assert json.loads(a.stdout) == json.loads(b.stdout) == records
 
 
+def test_records_list_forwards_fields(monkeypatch):
+    seen = {}
+
+    def fake_search(
+        object_api_name, filters=None, search=None, limit=100, field_names=None
+    ):
+        seen.update(field_names=field_names)
+        return []
+
+    monkeypatch.setattr(record_tools, "search_records", fake_search)
+    result = runner.invoke(
+        cli.app,
+        ["records", "list", "tax_lot", "--fields", "ticker_symbol,purchase_price"],
+    )
+    assert result.exit_code == 0
+    assert seen["field_names"] == ["ticker_symbol", "purchase_price"]
+
+
+def test_records_list_table_shows_requested_field_columns(monkeypatch):
+    records = load_fixture("records/list_tax_lot.json")
+    monkeypatch.setattr(record_tools, "search_records", lambda *a, **k: records)
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "ticker_symbol"]
+    )
+    assert result.exit_code == 0
+    assert "ticker_symbol" in result.stdout
+    assert "VTI" in result.stdout  # the fixture's ticker_symbol value
+
+
+def test_records_list_unknown_field_rejected_before_table(monkeypatch):
+    def fake_search(
+        object_api_name, filters=None, search=None, limit=100, field_names=None
+    ):
+        raise LookupError(
+            f"field 'bogus_field' not found on '{object_api_name}'. "
+            "Available: ['name', 'ticker_symbol']"
+        )
+
+    monkeypatch.setattr(record_tools, "search_records", fake_search)
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "bogus_field"]
+    )
+    assert result.exit_code == 1
+    assert "bogus_field" in result.stderr
+    assert "Available" in result.stderr
+    assert "record(s)" not in result.stdout  # no table rendered on validation failure
+
+
+# Shaped like the tools layer's own output once field_names has narrowed the
+# server's response: only the requested field plus the auto-added `name`,
+# never the object's other fields.
+_FIELD_SCOPED_RECORDS = [
+    {
+        "id": "r1",
+        "fields": {
+            "u1": {"name": "ticker_symbol", "value": "VTI"},
+            "u2": {"name": "name", "value": "Lot A"},
+        },
+    }
+]
+
+
+def test_records_list_csv_shows_id_name_and_requested_fields(monkeypatch):
+    monkeypatch.setattr(
+        record_tools, "search_records", lambda *a, **k: _FIELD_SCOPED_RECORDS
+    )
+    result = runner.invoke(
+        cli.app,
+        ["records", "list", "tax_lot", "--fields", "ticker_symbol", "-o", "csv"],
+    )
+    assert result.exit_code == 0
+    header = result.stdout.strip().splitlines()[0].split(",")
+    assert header == ["id", "ticker_symbol", "name"]
+
+
+def test_records_list_json_shows_id_name_and_requested_fields(monkeypatch):
+    monkeypatch.setattr(
+        record_tools, "search_records", lambda *a, **k: _FIELD_SCOPED_RECORDS
+    )
+    result = runner.invoke(
+        cli.app, ["records", "list", "tax_lot", "--fields", "ticker_symbol", "--json"]
+    )
+    assert result.exit_code == 0
+    field_names = {f["name"] for f in json.loads(result.stdout)[0]["fields"].values()}
+    assert field_names == {"ticker_symbol", "name"}
+
+
 def test_invalid_output_format_is_usage_error(monkeypatch):
     monkeypatch.setattr(obj_tools, "list_objects", lambda: [])
     result = runner.invoke(cli.app, ["objects", "list", "-o", "yaml"])
@@ -481,6 +569,214 @@ def test_runs_view_no_steps_skips_history(monkeypatch):
     assert len(hist_calls) == 1  # unchanged: history not fetched again
 
 
+def test_runs_view_without_wait_makes_exactly_one_status_call(monkeypatch):
+    """Without --wait, behaviour is unchanged: one get_execution call, no
+    wait_for_execution call at all, exit 0 whatever the status."""
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    calls = []
+    monkeypatch.setattr(
+        auto_tools,
+        "get_execution",
+        lambda *a, **k: calls.append(1) or {"execution_id": uuid, "status": "active"},
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: [])
+
+    def boom(*a, **k):
+        raise AssertionError("wait_for_execution must not run without --wait")
+
+    monkeypatch.setattr(auto_tools, "wait_for_execution", boom)
+
+    result = runner.invoke(cli.app, ["automations", "runs", "view", uuid])
+    assert result.exit_code == 0
+    assert len(calls) == 1
+
+
+def test_runs_view_wait_rejects_negative_timeout(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    result = runner.invoke(
+        cli.app,
+        ["automations", "runs", "view", uuid, "--wait", "--timeout", "-1"],
+    )
+    assert result.exit_code == 2
+
+
+@pytest.mark.parametrize("poll_interval", ["-1", "0"])
+def test_runs_view_wait_rejects_non_positive_poll_interval(monkeypatch, poll_interval):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "runs",
+            "view",
+            uuid,
+            "--wait",
+            "--poll-interval",
+            poll_interval,
+        ],
+    )
+    assert result.exit_code == 2
+
+
+@pytest.mark.parametrize(
+    "status,timed_out,expected_exit",
+    [
+        ("completed", False, 0),
+        ("failed", False, 1),
+        ("cancelled", False, 1),
+        ("paused", False, 3),
+        ("paused_by_automation", False, 3),
+        ("paused_by_failure", False, 3),
+        ("active", True, 3),
+    ],
+)
+def test_runs_view_wait_exit_codes(monkeypatch, status, timed_out, expected_exit):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": status,
+            "timed_out": timed_out,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == expected_exit
+
+
+def test_runs_view_wait_timeout_message_avoids_failure_language(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "active",
+            "timed_out": True,
+            "polls": 42,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == 3
+    out = result.stdout.lower()
+    assert "failed" not in out
+    assert "stalled" not in out
+    assert "stuck" not in out
+    assert "may still complete" in out
+    assert f"kizen automations runs view {uuid}" in out
+    assert "--timeout" in out
+
+
+def test_runs_view_wait_paused_names_resume(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "paused",
+            "timed_out": False,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == 3
+    assert f"kizen automations runs resume {uuid}" in result.stdout
+
+
+def test_runs_view_wait_paused_by_failure_says_needs_a_human(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "paused_by_failure",
+            "timed_out": False,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": None,
+            "finished_at": None,
+        },
+    )
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--no-steps"]
+    )
+    assert result.exit_code == 3
+    assert "may still complete" not in result.stdout.lower()
+    assert f"kizen automations runs resume {uuid}" in result.stdout
+
+
+def test_runs_view_wait_success_renders_summary_and_json_still_works(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "completed",
+            "timed_out": False,
+            "polls": 3,
+            "automation_api_name": "flow",
+            "record_id": None,
+            "started_at": "2026-08-13T00:00:00Z",
+            "finished_at": "2026-08-13T00:05:00Z",
+        },
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: [])
+    result = runner.invoke(
+        cli.app, ["automations", "runs", "view", uuid, "--wait", "--json"]
+    )
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "completed"
+
+
+def test_runs_view_surfaces_paused_on_step(monkeypatch):
+    """paused_on_step is surfaced whenever the execution GET carries it, with
+    or without --wait — it names the exact step and whether it branches."""
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    monkeypatch.setattr(
+        auto_tools,
+        "get_execution",
+        lambda *a, **k: {
+            "execution_id": uuid,
+            "status": "paused_by_failure",
+            "paused_on_step": {
+                "id": "52ced4b6-0000-4000-8000-000000000009",
+                "type": "create_related_entity",
+                "branching_step": False,
+                "label": "Action: Create Related Entity",
+            },
+        },
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: [])
+    result = runner.invoke(cli.app, ["automations", "runs", "view", uuid, "--no-steps"])
+    assert result.exit_code == 0
+    assert "Action: Create Related Entity" in result.stdout
+
+
 def test_runs_list_table_shows_full_execution_id(monkeypatch):
     execs = load_fixture("executions/list_record_test.json")
     monkeypatch.setattr(auto_tools, "list_executions", lambda *a, **k: execs)
@@ -488,6 +784,135 @@ def test_runs_list_table_shows_full_execution_id(monkeypatch):
     assert result.exit_code == 0
     # Full id present and not the truncated "…" form the old table used.
     assert execs[0]["execution_id"] in result.stdout
+
+
+def test_runs_logs_rejects_non_uuid(monkeypatch):
+    called = []
+    monkeypatch.setattr(
+        auto_tools, "get_execution_history", lambda *a, **k: called.append(1) or []
+    )
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", "llm_comparison"])
+    assert result.exit_code == 1
+    assert "not an execution UUID" in result.stderr
+    assert not called
+
+
+def test_runs_logs_renders_known_detailed_log_shapes(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "code_step",
+            "description": "Run Python 3.13 Code",
+            "status": "failed",
+            "detailed_log": {"stdout": "", "traceback": "NameError: name 'foo'"},
+        },
+        {
+            "id": "e2",
+            "kind": "step",
+            "type": "code_step",
+            "description": "Send welcome email",
+            "status": "completed",
+            "detailed_log": {"logs": ["starting", "sent"]},
+        },
+        {
+            "id": "e3",
+            "kind": "step",
+            "type": "initialize_variable",
+            "description": "org_match = 'No'",
+            "status": "completed",
+            "detailed_log": None,
+        },
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid])
+    assert result.exit_code == 0
+    assert "NameError: name 'foo'" in result.stdout
+    assert "starting" in result.stdout
+    assert "sent" in result.stdout
+    # The row with no detailed_log isn't rendered at all.
+    assert "initialize_variable" not in result.stdout
+
+
+def test_runs_logs_code_step_full_audit_shape_is_not_dropped(monkeypatch):
+    """A real code_step's detailed_log carries logs alongside inputs/values/
+    http_requests/duration — the narrow `"logs" in log` check must not
+    intercept it and silently drop the rest (the shape §4 of the item's
+    Context calls the most diagnostically valuable)."""
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "code_step",
+            "description": "Call sender API",
+            "status": "completed",
+            "detailed_log": {
+                "logs": ["hello"],
+                "inputs": {"x": 1},
+                "values": {"y": 2},
+                "duration": 2.246,
+                "http_requests": {"count": 1, "requests": [{"url": "https://x"}]},
+            },
+        },
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid])
+    assert result.exit_code == 0
+    assert "http_requests" in result.stdout
+    assert "inputs" in result.stdout
+    assert "values" in result.stdout
+    assert "duration" in result.stdout
+    assert "hello" in result.stdout
+
+
+def test_runs_logs_no_logs_exits_0_with_pointer(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "initialize_variable",
+            "description": "x",
+            "status": "completed",
+            "detailed_log": None,
+        }
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid])
+    assert result.exit_code == 0
+    assert "outputs.log" in result.stdout
+    assert "code-steps" in result.stdout
+
+
+def test_runs_logs_json_emits_raw_blobs(monkeypatch):
+    uuid = "2461cd64-c82c-406c-a6fd-f27e4918e31e"
+    entries = [
+        {
+            "id": "e1",
+            "kind": "step",
+            "type": "code_step",
+            "description": "d",
+            "status": "completed",
+            "detailed_log": {"logs": ["hi"]},
+        },
+        {
+            "id": "e2",
+            "kind": "step",
+            "type": "initialize_variable",
+            "description": "d2",
+            "status": "completed",
+            "detailed_log": None,
+        },
+    ]
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: entries)
+    result = runner.invoke(cli.app, ["automations", "runs", "logs", uuid, "--json"])
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert len(payload) == 1
+    assert payload[0]["index"] == 1
+    assert payload[0]["detailed_log"] == {"logs": ["hi"]}
 
 
 def test_config_error_exits_nonzero(monkeypatch):
@@ -993,15 +1418,17 @@ def test_init_stores_profile_and_pins_directory(monkeypatch, tmp_path):
 
     config.set_profile_override(None)
     monkeypatch.chdir(tmp_path)  # pin is written to cwd
+    # Fourth prompt is now "Environment" (a curated name), not a free-typed URL.
     result = runner.invoke(
         cli.app,
         ["init", "--profile", "alpha", "--skip-validation"],
-        input="apikey\nAAAA\nuser1\nhttps://app.go.kizen.com\n",
+        input="apikey\nAAAA\nuser1\ngo\n",
     )
     assert result.exit_code == 0, result.output
 
     stored = profiles.get_profile("alpha")
     assert stored is not None and stored.business_id == "AAAA"
+    assert stored.base_url == "https://app.go.kizen.com"
 
     # Read the pin file directly (autouse fixture stubs find_pin to None).
     import tomllib
@@ -1010,6 +1437,98 @@ def test_init_stores_profile_and_pins_directory(monkeypatch, tmp_path):
     assert pin_file.is_file()
     data = tomllib.loads(pin_file.read_text())
     assert data == {"profile": "alpha", "business_id": "AAAA"}
+
+
+def test_init_environment_picker_resolves_named_host(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "beta", "--skip-validation"],
+        input="apikey\nBBBB\nuser1\nfmo\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("beta")
+    assert stored is not None and stored.base_url == "https://app.fmo.kizen.com"
+
+
+def test_init_environment_picker_rejects_bare_enter(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "zeta", "--skip-validation"],
+        input="apikey\nZZZZ\nuser1\n\nintegration\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("zeta")
+    assert stored is not None and stored.base_url == "https://integration.kizen.dev"
+
+
+def test_init_environment_picker_free_text_url(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        ["init", "--profile", "gamma", "--skip-validation"],
+        input="apikey\nCCCC\nuser1\nurl\nhttps://self-hosted.example.com\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("gamma")
+    assert stored is not None and stored.base_url == "https://self-hosted.example.com"
+
+
+def test_init_base_url_flag_accepts_named_host(monkeypatch, tmp_path):
+    from kizen_builder import config, profiles
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        [
+            "init",
+            "--profile",
+            "delta",
+            "--skip-validation",
+            "--base-url",
+            "staging",
+        ],
+        input="apikey\nDDDD\nuser1\n",
+    )
+    assert result.exit_code == 0, result.output
+
+    stored = profiles.get_profile("delta")
+    assert stored is not None and stored.base_url == "https://staging.kizen.com"
+
+
+def test_init_base_url_flag_rejects_unknown_name(monkeypatch, tmp_path):
+    from kizen_builder import config
+
+    config.set_profile_override(None)
+    monkeypatch.chdir(tmp_path)
+    result = runner.invoke(
+        cli.app,
+        [
+            "init",
+            "--profile",
+            "epsilon",
+            "--skip-validation",
+            "--base-url",
+            "not-a-real-env",
+        ],
+        input="apikey\nEEEE\nuser1\n",
+    )
+    assert result.exit_code == 2, result.output
+    assert "unknown environment" in result.stderr
 
 
 def test_envs_list_json_marks_pinned_profile(monkeypatch):
