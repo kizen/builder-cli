@@ -8,6 +8,8 @@ how many results the caller wanted.
 from __future__ import annotations
 
 import json
+import re
+from typing import Any
 
 import httpx
 import pytest
@@ -15,7 +17,7 @@ import respx
 
 from kizen_builder.api import records as records_api
 from kizen_builder.api.client import KizenClient
-from tests.conftest import FAKE_BASE_URL, load_fixture
+from tests.conftest import FAKE_BASE_URL, fake_get_object, load_fixture
 
 SEARCH_URL = f"{FAKE_BASE_URL}/api/records/tax_lot/search"
 
@@ -91,6 +93,27 @@ def test_search_body_wraps_filter_groups(client):
 
 
 @respx.mock
+def test_search_body_includes_field_names(client):
+    route = respx.post(SEARCH_URL).mock(
+        return_value=httpx.Response(200, json=_page([]))
+    )
+    records_api.search_records(client, "tax_lot", field_names=["name", "ticker_symbol"])
+    body = json.loads(route.calls.last.request.content)
+    assert body["field_names"] == ["name", "ticker_symbol"]
+
+
+@respx.mock
+def test_search_body_omits_field_names_key_when_not_passed(client):
+    route = respx.post(SEARCH_URL).mock(
+        return_value=httpx.Response(200, json=_page([]))
+    )
+    records_api.search_records(client, "tax_lot")
+    body = json.loads(route.calls.last.request.content)
+    assert "field_names" not in body
+    assert body == {"query": [], "and": True}
+
+
+@respx.mock
 def test_search_text_param_forwarded(client):
     route = respx.post(SEARCH_URL).mock(
         return_value=httpx.Response(200, json=_page([]))
@@ -118,7 +141,13 @@ def test_tools_layer_truncates_and_forwards_limit(monkeypatch):
     seen: dict = {}
 
     def fake_api_search(
-        client, object_identifier, filters=None, search=None, page_size=100, limit=None
+        client,
+        object_identifier,
+        filters=None,
+        search=None,
+        field_names=None,
+        page_size=100,
+        limit=None,
     ):
         seen["page_size"] = page_size
         seen["limit"] = limit
@@ -128,3 +157,91 @@ def test_tools_layer_truncates_and_forwards_limit(monkeypatch):
     out = record_tools.search_records("tax_lot", limit=3)
     assert len(out) == 3
     assert seen["limit"] == 3
+
+
+def test_tools_layer_forwards_field_names_with_name_added(monkeypatch):
+    """A caller's ``field_names`` reaches the API layer, `name` auto-added."""
+    from kizen_builder.tools import objects as obj_tools
+    from kizen_builder.tools import records as record_tools
+
+    monkeypatch.setattr(obj_tools, "get_object", fake_get_object)
+    seen: dict = {}
+
+    def fake_api_search(
+        client,
+        object_identifier,
+        filters=None,
+        search=None,
+        field_names=None,
+        page_size=100,
+        limit=None,
+    ):
+        seen["field_names"] = field_names
+        return []
+
+    monkeypatch.setattr(record_tools.records_api, "search_records", fake_api_search)
+    record_tools.search_records("tax_lot", field_names=["ticker_symbol"])
+    assert seen["field_names"] == ["ticker_symbol", "name"]
+
+    # Already including "name" — not duplicated.
+    record_tools.search_records("tax_lot", field_names=["name", "ticker_symbol"])
+    assert seen["field_names"] == ["name", "ticker_symbol"]
+
+
+def test_tools_layer_explicit_empty_field_names_still_sends_name(monkeypatch):
+    """``field_names=[]`` means "no extra fields," not "omit the key."
+
+    The live server treats an omitted key as "every field" and an explicit
+    empty list as "zero fields" (see this item's live probe, F). Since the
+    id+name+requested contract holds even when requested is empty, `[]`
+    must reach the wire as `["name"]`, not `None`.
+    """
+    from kizen_builder.tools import objects as obj_tools
+    from kizen_builder.tools import records as record_tools
+
+    monkeypatch.setattr(obj_tools, "get_object", fake_get_object)
+    seen: dict = {}
+
+    def fake_api_search(client, object_identifier, **kwargs):
+        seen["field_names"] = kwargs.get("field_names")
+        return []
+
+    monkeypatch.setattr(record_tools.records_api, "search_records", fake_api_search)
+    record_tools.search_records("tax_lot", field_names=[])
+    assert seen["field_names"] == ["name"]
+
+
+@pytest.mark.parametrize(
+    "bad_name",
+    [
+        "bogus_field",  # typo
+        "Ticker Symbol",  # display label, not the api_name "ticker_symbol"
+        "104e186e-7bab-4149-b2bc-b9c912518d5e",  # field UUID
+    ],
+    ids=["typo", "display-label", "field-uuid"],
+)
+def test_tools_layer_rejects_unknown_field_before_any_search_call(
+    monkeypatch, bad_name
+):
+    """An unrecognized field_names entry raises before the api layer is called.
+
+    Matching is on api_name only (per the item's live probe): a display
+    label or a field UUID misses the index exactly like a typo does. The
+    live server accepts an unknown name and silently drops it (200, no
+    error) rather than rejecting it, so this client-side check is
+    load-bearing, not defensive.
+    """
+    from kizen_builder.tools import objects as obj_tools
+    from kizen_builder.tools import records as record_tools
+
+    monkeypatch.setattr(obj_tools, "get_object", fake_get_object)
+    calls: list[Any] = []
+
+    def fake_api_search(*args, **kwargs):
+        calls.append((args, kwargs))
+        return []
+
+    monkeypatch.setattr(record_tools.records_api, "search_records", fake_api_search)
+    with pytest.raises(LookupError, match=re.escape(bad_name)):
+        record_tools.search_records("tax_lot", field_names=[bad_name])
+    assert calls == []
