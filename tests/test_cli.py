@@ -23,6 +23,7 @@ from kizen_builder.tools.planners import automations as auto_planners
 from kizen_builder.tools.planners import fields as field_planners
 from kizen_builder.tools.planners import forms as form_planners
 from kizen_builder.tools.planners import objects as object_planners
+from kizen_builder.tools.planners import records as record_planners
 from tests.conftest import FAKE_BASE_URL, load_fixture
 
 runner = CliRunner()
@@ -1902,6 +1903,48 @@ def test_records_list_filter_invalid_spec_exits_2(kizen):
     )
     assert result.exit_code == 2
     assert "filter error" in result.stderr
+
+
+def test_records_archive_dry_run_forwards_ids(monkeypatch):
+    def fake_plan_archive(object_api_name, record_ids):
+        assert object_api_name == "patients"
+        assert record_ids == ["rec-1", "rec-2"]
+        return plan_tools.Plan.build(
+            env="testenv", summary="Archive 2 record(s)", operations=[]
+        )
+
+    monkeypatch.setattr(record_planners, "plan_archive_records", fake_plan_archive)
+    result = runner.invoke(
+        cli.app, ["records", "archive", "patients", "rec-1", "rec-2", "--dry-run"]
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_records_archive_requires_at_least_one_id():
+    result = runner.invoke(cli.app, ["records", "archive", "patients"])
+    assert result.exit_code == 2
+    assert "pass at least one record UUID" in result.stderr
+
+
+def test_records_unarchive_dry_run_forwards_ids(monkeypatch):
+    def fake_plan_unarchive(object_api_name, record_ids):
+        assert object_api_name == "patients"
+        assert record_ids == ["rec-1"]
+        return plan_tools.Plan.build(
+            env="testenv", summary="Unarchive 1 record(s)", operations=[]
+        )
+
+    monkeypatch.setattr(record_planners, "plan_unarchive_records", fake_plan_unarchive)
+    result = runner.invoke(
+        cli.app, ["records", "unarchive", "patients", "rec-1", "--dry-run"]
+    )
+    assert result.exit_code == 0, result.output
+
+
+def test_records_unarchive_requires_at_least_one_id():
+    result = runner.invoke(cli.app, ["records", "unarchive", "patients"])
+    assert result.exit_code == 2
+    assert "pass at least one record UUID" in result.stderr
 
 
 # ---------------------------------------------------------------------------

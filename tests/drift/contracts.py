@@ -187,6 +187,29 @@ ENDPOINT_CONTRACTS: tuple[Contract, ...] = (
             "action on the custom-object viewset, not the records viewset"
         ),
     ),
+    Contract(
+        "records",
+        "archive record",
+        "post",
+        "/api/custom-objects/{object_pk}/bulk-archive-entity-record",
+        note=(
+            "lives under /api/custom-objects, same detail-action shape as "
+            "bulk-change-field-value. The UI's Archive button; confirmed "
+            "live 2026-08-13 that DELETE /api/records/{o}/{id} reaches the "
+            "identical externally-observable state, but the CLI calls this "
+            "endpoint for `records archive` rather than aliasing to delete"
+        ),
+    ),
+    Contract(
+        "records",
+        "unarchive record",
+        "patch",
+        "/api/records/{object_identifier}/{entity_id}/unarchive",
+        note=(
+            "reverses archive record above and, confirmed live 2026-08-13, "
+            "DELETE /api/records/{o}/{id} too"
+        ),
+    ),
     # --- saved_views (filter groups / quick filters) ------------------
     Contract(
         "saved_views",

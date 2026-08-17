@@ -147,11 +147,63 @@ def delete_record(
 ) -> dict[str, Any]:
     """DELETE /api/records/{object_identifier}/{record_id}.
 
-    Removes one record. Returns an empty dict (the endpoint answers 204 No
-    Content).
+    Despite the name, this archives the record rather than erasing it: the
+    record 404s on a direct `get_record` and drops out of `search_records`,
+    but it is restorable via `unarchive_record` or
+    `upsert_record(..., oncreate_unarchive="unarchive")` — confirmed live
+    2026-08-13 by deleting a record and unarchiving it back by the same id.
+    Returns an empty dict (the endpoint answers 204 No Content).
     """
     resp = client.delete(f"/api/records/{object_identifier}/{record_id}")
     return resp if isinstance(resp, dict) else {}
+
+
+def archive_record(
+    client: KizenClient,
+    object_uuid: str,
+    record_id: str,
+) -> dict[str, Any]:
+    """POST /api/custom-objects/{object_uuid}/bulk-archive-entity-record.
+
+    Archives one record — the operation the UI's Archive button performs.
+    Lives under /api/custom-objects, not /api/records (same detail-action
+    shape as `bulk_change_field_value`): the path segment is the object's
+    **UUID**, not its api_name. The request body is a real bulk op
+    (`record_ids` is a list); this wraps it one record at a time to match
+    `delete_record`'s per-record shape.
+
+    The response is `{"number_archived": N, "async": true}` — archiving
+    happens server-side asynchronously, so a 200 here does not by itself
+    prove the record is out of search yet (confirmed live 2026-08-13:
+    observed as already reflected in `search_records` well under 2s later,
+    same order of lag `_poll_field_value` documents for field writes).
+
+    `DELETE /api/records/{object_identifier}/{record_id}` (`delete_record`)
+    reaches the identical externally-observable state — confirmed live by
+    archiving a record here, then a separately deleted record, and
+    unarchiving both back by id through the same `unarchive_record` call.
+    This function uses the dedicated endpoint anyway rather than aliasing to
+    `delete_record`, so `archive_record` keeps working even if `DELETE`'s
+    behavior is ever tightened to match its name.
+    """
+    resp = client.post(
+        f"/api/custom-objects/{object_uuid}/bulk-archive-entity-record",
+        json={"record_ids": [record_id]},
+    )
+    return resp if isinstance(resp, dict) else {}
+
+
+def unarchive_record(
+    client: KizenClient,
+    object_identifier: str,
+    record_id: str,
+) -> dict[str, Any]:
+    """PATCH /api/records/{object_identifier}/{record_id}/unarchive.
+
+    Reverses `archive_record` — and, confirmed live 2026-08-13, `delete_record`
+    too; the wire treats both the same way. Takes no request body.
+    """
+    return client.patch(f"/api/records/{object_identifier}/{record_id}/unarchive")
 
 
 def related_pipeline_records(

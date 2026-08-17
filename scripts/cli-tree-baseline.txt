@@ -2703,9 +2703,29 @@
 │ create        Create one record (via --field) or many (via CSV/JSON spec).                       │
 │ update        Update one record (UUID + --field) or many (CSV/JSON spec with 'id').              │
 │ upsert        Create-or-update one record (lookup_value + --field) or many (CSV/JSON spec).      │
-│ delete        Delete one or more records by UUID. Deletion removes the record's data.            │
+│ delete        Delete one or more records by UUID.                                                │
+│ archive       Archive one or more records by UUID.                                               │
+│ unarchive     Unarchive one or more records by UUID.                                             │
 │ set-field     Set one field to one value across many records in a single API call.               │
 │ move          Move a pipeline record to a different stage.                                       │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: records archive [OPTIONS] {object_api_name} [record_id]...                                  
+                                                                                                    
+ Archive one or more records by UUID.                                                               
+                                                                                                    
+ This is the operation the UI's Archive button performs. Data is                                    
+ retained; restore with `records unarchive`.                                                        
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    object_api_name      <str>  Object api_name. [required]                                     │
+│      record_id            <str>  One or more record UUIDs to archive.                            │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --dry-run            Show the plan without applying.                                             │
+│ --yes      -y        Skip the y/N confirmation prompt.                                           │
+│ --json               Emit JSON (plan with --dry-run, results otherwise).                         │
+│ --help               Show this message and exit.                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: records create [OPTIONS] {object_api_name}                                                  
@@ -2735,7 +2755,13 @@
                                                                                                     
  Usage: records delete [OPTIONS] {object_api_name} [record_id]...                                   
                                                                                                     
- Delete one or more records by UUID. Deletion removes the record's data.                            
+ Delete one or more records by UUID.                                                                
+                                                                                                    
+ Despite the name, this archives the record rather than erasing its data —                          
+ confirmed live 2026-08-13: a deleted record 404s on a direct read and                              
+ drops out of search, but comes back via `records unarchive` or                                     
+ `records upsert --oncreate-unarchive unarchive`. `records archive` is the                          
+ same operation under the name that says what it does.                                              
                                                                                                     
 ╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
 │ *    object_api_name      <str>  Object api_name. [required]                                     │
@@ -2876,6 +2902,24 @@
 │    --yes         -y             Skip the y/N confirmation prompt.                                │
 │    --json                       Emit JSON (plan with --dry-run, results otherwise).              │
 │    --help                       Show this message and exit.                                      │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+                                                                                                    
+ Usage: records unarchive [OPTIONS] {object_api_name} [record_id]...                                
+                                                                                                    
+ Unarchive one or more records by UUID.                                                             
+                                                                                                    
+ The reverse of `records archive` (also reachable via `records upsert                               
+ --oncreate-unarchive unarchive`).                                                                  
+                                                                                                    
+╭─ Arguments ──────────────────────────────────────────────────────────────────────────────────────╮
+│ *    object_api_name      <str>  Object api_name. [required]                                     │
+│      record_id            <str>  One or more record UUIDs to unarchive.                          │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+╭─ Options ────────────────────────────────────────────────────────────────────────────────────────╮
+│ --dry-run            Show the plan without applying.                                             │
+│ --yes      -y        Skip the y/N confirmation prompt.                                           │
+│ --json               Emit JSON (plan with --dry-run, results otherwise).                         │
+│ --help               Show this message and exit.                                                 │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
                                                                                                     
  Usage: records update [OPTIONS] {object_api_name} [record_id]                                      
@@ -4312,6 +4356,9 @@
 ===== records =====
 
 
+===== records archive =====
+
+
 ===== records create =====
 
 
@@ -4334,6 +4381,9 @@
 
 
 ===== records set-field =====
+
+
+===== records unarchive =====
 
 
 ===== records update =====

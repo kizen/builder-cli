@@ -2,7 +2,7 @@
   "_meta": {
     "base_url": "https://app.go.kizen.com",
     "captured": "2026-08-13",
-    "contracts_tracked": 64,
+    "contracts_tracked": 66,
     "how_to_refresh": "KIZEN_DRIFT_PROFILE=<profile> KIZEN_DRIFT_UPDATE_SNAPSHOT=1 uv run pytest -m drift",
     "info": {
       "title": "Kizen API",
@@ -238,6 +238,18 @@
       ],
       "surface": "records"
     },
+    "PATCH /api/records/{object_identifier}/{entity_id}/unarchive": {
+      "label": "unarchive record",
+      "operation_id": "records_unarchive_partial_update",
+      "present": true,
+      "query_params": [],
+      "request_schema": null,
+      "responses": [
+        "200",
+        "400"
+      ],
+      "surface": "records"
+    },
     "PATCH /api/role/{id}": {
       "label": "update role",
       "operation_id": "role_partial_update",
@@ -355,6 +367,30 @@
         "201"
       ],
       "surface": "objects"
+    },
+    "POST /api/custom-objects/{object_pk}/bulk-archive-entity-record": {
+      "label": "archive record",
+      "operation_id": "custom_objects_bulk_archive_entity_record_create",
+      "present": true,
+      "query_params": [],
+      "request_body": {
+        "present": true,
+        "properties": {
+          "bytes_end_index": "integer?",
+          "bytes_start_index": "integer?",
+          "entity_records_set_key": "string?",
+          "record_ids": "array[string<uuid>]?",
+          "send_email_notification": "boolean"
+        },
+        "required": [],
+        "type": "object"
+      },
+      "request_required": false,
+      "request_schema": "BulkArchiveEntityRecordRequest",
+      "responses": [
+        "200"
+      ],
+      "surface": "records"
     },
     "POST /api/custom-objects/{object_pk}/bulk-change-field-value": {
       "label": "bulk change field value",
