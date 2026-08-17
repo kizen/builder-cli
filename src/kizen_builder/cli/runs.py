@@ -61,14 +61,14 @@ def _history_error_str(e: dict[str, Any]) -> str:
     return str(error) if error else ""
 
 
-def _history_duration(e: dict[str, Any]) -> str:
+def history_duration(e: dict[str, Any]) -> str:
     ms = e.get("duration_ms")
     if ms is None:
         return ""
     return f"{ms / 1000:.2f}s" if ms >= 1000 else f"{ms}ms"
 
 
-def _wait_exit_code(summary: dict[str, Any]) -> int:
+def wait_exit_code(summary: dict[str, Any]) -> int:
     """completed -> 0; failed/cancelled -> 1; timeout or any paused* -> 3 —
     the wait ended without the run finishing, which a script has to be able
     to tell apart from an actual failure."""
@@ -80,7 +80,7 @@ def _wait_exit_code(summary: dict[str, Any]) -> int:
     return 0
 
 
-def _print_wait_outcome(
+def print_wait_outcome(
     execution_id: str, summary: dict[str, Any], timeout: float
 ) -> None:
     """The human-readable line printed after `--wait` ends without the run
@@ -202,7 +202,7 @@ def runs_view(
                 e.get("type") or "",
                 _short(e.get("description")),
                 e.get("status") or "",
-                _history_duration(e),
+                history_duration(e),
                 _history_error_str(e),
             )
         console.print(st)
@@ -245,8 +245,8 @@ def runs_view(
 
     if wait:
         if fmt is out.OutputFormat.TABLE:
-            _print_wait_outcome(execution_id, summary, timeout)
-        exit_code = _wait_exit_code(summary)
+            print_wait_outcome(execution_id, summary, timeout)
+        exit_code = wait_exit_code(summary)
         if exit_code:
             raise typer.Exit(code=exit_code)
 

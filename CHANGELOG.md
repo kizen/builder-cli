@@ -54,6 +54,16 @@ called out explicitly under **Changed** or **Removed**.
 - **`kizen automations runs logs <exec>`** prints each step's `detailed_log` —
   a `code_step`'s stdout/traceback and other per-step diagnostic detail that
   previously only surfaced via `runs view --json` → `steps[].detailed_log`.
+- **`kizen automations start --wait --show-logs`** triggers an automation and
+  follows it to completion in one command: it blocks until the run finishes
+  (reusing `runs view --wait`'s wait and exit-code logic) and prints each new
+  step's status as it appears, instead of a silent block until the very end.
+  `--show-logs` also prints a step's `detailed_log` once that step finishes —
+  a `code_step`'s log is released on completion, so this is a completed log
+  rather than a running one being tailed. Replaces the old
+  `start` + hand-rolled polling + a separate `runs logs` call with one command
+  and one exit code. Builds directly on `runs view --wait` / `runs logs`
+  above — no second poll loop, no second log renderer.
 - **`kizen records list <object> --fields a,b,c`** fetches `id`, `name`, and
   those field api_names in the same search call already used today, and
   shows them all as table columns — previously the table only ever showed

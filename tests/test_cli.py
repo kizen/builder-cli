@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import json
+import time
 
+import httpx
 import pytest
+import respx
 from rich.console import Console
 from typer.testing import CliRunner
 
@@ -20,7 +23,7 @@ from kizen_builder.tools.planners import automations as auto_planners
 from kizen_builder.tools.planners import fields as field_planners
 from kizen_builder.tools.planners import forms as form_planners
 from kizen_builder.tools.planners import objects as object_planners
-from tests.conftest import load_fixture
+from tests.conftest import FAKE_BASE_URL, load_fixture
 
 runner = CliRunner()
 
@@ -528,6 +531,440 @@ def test_start_rejects_malformed_var(monkeypatch):
         cli.app, ["automations", "start", "flow", "-r", "rec-1", "--var", "novalue"]
     )
     assert result.exit_code != 0
+
+
+# ---------------------------------------------------------------------------
+# `start --wait [--show-logs]` (BCLI-021) — composes BCLI-012's
+# wait_for_execution()/get_execution_history(); tests mock the tool layer
+# (test_start_var_flags_reach_the_tool's own pattern) for the composition
+# itself, and respx + a fake clock (test_runs.py's wait_for_execution
+# pattern) for the streaming behaviour that only shows up across real polls.
+# ---------------------------------------------------------------------------
+
+_START_RESULT = {
+    "execution_id": "e0000000-0000-4000-8000-000000000099",
+    "record_id": "rec-1",
+    "client_id": None,
+    "variable_overrides": [],
+    "raw": {},
+}
+
+
+def _wait_raw(execution_id, status):
+    """A minimal raw GET .../automation-execution/{id} response."""
+    return {
+        "id": execution_id,
+        "status": status,
+        "automation": {"api_name": "flow"},
+        "record": {"id": "rec-1"},
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+    }
+
+
+def test_start_wait_composes_start_and_wait_in_order(monkeypatch):
+    """`start --wait` calls start_automation() then wait_for_execution(),
+    in that order, with the first call's execution_id flowing into the
+    second — the tool-composition contract, not the HTTP wire."""
+    calls = []
+
+    def fake_start(api_name, record_id, *, client_id=None, variables=None):
+        calls.append(("start", api_name, record_id))
+        return dict(_START_RESULT)
+
+    def fake_wait(execution_id, *, timeout, poll_interval, on_poll=None):
+        calls.append(("wait", execution_id))
+        return {
+            "execution_id": execution_id,
+            "status": "completed",
+            "timed_out": False,
+            "polls": 1,
+        }
+
+    monkeypatch.setattr(auto_tools, "start_automation", fake_start)
+    monkeypatch.setattr(auto_tools, "wait_for_execution", fake_wait)
+
+    result = runner.invoke(
+        cli.app, ["automations", "start", "flow", "-r", "rec-1", "--wait"]
+    )
+
+    assert result.exit_code == 0
+    assert calls == [
+        ("start", "flow", "rec-1"),
+        ("wait", _START_RESULT["execution_id"]),
+    ]
+
+
+def test_start_without_wait_never_calls_wait_for_execution(monkeypatch):
+    """Without --wait, exactly one call to start_automation() and none to
+    wait_for_execution() — the byte-for-byte-unchanged requirement."""
+    calls = []
+    monkeypatch.setattr(
+        auto_tools,
+        "start_automation",
+        lambda *a, **k: calls.append(1) or dict(_START_RESULT),
+    )
+
+    def boom(*a, **k):
+        raise AssertionError("wait_for_execution must not run without --wait")
+
+    monkeypatch.setattr(auto_tools, "wait_for_execution", boom)
+
+    result = runner.invoke(cli.app, ["automations", "start", "flow", "-r", "rec-1"])
+
+    assert result.exit_code == 0
+    assert len(calls) == 1
+
+
+@respx.mock
+def test_start_wait_streams_new_history_rows_once(monkeypatch):
+    """A history row prints exactly once, the poll it first appears on — not
+    once per poll, and not again on a later poll that re-fetches it."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        side_effect=[
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "completed")),
+        ]
+    )
+    trigger_row = {
+        "id": "row-1",
+        "trigger": {"type": "manual", "description": "Manual", "deleted": False},
+        "step": None,
+        "status": "completed",
+        "execution_time_ms": 5,
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+        "error": None,
+        "error_description": None,
+        "detailed_log": None,
+    }
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        side_effect=[
+            httpx.Response(200, json=[]),
+            httpx.Response(200, json=[trigger_row]),
+            httpx.Response(200, json=[trigger_row]),
+        ]
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout.count("Manual") == 1
+
+
+@respx.mock
+def test_start_wait_heartbeats_during_a_gap_with_no_new_rows(monkeypatch):
+    """No new history row across several polls, but the fixed heartbeat
+    interval has elapsed: a heartbeat line prints (not a step line)."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        side_effect=[
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "completed")),
+        ]
+    )
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    # A fake clock that advances 20s on every read. _RunStream reads
+    # time.monotonic() once (no new rows) or more (a heartbeat fires) per
+    # poll; wait_for_execution itself never reads it here (--timeout 0
+    # disables the deadline check that would otherwise call it too).
+    clock = {"t": 0.0}
+
+    def fake_monotonic():
+        clock["t"] += 20.0
+        return clock["t"]
+
+    monkeypatch.setattr(time, "monotonic", fake_monotonic)
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--timeout",
+            "0",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "still active" in result.stdout
+    assert "poll 2" in result.stdout
+
+
+@respx.mock
+def test_start_wait_without_show_logs_never_prints_detailed_log(monkeypatch):
+    """--wait without --show-logs streams the step-status line but never a
+    detailed_log body, even when a row carries one."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        return_value=httpx.Response(200, json=_wait_raw(exec_id, "completed"))
+    )
+    log_row = {
+        "id": "row-2",
+        "trigger": None,
+        "step": {"type": "code_step", "description": "Run script", "deleted": False},
+        "status": "completed",
+        "execution_time_ms": 10,
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+        "error": None,
+        "error_description": None,
+        "detailed_log": {"stdout": "SENTINEL_LOG_BODY", "traceback": None},
+    }
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        return_value=httpx.Response(200, json=[log_row])
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "Run script" in result.stdout
+    assert "SENTINEL_LOG_BODY" not in result.stdout
+
+
+@respx.mock
+def test_start_wait_survives_a_transient_history_fetch_error(monkeypatch):
+    """A dropped connection or a 5xx on `_RunStream`'s own
+    get_execution_history() call must not abort the wait — that's the same
+    bug BCLI-012 fixed for the status poll, one endpoint over. The run still
+    reaches its correct terminal status and exit code; only that one poll's
+    render is skipped."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    respx.get(f"{exec_base}/{exec_id}").mock(
+        side_effect=[
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "active")),
+            httpx.Response(200, json=_wait_raw(exec_id, "completed")),
+        ]
+    )
+    trigger_row = {
+        "id": "row-1",
+        "trigger": {"type": "manual", "description": "Manual", "deleted": False},
+        "step": None,
+        "status": "completed",
+        "execution_time_ms": 5,
+        "created": "2026-08-13T00:00:00Z",
+        "updated": "2026-08-13T00:00:00Z",
+        "error": None,
+        "error_description": None,
+        "detailed_log": None,
+    }
+    respx.get(f"{exec_base}/{exec_id}/history").mock(
+        side_effect=[
+            httpx.Response(200, json=[]),
+            httpx.Response(503, json={"detail": "temporarily unavailable"}),
+            httpx.Response(200, json=[trigger_row]),
+        ]
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert result.stdout.count("Manual") == 1
+
+
+@respx.mock
+def test_start_wait_history_4xx_surfaces_immediately(monkeypatch):
+    """A 4xx from get_execution_history() (e.g. a malformed request) is not
+    transient — it must surface right away as a command error, not be
+    retried until the wait's own --timeout is reached."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    exec_id = _START_RESULT["execution_id"]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    exec_base = f"{FAKE_BASE_URL}/api/automation2/automation-execution"
+    status_route = respx.get(f"{exec_base}/{exec_id}").mock(
+        return_value=httpx.Response(200, json=_wait_raw(exec_id, "active"))
+    )
+    history_route = respx.get(f"{exec_base}/{exec_id}/history").mock(
+        return_value=httpx.Response(400, json={"detail": "bad request"})
+    )
+
+    result = runner.invoke(
+        cli.app,
+        [
+            "automations",
+            "start",
+            "flow",
+            "-r",
+            "rec-1",
+            "--wait",
+            "--poll-interval",
+            "1",
+        ],
+    )
+
+    assert result.exit_code == 1
+    assert status_route.call_count == 1
+    assert history_route.call_count == 1
+
+
+def test_start_wait_json_output_is_valid_json_only(monkeypatch):
+    """--json --wait: stdout is exactly one JSON blob — no interleaved
+    streaming text — carrying status/timed_out/polls alongside start's
+    existing keys."""
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": _START_RESULT["execution_id"],
+            "status": "completed",
+            "timed_out": False,
+            "polls": 2,
+        },
+    )
+
+    result = runner.invoke(
+        cli.app, ["automations", "start", "flow", "-r", "rec-1", "--wait", "--json"]
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["execution_id"] == _START_RESULT["execution_id"]
+    assert payload["record_id"] == _START_RESULT["record_id"]
+    assert payload["raw"] == _START_RESULT["raw"]
+    assert payload["status"] == "completed"
+    assert payload["timed_out"] is False
+    assert payload["polls"] == 2
+
+
+def test_start_show_logs_implies_wait_and_adds_steps_to_json(monkeypatch):
+    """--show-logs alone (no --wait) still waits, and --json --show-logs
+    adds the full step history under "steps"."""
+    history = [
+        {
+            "id": "row-1",
+            "kind": "trigger",
+            "type": "manual",
+            "description": "Manual",
+            "status": "completed",
+            "duration_ms": 5,
+            "started_at": None,
+            "finished_at": None,
+            "error": None,
+            "detailed_log": None,
+        }
+    ]
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": _START_RESULT["execution_id"],
+            "status": "completed",
+            "timed_out": False,
+            "polls": 1,
+        },
+    )
+    monkeypatch.setattr(auto_tools, "get_execution_history", lambda *a, **k: history)
+
+    result = runner.invoke(
+        cli.app,
+        ["automations", "start", "flow", "-r", "rec-1", "--show-logs", "--json"],
+    )
+
+    assert result.exit_code == 0
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "completed"  # proves --show-logs implied --wait
+    assert payload["steps"] == history
+
+
+def test_start_wait_exit_code_reuses_runs_view_wait_mapping(monkeypatch):
+    """`start --wait`'s exit code comes from the same completed/failed/
+    cancelled/timeout/paused mapping `runs view --wait` uses — a failed run
+    exits 1, matching that shared logic rather than a second copy of it."""
+    monkeypatch.setattr(
+        auto_tools, "start_automation", lambda *a, **k: dict(_START_RESULT)
+    )
+    monkeypatch.setattr(
+        auto_tools,
+        "wait_for_execution",
+        lambda *a, **k: {
+            "execution_id": _START_RESULT["execution_id"],
+            "status": "failed",
+            "timed_out": False,
+            "polls": 3,
+        },
+    )
+
+    result = runner.invoke(
+        cli.app, ["automations", "start", "flow", "-r", "rec-1", "--wait"]
+    )
+
+    assert result.exit_code == 1
 
 
 def test_runs_view_rejects_non_uuid(monkeypatch):

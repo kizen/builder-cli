@@ -316,6 +316,34 @@ def test_wait_for_execution_does_not_retry_a_4xx(monkeypatch):
         wait_for_execution(EXEC_ID, timeout=60.0, poll_interval=1.0)
 
 
+@respx.mock
+def test_wait_for_execution_on_poll_runs_once_per_poll(monkeypatch):
+    """BCLI-021's one sanctioned extension: `on_poll`, when given, is called
+    once per successful poll (including the first, before the loop even
+    waits), with the same summary shape plus `polls`. Absent, behaviour is
+    identical to before (covered by every other test in this file, which
+    don't pass it)."""
+    monkeypatch.setattr(time, "sleep", lambda _s: None)
+    respx.get(f"{EXEC_BASE}/{EXEC_ID}").mock(
+        side_effect=[
+            httpx.Response(200, json=_execution("active")),
+            httpx.Response(200, json=_execution("active")),
+            httpx.Response(200, json=_execution("completed")),
+        ]
+    )
+    seen = []
+
+    result = wait_for_execution(
+        EXEC_ID, timeout=60.0, poll_interval=1.0, on_poll=seen.append
+    )
+
+    assert [s["status"] for s in seen] == ["active", "active", "completed"]
+    assert [s["polls"] for s in seen] == [1, 2, 3]
+    assert all(s["execution_id"] == EXEC_ID for s in seen)
+    assert result["status"] == "completed"
+    assert result["polls"] == 3
+
+
 def test_get_execution_omits_paused_on_step_when_absent():
     """A normal (non-paused) execution's summary shape is unchanged — no
     `paused_on_step` key at all, not `paused_on_step: None`."""
